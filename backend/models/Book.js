@@ -9,7 +9,10 @@ const bookSchema = new mongoose.Schema({
   author_id: { type: Number },
   rent_count: { type: Number, default: 0 },
   book_id: { type: Number },
-  available: { type: Boolean, default: true }
+  available: { type: Boolean, default: true },
+  owned_by: { type: String, default: null },
+  rent_from: { type: Date, default: null }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Bible Books', bookSchema);
+// Explicitly specify collection name
+module.exports = mongoose.model('Book', bookSchema, 'Bible Books');

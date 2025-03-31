@@ -3,7 +3,12 @@ const router = express.Router();
 const bookController = require('../controllers/bookController');
 
 router.get('/books', bookController.getAllBooks);
-router.get('/books/:id', bookController.getBookById);
-router.get('/books/author/:authorId', bookController.getBooksByAuthor);
+router.post('/add-book', bookController.addBook);
+router.get('/book-analytics', bookController.getBookAnalytics);
+router.post('/submit-rent-request', bookController.submitRentRequest);
+router.get('/pending-rent-requests', bookController.getPendingRentRequests);
+router.post('/approve-rent-request', bookController.approveRentRequest);
+router.post('/reject-rent-request', bookController.rejectRentRequest);
+router.post('/return-book', bookController.returnBook);
 
 module.exports = router;

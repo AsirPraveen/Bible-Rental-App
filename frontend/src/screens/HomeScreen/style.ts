@@ -87,6 +87,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#19A7CE',
   },
+    clearButton: {
+      padding: 8,
+    },
+    
+    clearIconContainer: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: '#e0e0e0',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    
+    clearIcon: {
+      fontSize: 12,
+      color: '#146C94',
+      fontWeight: 'bold',
+    },
+    
+    resultsList: {
+      width: '100%',
+    },
+    
+    noResultsContainer: {
+      padding: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    
+    noResultsText: {
+      color: '#146C94',
+      fontSize: 16,
+      fontWeight: '500',
+    },
   categoriesContainer: {
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -112,8 +146,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: '#146C94',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 0,
+  },
+  viewAllButton: {
+    backgroundColor: '#AFD3E2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  viewAllText: {
+    color: '#F6F1F1',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   bookCard: {
-    height: 260,
+    height: 275,
     width: 160,
     marginRight: 16,
     backgroundColor: '#AFD3E2',
@@ -127,7 +178,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   bookTitle: {
-    fontSize: 20,
+    fontSize: 18,
+    paddingBottom: 4,
     fontWeight: '500',
     marginBottom: 4,
     color: '#146C94',

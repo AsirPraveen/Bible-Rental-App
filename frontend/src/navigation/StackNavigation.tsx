@@ -13,17 +13,19 @@ import SongComponent from '../screens/Songs/Songs';
 import BookPdfComponent from '../screens/BookPdf/BookPdf';
 import BibleComponent from '../screens/Bible/Bible';
 import MessageNotesComponent from '../screens/MessageNotes/MessageNotes';
+import AllBooks from '../screens/AllBooks/AllBooks';
+import AdminScreen from '../screens/AdminScreen/AdminScreen';
 
 const Stack = createStackNavigator();
 const StackNavigation = () => {
   return (
-    // <Stack.Navigator initialRouteName="Onboarding">
-    <Stack.Navigator initialRouteName="ggg">
+    <Stack.Navigator initialRouteName="Onboarding">
+    {/* <Stack.Navigator initialRouteName="ggg"> */}
       <Stack.Screen
-        // name="Onboarding"
-        // component={OnboardingComponent}
-        name="ggg"
-        component={DrawerNavigator}
+        name="Onboarding"
+        component={OnboardingComponent}
+        // name="ggg"
+        // component={DrawerNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -39,6 +41,16 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Home"
         component={DrawerNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminScreen"
+        component={AdminScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AllBooks"
+        component={AllBooks}
         options={{ headerShown: false }}
       />
       <Stack.Screen

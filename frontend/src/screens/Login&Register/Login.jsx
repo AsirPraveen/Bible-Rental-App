@@ -29,19 +29,19 @@ const {
         password,
       };
   
-      axios.post('http://192.168.197.192:5001/login-user', userData).then(res => {
+      axios.post('http://192.168.29.46:5001/api/auth/login-user', userData).then(res => {
         console.log(res.data);
         if (res.data.status == 'ok') {
           Alert.alert('Logged In Successfull');
           AsyncStorage.setItem('token', res.data.data);
           AsyncStorage.setItem('isLoggedIn', JSON.stringify(true));
           AsyncStorage.setItem('userType',res.data.userType)
-          navigation.navigate('Home');
-          // if(res.data.userType=="Admin"){
-          //    navigation.navigate('AdminScreen');
-          // }else{
-          //   navigation.navigate('Home');
-          // }
+          // navigation.navigate('Home');
+          if(res.data.userType=="Admin"){
+             navigation.navigate('AdminScreen');
+          }else{
+            navigation.navigate('Home');
+          }
         }
       });
     }

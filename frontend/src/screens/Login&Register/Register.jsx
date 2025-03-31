@@ -38,14 +38,15 @@ const {
         email,
         mobile,
         password,
-        userType
+        userType,
+        secretText
       };
       // if (nameVerify && emailVerify && passwordVerify && mobileVerify) {
-        if (userType == 'Admin' && secretText != 'Text1243') {
-          return Alert.alert('Invalid Admin');
-        }
+        // if (userType == 'Admin' && secretText != 'Text1243') {
+        //   return Alert.alert('Invalid Admin');
+        // }
         axios
-          .post('http://192.168.197.192:5001/register', userData)
+          .post('http://192.168.29.46:5001/api/auth/register', userData)
           .then(res => {
             console.log(res.data);
             if (res.data.status == 'ok') {
@@ -124,6 +125,7 @@ const {
               <View style={styles.radioButton_inner_div}>
                 <Text style={styles.radioButton_text}>User</Text>
                 <RadioButton
+                  // require
                   value="User"
                   status={userType == 'User' ? 'checked' : 'unchecked'}
                   onPress={() => setUserType('User')}
@@ -132,6 +134,7 @@ const {
               <View style={styles.radioButton_inner_div}>
                 <Text style={styles.radioButton_text}>Admin</Text>
                 <RadioButton
+                  // require
                   value="Admin"
                   status={userType == 'Admin' ? 'checked' : 'unchecked'}
                   onPress={() => setUserType('Admin')}

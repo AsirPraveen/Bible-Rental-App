@@ -9,10 +9,17 @@ const UserDetailSchema = new mongoose.Schema(
     image:String,
     gender:String,
     profession:String,
-    userType:String
+    userType:String,
+    secretText:String,
+    books_rented: [{
+      book_id: { type: Number },
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+      requested_at: { type: Date, default: Date.now }
+    }]
   },
   {
     collection: "UserInfo",
+    timestamps: true
   }
 );
-mongoose.model("UserInfo", UserDetailSchema);
+module.exports = mongoose.model("UserInfo", UserDetailSchema);

@@ -3,6 +3,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import {Platform} from 'react-native';
 import HomeTabsNavigation from './TabNavigator';
+import History from '../screens/History/History';
 
 const Drawer = createDrawerNavigator();
 
@@ -51,7 +52,7 @@ const DrawerNavigator = () => {
       />
       <Drawer.Screen
         name="History"
-        component={HomeTabsNavigation}
+        component={History}
         options={{
           drawerIcon: options => drawerIcon(options, 'history'),
         }}

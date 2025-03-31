@@ -7,6 +7,7 @@ import axios from "axios";
 import { TextInput, ScrollView } from "react-native";
 import { Search, Bell } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
+import { FlatList } from "react-native-gesture-handler";
 
 const CATEGORIES = [
   { id: '1', name: 'Faith', color: '#146C94' },
@@ -14,39 +15,6 @@ const CATEGORIES = [
   { id: '3', name: 'Prayer', color: '#146C94' },
   { id: '4', name: 'Bible', color: '#146C94' },
   { id: '5', name: 'Fellowship', color: '#146C94' },
-];
-
-const FEATURED_BOOKS = [
-  {
-    id: '1',
-    title: 'Pulang',
-    cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500',
-    author: 'Tere Liye',
-    description: 'A compelling story about finding one\'s way back home.',
-    rating: 4.8,
-    publishedYear: 2022,
-    pages: 320,
-  },
-  {
-    id: '2',
-    title: 'Heart',
-    cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500',
-    author: 'Alyssa Dafina',
-    description: 'An emotional journey through love and loss.',
-    rating: 4.6,
-    publishedYear: 2021,
-    pages: 280,
-  },
-  {
-    id: '3',
-    title: 'Di Bawah Bumi',
-    cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500',
-    author: 'J. Pratama',
-    description: 'Explore the mysteries that lie beneath the earth.',
-    rating: 4.7,
-    publishedYear: 2023,
-    pages: 400,
-  },
 ];
 
 const AUTHORS = [
@@ -80,75 +48,57 @@ const AUTHORS = [
   },
 ];
 
-const TOP_BOOKS = [
-  {
-    id: '1',
-    title: 'Perahu Kertas',
-    cover: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=150',
-    rating: 4.8,
-    publishedYear: 2022,
-    reads: '1.2M',
-    author: 'Dee Lestari',
-    description: 'A beautiful story about dreams and determination.',
-    pages: 288,
-  },
-  {
-    id: '2',
-    title: 'Nanti Kita Cerita Tentang Hari Ini',
-    cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150',
-    rating: 4.7,
-    publishedYear: 2018,
-    reads: '10M',
-    author: 'Marchella FP',
-    description: 'A collection of stories about life\'s precious moments.',
-    pages: 256,
-  },
-  {
-    id: '3',
-    title: 'Bumi Manusia',
-    cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150',
-    rating: 4.5,
-    publishedYear: 2019,
-    reads: '8M',
-    author: 'Pramoedya Ananta Toer',
-    description: 'A historical masterpiece about Indonesian society.',
-    pages: 544,
-  },
-];
-
 const HomeView = () => {
   const navigation = useNavigation();
 
   const [userData, setUserData] = useState("");
-  async function getData() {
-    const token = await AsyncStorage.getItem('token');
-    console.log(token);
-    axios
-      .post('http://192.168.29.46:5001/userdata', {token: token})
-      .then(res => {
-        console.log(res.data);
-        setUserData(res.data.data);
-      });
-  }
-  useEffect(() => {
-    getData();
-  },[]);
-
+  const [books, setBooks] = useState([]);
+  const [topBooks, setTopBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-  const allBooks = [...FEATURED_BOOKS, ...TOP_BOOKS];
-  
-  const filteredBooks = allBooks.filter(book => 
-    book.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  async function getUserData() {
+    const token = await AsyncStorage.getItem('token');
+    try {
+      const res = await axios.post('http://192.168.29.46:5001/api/auth/userdata', { token });
+      setUserData(res.data.data);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  }
 
-  const navigateToBookDetails = (bookId:any) => {
-    navigation.navigate('BookDetails', { id: bookId });
+  async function fetchBooks() {
+    try {
+      const res = await axios.get('http://192.168.29.46:5001/api/books');
+      setBooks(res.data.data);
+
+      const sortedBooks = [...res.data.data].sort((a, b) => 
+        (b.rent_count || 0) - (a.rent_count || 0)
+      );
+      setTopBooks(sortedBooks);
+
+    } catch (error) {
+      console.error('Error fetching books:', error);
+    }
+  }
+
+  useEffect(() => {
+    getUserData();
+    fetchBooks();
+  }, []);
+  
+  const filteredBooks = books.filter(book => book.book_name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const navigateToBookDetails = (book) => {
+    navigation.navigate('BookDetails', { book:book });
   };
 
-  const navigateToAuthorBooks = (authorId:any) => {
+  const navigateToAuthorBooks = (authorId) => {
     navigation.navigate('AuthorBooks', { id: authorId });
+  };
+
+  const navigateToAllBooks = () => {
+    navigation.navigate('AllBooks', { books: books });
   };
 
   return (
@@ -173,25 +123,53 @@ const HomeView = () => {
                 setShowSearchResults(text.length > 0);
               }}
             />
+            {searchQuery.length > 0 && (
+              <Pressable
+                style={styles.clearButton}
+                onPress={() => {
+                  setSearchQuery('');
+                  setShowSearchResults(false);
+                }}
+              >
+                <View style={styles.clearIconContainer}>
+                  <Text style={styles.clearIcon}>✕</Text>
+                </View>
+              </Pressable>
+            )}
           </View>
           {showSearchResults && searchQuery && (
             <View style={styles.searchResults}>
-              {filteredBooks.map((book) => (
-                <Pressable
-                  key={book.id}
-                  style={styles.searchResultItem}
-                  onPress={() => {
-                    setShowSearchResults(false);
-                    setSearchQuery('');
-                  }}
-                >
-                  <Image source={{ uri: book.cover }} style={styles.searchResultImage} />
-                  <View style={styles.searchResultText}>
-                    <Text style={styles.searchResultTitle}>{book.title}</Text>
-                    <Text style={styles.searchResultAuthor}>{book.author}</Text>
-                  </View>
-                </Pressable>
-              ))}
+              {filteredBooks.length > 0 ? (
+                <FlatList
+                  data={filteredBooks}
+                  keyExtractor={(item) => (item.book_id || item.id).toString()}
+                  renderItem={({ item: book }) => (
+                    <Pressable
+                      style={styles.searchResultItem}
+                      onPress={() => {
+                        setShowSearchResults(false);
+                        setSearchQuery('');
+                        navigateToBookDetails(book);
+                      }}
+                    >
+                      <Image 
+                        source={{ uri: 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
+                        style={styles.searchResultImage} 
+                      />
+                      <View style={styles.searchResultText}>
+                        <Text style={styles.searchResultTitle}>{book.book_name || book.title}</Text>
+                        <Text style={styles.searchResultAuthor}>{book.author_name || book.author}</Text>
+                      </View>
+                    </Pressable>
+                  )}
+                  style={styles.resultsList}
+                  maxHeight={300}
+                />
+              ) : (
+                <View style={styles.noResultsContainer}>
+                  <Text style={styles.noResultsText}>No books found</Text>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -218,19 +196,47 @@ const HomeView = () => {
         </ScrollView>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Books</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Books</Text>
+            <TouchableOpacity 
+              style={styles.viewAllButton}
+              onPress={navigateToAllBooks}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {FEATURED_BOOKS.map((book) => (
-              <Pressable 
-                key={book.id} 
-                style={styles.bookCard}
-                onPress={() => navigateToBookDetails(book.id)}
-              >
-                <Image source={{ uri: book.cover }} style={styles.bookCover} />
-                <Text style={styles.bookTitle}>{book.title}</Text>
-                <Text style={styles.bookAuthor}>{book.author}</Text>
-              </Pressable>
-            ))}
+            {books && books.length > 0 && 
+              [...books]
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 5)
+                .map((book) => (
+                  <Pressable 
+                    key={book.book_id} 
+                    style={styles.bookCard}
+                    onPress={() => navigateToBookDetails(book)}
+                  >
+                    <Image
+                      source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
+                      style={styles.bookCover} 
+                    />
+                    <Text 
+                      numberOfLines={2} 
+                      ellipsizeMode="tail" 
+                      style={styles.bookTitle}
+                    >
+                      {book.book_name}
+                    </Text>
+                    <Text 
+                      numberOfLines={1}
+                      ellipsizeMode="tail" 
+                      style={styles.bookAuthor}
+                    >
+                      {book.author_name}
+                    </Text>
+                  </Pressable>
+                ))
+            }
           </ScrollView>
         </View>
 
@@ -252,21 +258,21 @@ const HomeView = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Top 10 Reads </Text>
-          {TOP_BOOKS.map((book) => (
+          {topBooks.slice(0,10).map((book) => (
             <Pressable 
-              key={book.id} 
+              key={book.book_id}
               style={styles.topBookCard}
+              onPress={() => navigateToBookDetails(book)}
             >
-              <Image source={{ uri: book.cover }} style={styles.topBookCover} />
+              <Image source={{ uri: book.cover || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
               <View style={styles.topBookInfo}>
-                <Text style={styles.topBookTitle}>{book.title}</Text>
+                <Text style={styles.topBookTitle}>{book.book_name}</Text>
                 <View style={styles.topBookMeta}>
-                  <Text style={styles.topBookMetaText}>Published: {book.publishedYear}</Text>
-                  <Text style={styles.topBookMetaText}>Read by: {book.reads}</Text>
-                  <Text style={styles.topBookDetail}>Detail</Text>
+                  <Text style={styles.topBookMetaText}>Published: {book.year_of_publication}</Text>
+                  <Text style={styles.topBookMetaText}>Read by: {book.rent_count}</Text>
                 </View>
                 <View style={styles.ratingContainer}>
-                  <Text style={styles.rating}>★ {book.rating}</Text>
+                  <Text style={styles.rating}>★ 5</Text>
                 </View>
               </View>
             </Pressable>

@@ -8,6 +8,10 @@ import { TextInput, ScrollView } from "react-native";
 import { Search, Bell } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
+import Constants from 'expo-constants';
+
+const API_URL = Constants.expoConfig.extra.apiUrl;
+const APP_NAME = Constants.expoConfig.extra.appName;
 
 const CATEGORIES = [
   { id: '1', name: 'Faith', color: '#146C94' },
@@ -60,7 +64,7 @@ const HomeView = () => {
   async function getUserData() {
     const token = await AsyncStorage.getItem('token');
     try {
-      const res = await axios.post('http://192.168.29.46:5001/api/auth/userdata', { token });
+      const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
       setUserData(res.data.data);
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -69,7 +73,7 @@ const HomeView = () => {
 
   async function fetchBooks() {
     try {
-      const res = await axios.get('http://192.168.29.46:5001/api/books');
+      const res = await axios.get(`${API_URL}/api/books`);
       setBooks(res.data.data);
 
       const sortedBooks = [...res.data.data].sort((a, b) => 
@@ -105,7 +109,7 @@ const HomeView = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.stickyHeader}>
         <View style={styles.header}>
-          <Text style={styles.logo}>YOUTH ROOM</Text>
+          <Text style={styles.logo}>{APP_NAME}</Text>
           <Pressable>
             <Bell size={24} color="#146C94" />
           </Pressable>

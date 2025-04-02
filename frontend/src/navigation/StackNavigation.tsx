@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import "@expo/metro-runtime";
 import { createStackNavigator } from "@react-navigation/stack";
 import OnboardingComponent from "../screens/InitialScreen/index";
@@ -14,18 +14,16 @@ import BookPdfComponent from '../screens/BookPdf/BookPdf';
 import BibleComponent from '../screens/Bible/Bible';
 import MessageNotesComponent from '../screens/MessageNotes/MessageNotes';
 import AllBooks from '../screens/AllBooks/AllBooks';
-import AdminScreen from '../screens/AdminScreen/AdminScreen';
+import AdminTabsNavigation from './AdminTabsNavigation'; // Import the new AdminTabsNavigation
 
 const Stack = createStackNavigator();
+
 const StackNavigation = () => {
   return (
     <Stack.Navigator initialRouteName="Onboarding">
-    {/* <Stack.Navigator initialRouteName="ggg"> */}
       <Stack.Screen
         name="Onboarding"
         component={OnboardingComponent}
-        // name="ggg"
-        // component={DrawerNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -45,7 +43,7 @@ const StackNavigation = () => {
       />
       <Stack.Screen
         name="AdminScreen"
-        component={AdminScreen}
+        component={AdminTabsNavigation} // Replace AdminScreen with AdminTabsNavigation
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -84,7 +82,7 @@ const StackNavigation = () => {
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
-  )
-}
+  );
+};
 
-export default StackNavigation
+export default StackNavigation;

@@ -10,5 +10,6 @@ router.get('/pending-rent-requests', bookController.getPendingRentRequests);
 router.post('/approve-rent-request', bookController.approveRentRequest);
 router.post('/reject-rent-request', bookController.rejectRentRequest);
 router.post('/return-book', bookController.returnBook);
+router.get('/request-history', bookController.getRequestHistory);
 
 module.exports = router;

@@ -15,7 +15,9 @@ const {
   import {log} from 'react-native-reanimated';
   import axios from 'axios';
   import AsyncStorage from '@react-native-async-storage/async-storage';
-  
+  import Constants from 'expo-constants';
+
+  const API_URL = Constants.expoConfig.extra.apiUrl;
   
   function LoginPage({props}) {
     const navigation = useNavigation();
@@ -29,7 +31,7 @@ const {
         password,
       };
   
-      axios.post('http://192.168.29.46:5001/api/auth/login-user', userData).then(res => {
+      axios.post(`${API_URL}/api/auth/login-user`, userData).then(res => {
         console.log(res.data);
         if (res.data.status == 'ok') {
           Alert.alert('Logged In Successfull');

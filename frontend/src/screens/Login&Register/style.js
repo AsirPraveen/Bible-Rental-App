@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     // marginRight: 10,
   },
   bottomText: {
-    color: 'black',
+    color: '#000000',
     fontSize: 12,
     fontWeight: '600',
     marginTop: 5,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   radioButton_text: {
     fontSize: 16,
-    color: 'black',
+    color: '#000000',
   },
 });
 export default styles;

@@ -1,29 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import { LogOut, Plus, Check, X } from 'lucide-react-native';
+import Constants from 'expo-constants';
+import { Check, LogOut, Plus, X } from 'lucide-react-native';
 
-const BASE_URL = 'http://192.168.29.46:5001'; // Replace with your IP or use .env
+  const BASE_URL = Constants.expoConfig.extra.apiUrl; // Replace with your IP or use .env
+
+const Colors = {
+  bg: '#146C94',
+  active: '#AFD3E2',
+  inactive: '#F6F1F1',
+  transparent: 'transparent',
+};
 
 const AdminScreen = () => {
   const navigation = useNavigation();
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [requestHistory, setRequestHistory] = useState([]);
   const [analytics, setAnalytics] = useState({ totalBooks: 0, totalRented: 0, popularBooks: [] });
   const [newBook, setNewBook] = useState({
-    book_name: '', author_name: '', pages: '', preface: '', year_of_publication: '', author_id: '', book_id: ''
+    book_name: '',
+    author_name: '',
+    pages: '',
+    preface: '',
+    year_of_publication: '',
+    author_id: '',
+    book_id: '',
   });
   const [showAddBookForm, setShowAddBookForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch pending rent requests
   const fetchPendingRequests = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/pending-rent-requests`);
-      setPendingRequests(res.data.data);
+      setPendingRequests(Array.isArray(res.data.data) ? res.data.data : []);
     } catch (error) {
       console.error('Error fetching pending requests:', error);
+      setPendingRequests([]);
+    }
+  };
+
+  // Fetch request history
+  const fetchRequestHistory = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/request-history`);
+      setRequestHistory(Array.isArray(res.data.data) ? res.data.data : []);
+    } catch (error) {
+      console.error('Error fetching request history:', error);
+      setRequestHistory([]);
     }
   };
 
@@ -31,38 +59,87 @@ const AdminScreen = () => {
   const fetchAnalytics = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/book-analytics`);
-      setAnalytics(res.data.data);
+      console.log('Analytics API Response:', res.data); // Debug the response
+      const data = res.data.data || { totalBooks: 0, totalRented: 0, popularBooks: [] };
+      setAnalytics({
+        totalBooks: data.totalBooks || 0,
+        totalRented: data.totalRented || 0,
+        popularBooks: Array.isArray(data.popularBooks) ? data.popularBooks : [],
+      });
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setAnalytics({ totalBooks: 0, totalRented: 0, popularBooks: [] });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Fetch data on mount
   useEffect(() => {
-    fetchPendingRequests();
-    fetchAnalytics();
+    const fetchData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchPendingRequests(), fetchRequestHistory(), fetchAnalytics()]);
+    };
+    fetchData();
+  }, []);
+
+  // Polling for updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchPendingRequests();
+      fetchRequestHistory();
+      fetchAnalytics();
+    }, 10000); // Poll every 10 seconds
+    return () => clearInterval(interval);
   }, []);
 
   // Approve a rent request
-  const handleApproveRequest = async (userEmail: string, book_id: number) => {
-    try {
-      await axios.post(`${BASE_URL}/api/approve-rent-request`, { userEmail, book_id });
-      Alert.alert('Success', 'Rent request approved');
-      fetchPendingRequests(); // Refresh the list
-      fetchAnalytics(); // Update analytics
-    } catch (error) {
-      Alert.alert('Error', 'Failed to approve request');
-    }
+  const handleApproveRequest = (userEmail: string, book_id: number) => {
+    Alert.alert(
+      'Confirm Approval',
+      `Are you sure you want to approve the rent request for book ID ${book_id} by ${userEmail}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Approve',
+          onPress: async () => {
+            try {
+              await axios.post(`${BASE_URL}/api/approve-rent-request`, { userEmail, book_id });
+              Alert.alert('Success', 'Rent request approved');
+              await fetchPendingRequests();
+              await fetchRequestHistory();
+              await fetchAnalytics();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to approve request');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Reject a rent request
-  const handleRejectRequest = async (userEmail: string, book_id: number) => {
-    try {
-      await axios.post(`${BASE_URL}/api/reject-rent-request`, { userEmail, book_id });
-      Alert.alert('Success', 'Rent request rejected');
-      fetchPendingRequests(); // Refresh the list
-    } catch (error) {
-      Alert.alert('Error', 'Failed to reject request');
-    }
+  const handleRejectRequest = (userEmail: string, book_id: number) => {
+    Alert.alert(
+      'Confirm Rejection',
+      `Are you sure you want to reject the rent request for book ID ${book_id} by ${userEmail}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reject',
+          onPress: async () => {
+            try {
+              await axios.post(`${BASE_URL}/api/reject-rent-request`, { userEmail, book_id });
+              Alert.alert('Success', 'Rent request rejected');
+              await fetchPendingRequests();
+              await fetchRequestHistory();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to reject request');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Add a new book directly
@@ -72,10 +149,16 @@ const AdminScreen = () => {
       if (res.data.status === 'Ok') {
         Alert.alert('Success', 'Book added successfully');
         setNewBook({
-          book_name: '', author_name: '', pages: '', preface: '', year_of_publication: '', author_id: '', book_id: ''
+          book_name: '',
+          author_name: '',
+          pages: '',
+          preface: '',
+          year_of_publication: '',
+          author_id: '',
+          book_id: '',
         });
         setShowAddBookForm(false);
-        fetchAnalytics(); // Update analytics
+        await fetchAnalytics();
       } else {
         Alert.alert('Error', res.data.data);
       }
@@ -92,12 +175,23 @@ const AdminScreen = () => {
     navigation.navigate('Login');
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.bg} />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Admin Dashboard</Text>
         <Pressable onPress={handleLogout}>
-          <LogOut size={24} color="#fff" />
+          <LogOut size={24} color={Colors.inactive} />
         </Pressable>
       </View>
 
@@ -116,43 +210,82 @@ const AdminScreen = () => {
             </View>
           </View>
           <Text style={styles.subSectionTitle}>Popular Books</Text>
-          {analytics.popularBooks.map((book: any) => (
-            <View key={book.book_id} style={styles.popularBookCard}>
-              <Text style={styles.popularBookTitle}>{book.book_name}</Text>
-              <Text style={styles.popularBookDetail}>Rented: {book.rent_count} times</Text>
-            </View>
-          ))}
+          {analytics.popularBooks?.length > 0 ? (
+            analytics.popularBooks.map((book: any) => (
+              <View key={book.book_id} style={styles.popularBookCard}>
+                <Text style={styles.popularBookTitle}>{book.book_name}</Text>
+                <Text style={styles.popularBookDetail}>Rented: {book.rent_count} times</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>No popular books available</Text>
+          )}
         </View>
 
         {/* Pending Rent Requests */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Pending Rent Requests</Text>
-          {pendingRequests.length === 0 ? (
-            <Text style={styles.noDataText}>No pending requests</Text>
-          ) : (
+          {pendingRequests.length > 0 ? (
             pendingRequests.map((request: any) => (
-                <View key={`${request.userEmail}-${request.book_id}`} style={styles.requestCard}>
-                  <View>
+              <View key={`${request.userEmail}-${request.book_id}`} style={styles.requestCard}>
+                <View style={styles.requestContent}>
+                  <View style={styles.requestIndicator} />
+                  <View style={styles.requestDetails}>
                     <Text style={styles.requestTitle}>{request.book_name}</Text>
                     <Text style={styles.requestDetail}>Requested by: {request.userEmail}</Text>
                   </View>
-                  <View style={styles.requestActions}>
-                    <Pressable onPress={() => handleApproveRequest(request.userEmail, request.book_id)} style={styles.actionButton}>
-                      <Check size={20} color="#fff" />
-                    </Pressable>
-                    <Pressable onPress={() => handleRejectRequest(request.userEmail, request.book_id)} style={[styles.actionButton, { backgroundColor: '#FF6B6B' }]}>
-                      <X size={20} color="#fff" />
-                    </Pressable>
+                </View>
+                <View style={styles.requestActions}>
+                  <Pressable onPress={() => handleApproveRequest(request.userEmail, request.book_id)} style={styles.actionButton}>
+                    <Check size={20} color={Colors.inactive} />
+                  </Pressable>
+                  <Pressable onPress={() => handleRejectRequest(request.userEmail, request.book_id)} style={[styles.actionButton, { backgroundColor: '#FF6B6B' }]}>
+                    <X size={20} color={Colors.inactive} />
+                  </Pressable>
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>No pending requests</Text>
+          )}
+        </View>
+
+        {/* Request History */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Request History</Text>
+          {requestHistory.length > 0 ? (
+            requestHistory.map((history: any) => (
+              <View key={`${history.userEmail}-${history.book_id}-${history.processed_at}`} style={styles.historyCard}>
+                <View style={styles.historyContent}>
+                  <View style={styles.historyIndicator} />
+                  <View style={styles.historyDetails}>
+                    <Text style={styles.historyTitle}>{history.book_name}</Text>
+                    <Text style={styles.historyDetail}>User: {history.userEmail}</Text>
+                    <Text style={styles.historyDetail}>
+                      Processed on: {new Date(history.processed_at).toLocaleString()}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statusText,
+                        history.status === 'approved' && styles.statusApproved,
+                        history.status === 'rejected' && styles.statusRejected,
+                      ]}
+                    >
+                      {history.status === 'approved' ? 'Approved' : 'Rejected'}
+                    </Text>
                   </View>
                 </View>
-              ))
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>No request history available</Text>
           )}
         </View>
 
         {/* Add New Book */}
         <View style={styles.section}>
           <Pressable onPress={() => setShowAddBookForm(!showAddBookForm)} style={styles.addButton}>
-            <Plus size={20} color="#fff" />
+            <Plus size={20} color={Colors.inactive} />
             <Text style={styles.addButtonText}>Add New Book</Text>
           </Pressable>
           {showAddBookForm && (
@@ -224,19 +357,29 @@ const AdminScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: Colors.inactive,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: Colors.bg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: '#146C94',
+    backgroundColor: Colors.bg,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    color: Colors.inactive,
   },
   scrollView: {
     flex: 1,
@@ -247,13 +390,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: Colors.bg,
     marginBottom: 10,
   },
   subSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: Colors.bg,
     marginTop: 10,
     marginBottom: 5,
   },
@@ -277,7 +420,7 @@ const styles = StyleSheet.create({
   analyticsValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: Colors.bg,
   },
   analyticsLabel: {
     fontSize: 14,
@@ -297,30 +440,46 @@ const styles = StyleSheet.create({
   popularBookTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: Colors.bg,
   },
   popularBookDetail: {
     fontSize: 14,
     color: '#666',
   },
   requestCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 15,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+    borderLeftWidth: 5,
+    borderLeftColor: Colors.active,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+  },
+  requestContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  requestIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.active,
+    marginRight: 15,
+  },
+  requestDetails: {
+    flex: 1,
   },
   requestTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: Colors.bg,
   },
   requestDetail: {
     fontSize: 14,
@@ -335,6 +494,54 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 5,
   },
+  historyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 15,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+    borderLeftWidth: 5,
+    borderLeftColor: Colors.bg,
+  },
+  historyContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  historyIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.bg,
+    marginRight: 15,
+  },
+  historyDetails: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.bg,
+  },
+  historyDetail: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 5,
+  },
+  statusApproved: {
+    color: '#28A745',
+  },
+  statusRejected: {
+    color: '#FF6B6B',
+  },
   noDataText: {
     fontSize: 16,
     color: '#666',
@@ -343,13 +550,13 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#146C94',
+    backgroundColor: Colors.bg,
     borderRadius: 10,
     padding: 10,
     justifyContent: 'center',
   },
   addButtonText: {
-    color: '#fff',
+    color: Colors.inactive,
     fontSize: 16,
     marginLeft: 5,
   },
@@ -365,7 +572,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   input: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: Colors.inactive,
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
@@ -379,7 +586,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButtonText: {
-    color: '#fff',
+    color: Colors.inactive,
     fontSize: 16,
     fontWeight: 'bold',
   },

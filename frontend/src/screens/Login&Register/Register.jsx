@@ -17,6 +17,9 @@ const {
   import axios from 'axios';
   import Toast from 'react-native-toast-message';
   import {RadioButton} from 'react-native-paper';
+  import Constants from 'expo-constants';
+  
+  const API_URL = Constants.expoConfig.extra.apiUrl;
   
   function RegisterPage({props}) {
     const [name, setName] = useState('');
@@ -46,7 +49,7 @@ const {
         //   return Alert.alert('Invalid Admin');
         // }
         axios
-          .post('http://192.168.29.46:5001/api/auth/register', userData)
+          .post(`${API_URL}/api/auth/register`, userData)
           .then(res => {
             console.log(res.data);
             if (res.data.status == 'ok') {

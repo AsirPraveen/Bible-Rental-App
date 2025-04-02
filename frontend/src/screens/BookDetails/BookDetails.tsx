@@ -4,8 +4,16 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Star } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import Constants from 'expo-constants';
 
-const BASE_URL = 'http://192.168.29.46:5001'; // Replace with your IP or use .env
+const BASE_URL = Constants.expoConfig.extra.apiUrl; // Replace with your IP or use .env
+
+const Colors = {
+  bg: '#146C94',
+  active: '#AFD3E2',
+  inactive: '#F6F1F1',
+  transparent: 'transparent',
+};
 
 export default function BookDetails() {
   const navigation = useNavigation();
@@ -13,8 +21,9 @@ export default function BookDetails() {
   const { book: initialBook } = route.params;
   const [book, setBook] = useState(initialBook);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
-  // Fetch the latest book data to ensure availability status is up-to-date
+  // Fetch the latest book data and user data
   const fetchBookDetails = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/books`);
@@ -27,20 +36,36 @@ export default function BookDetails() {
     }
   };
 
-  // Fetch the current user's email
   const fetchCurrentUser = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       const user = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
       setCurrentUserEmail(user.data.data.email);
+
+      // Check if the user has a pending request for this book
+      const userData = user.data.data;
+      const pendingRequest = userData.books_rented.find(
+        (request: any) => request.book_id === initialBook.book_id && request.status === 'pending'
+      );
+      setHasPendingRequest(!!pendingRequest);
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
   };
 
+  // Fetch data on mount and whenever the book or user data might change
   useEffect(() => {
     fetchBookDetails();
     fetchCurrentUser();
+  }, []);
+
+  // Poll for updates every 5 seconds to ensure the button updates dynamically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchBookDetails();
+      fetchCurrentUser();
+    }, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
   if (!book) {
@@ -60,11 +85,12 @@ export default function BookDetails() {
       const res = await axios.post(`${BASE_URL}/api/submit-rent-request`, {
         userEmail,
         book_id: book.book_id,
-        book_name: book.book_name
+        book_name: book.book_name,
       });
 
       if (res.data.status === 'Ok') {
         Alert.alert('Success', 'Rent request submitted. Waiting for admin approval.');
+        setHasPendingRequest(true); // Update state to reflect pending request
       } else {
         Alert.alert('Error', res.data.data);
       }
@@ -73,13 +99,13 @@ export default function BookDetails() {
     }
   };
 
-  // Optional: Add a return book function (if the current user is the one who rented it)
   const handleReturnBook = async () => {
     try {
       const res = await axios.post(`${BASE_URL}/api/return-book`, { book_id: book.book_id });
       if (res.data.status === 'Ok') {
         Alert.alert('Success', 'Book returned successfully');
         fetchBookDetails(); // Refresh book details
+        fetchCurrentUser(); // Refresh user data
       } else {
         Alert.alert('Error', res.data.data);
       }
@@ -88,11 +114,47 @@ export default function BookDetails() {
     }
   };
 
+  // Determine the button state
+  const renderButton = () => {
+    if (book.available && !hasPendingRequest) {
+      return (
+        <Pressable style={styles.rentButton} onPress={handleRentRequest}>
+          <Text style={styles.rentButtonText}>Rent Now</Text>
+        </Pressable>
+      );
+    } else if (hasPendingRequest) {
+      return (
+        <View style={[styles.rentButton, styles.pendingButton]}>
+          <Text style={[styles.rentButtonText, styles.pendingText]}>Asked for rent</Text>
+        </View>
+      );
+    } else if (!book.available && book.owned_by === currentUserEmail) {
+      return (
+        <View style={styles.buttonContainer}>
+          <View style={[styles.rentButton, styles.readingButton]}>
+            <Text style={[styles.rentButtonText, styles.readingText]}>You are reading</Text>
+          </View>
+          <Pressable style={styles.returnButton} onPress={handleReturnBook}>
+            <Text style={styles.returnButtonText}>Return Book</Text>
+          </Pressable>
+        </View>
+      );
+    } else if (!book.available) {
+      return (
+        <View style={[styles.rentButton, styles.rentedButton]}>
+          <Text style={[styles.rentButtonText, styles.rentedText]}>
+            Rented by {book.owned_by}
+          </Text>
+        </View>
+      );
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#146C94" />
+          <ArrowLeft size={24} color={Colors.bg} />
         </Pressable>
       </View>
 
@@ -131,22 +193,7 @@ export default function BookDetails() {
           <Text style={styles.description}>{book.preface}</Text>
         </View>
 
-        {book.available ? (
-          <Pressable style={styles.rentButton} onPress={handleRentRequest}>
-            <Text style={styles.rentButtonText}>Rent Now</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.readingContainer}>
-            <Text style={styles.readingText}>
-              Reading by {book.owned_by === currentUserEmail ? 'You' : book.owned_by}
-            </Text>
-            {book.owned_by === currentUserEmail && (
-              <Pressable style={styles.returnButton} onPress={handleReturnBook}>
-                <Text style={styles.returnButtonText}>Return Book</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
+        {renderButton()}
       </View>
     </ScrollView>
   );
@@ -155,7 +202,7 @@ export default function BookDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: Colors.inactive,
   },
   header: {
     paddingHorizontal: 16,
@@ -166,7 +213,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#AFD3E2',
+    backgroundColor: Colors.active,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -181,14 +228,14 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     padding: 24,
-    backgroundColor: '#AFD3E2',
+    backgroundColor: Colors.active,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#146C94',
+    color: Colors.bg,
     marginBottom: 8,
   },
   author: {
@@ -205,13 +252,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: Colors.bg,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 24,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: Colors.inactive,
     borderRadius: 12,
     padding: 16,
   },
@@ -230,7 +277,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: Colors.bg,
   },
   descriptionContainer: {
     marginBottom: 24,
@@ -238,44 +285,55 @@ const styles = StyleSheet.create({
   descriptionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#146C94',
+    color: Colors.bg,
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
     lineHeight: 24,
-    color: '#146C94',
+    color: Colors.bg,
+  },
+  buttonContainer: {
+    marginBottom: 20,
   },
   rentButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: Colors.bg,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   rentButtonText: {
-    color: '#F6F1F1',
+    color: Colors.inactive,
     fontSize: 16,
     fontWeight: '600',
   },
-  readingContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
+  pendingButton: {
+    backgroundColor: '#FFA500', // Orange for pending
+  },
+  pendingText: {
+    color: Colors.inactive,
+  },
+  readingButton: {
+    backgroundColor: '#28A745', // Green for "You are reading"
+    marginBottom: 10,
   },
   readingText: {
-    fontSize: 16,
-    color: '#FF6B6B',
-    fontWeight: '600',
-    marginBottom: 10,
+    color: Colors.inactive,
+  },
+  rentedButton: {
+    backgroundColor: '#FF6B6B', // Red for "Rented by"
+  },
+  rentedText: {
+    color: Colors.inactive,
   },
   returnButton: {
     backgroundColor: '#19A7CE',
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: 'center',
   },
   returnButtonText: {
-    color: '#F6F1F1',
+    color: Colors.inactive,
     fontSize: 16,
     fontWeight: '600',
   },

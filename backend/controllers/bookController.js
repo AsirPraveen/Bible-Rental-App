@@ -1,5 +1,6 @@
 const Book = require('../models/Book');
 const User = require('../models/UserDetails');
+const RequestHistory = require('../models/RequestHistory');
 
 exports.getAllBooks = async (req, res) => {
   try {
@@ -44,9 +45,9 @@ exports.getBookAnalytics = async (req, res) => {
     res.send({
       status: "Ok",
       data: {
-        totalBooks,
+        totalBooks: totalBooks || 0,
         totalRented: rentedBooks[0]?.totalRented || 0,
-        popularBooks
+        popularBooks: popularBooks || []
       }
     });
   } catch (error) {
@@ -122,6 +123,11 @@ exports.approveRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Request not found or already processed" });
     }
 
+    const book = await Book.findOne({ book_id });
+    if (!book) {
+      return res.status(404).send({ status: "error", data: "Book not found" });
+    }
+
     await Book.updateOne(
       { book_id },
       { 
@@ -138,6 +144,14 @@ exports.approveRentRequest = async (req, res) => {
       { email: userEmail, 'books_rented.book_id': book_id },
       { $set: { 'books_rented.$.status': 'approved' } }
     );
+
+    // Save to request history
+    await RequestHistory.create({
+      userEmail,
+      book_id,
+      book_name: book.book_name,
+      status: 'approved',
+    });
 
     res.send({ status: "Ok", data: "Rent request approved" });
   } catch (error) {
@@ -160,12 +174,35 @@ exports.rejectRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Request not found or already processed" });
     }
 
+    const book = await Book.findOne({ book_id });
+    if (!book) {
+      return res.status(404).send({ status: "error", data: "Book not found" });
+    }
+
     await User.updateOne(
       { email: userEmail, 'books_rented.book_id': book_id },
       { $set: { 'books_rented.$.status': 'rejected' } }
     );
 
+    // Save to request history
+    await RequestHistory.create({
+      userEmail,
+      book_id,
+      book_name: book.book_name,
+      status: 'rejected',
+    });
+
     res.send({ status: "Ok", data: "Rent request rejected" });
+  } catch (error) {
+    res.send({ status: "error", data: error });
+  }
+};
+
+// New endpoint to fetch request history
+exports.getRequestHistory = async (req, res) => {
+  try {
+    const history = await RequestHistory.find().sort({ processed_at: -1 });
+    res.send({ status: "Ok", data: history });
   } catch (error) {
     res.send({ status: "error", data: error });
   }

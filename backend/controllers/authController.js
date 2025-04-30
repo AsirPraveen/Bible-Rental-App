@@ -28,6 +28,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  console.log("inside login",req.body);
   
   try {
     const oldUser = await User.findOne({ email });

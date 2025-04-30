@@ -189,25 +189,26 @@ const styles = StyleSheet.create({
     color: '#19A7CE',
   },
   authorCard: {
-    width: 140,
-    height: 140,
+    width: 120,
     alignItems: 'center',
-    marginRight: 20,
-    backgroundColor: '#AFD3E2',
-    padding: 8,
-    borderRadius: 12,
+    marginRight: 16,
   },
   authorPhoto: {
-    width: 85,
-    height: 85,
-    borderRadius: 45,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     marginBottom: 8,
   },
   authorName: {
-    fontSize: 15,
-    textAlign: 'center',
-    width: 100,
+    fontSize: 14,
     color: '#146C94',
+    textAlign: 'center',
+  },
+  noAuthorsText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
   },
   topBookCard: {
     flexDirection: 'row',
@@ -263,6 +264,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#146C94',
   },
+  
 });
 
 export default styles;

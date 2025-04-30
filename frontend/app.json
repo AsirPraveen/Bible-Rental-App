@@ -36,6 +36,10 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "permissions": [
+      "camera",
+      "mediaLibrary"
+    ]
   }
 }

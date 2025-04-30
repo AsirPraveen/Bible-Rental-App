@@ -1,129 +1,126 @@
-import { View, Text, Image, ScrollView, StyleSheet, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft } from 'lucide-react-native';
+import axios from 'axios';
+import Constants from 'expo-constants';
 
-const AUTHORS = [
-  {
-    id: '1',
-    name: 'J. Patterson',
-    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    books: 45,
-    followers: '2.3M',
-    bio: 'James Patterson is one of the world\'s most prolific and popular authors.',
-  },
-  {
-    id: '2',
-    name: 'J.K Rowling',
-    photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    books: 12,
-    followers: '15M',
-    bio: 'British author best known for creating the magical world of Harry Potter.',
-  },
-  {
-    id: '3',
-    name: 'Marchella FP',
-    photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-    books: 8,
-    followers: '980K',
-    bio: 'Indonesian author known for her contemporary fiction and poetry.',
-  },
-  {
-    id: '4',
-    name: 'Raditya Dika',
-    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-    books: 15,
-    followers: '4.2M',
-    bio: 'Indonesian author, comedian, and filmmaker known for his humorous writing style.',
-  },
-];
-
-const AUTHOR_BOOKS = {
-  '1': [
-    {
-      id: 'p1',
-      title: 'Along Came a Spider',
-      cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500',
-      year: 2020,
-      rating: 4.5,
-    },
-    {
-      id: 'p2',
-      title: 'Kiss the Girls',
-      cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500',
-      year: 2021,
-      rating: 4.7,
-    },
-  ],
-  '2': [
-    {
-      id: 'r1',
-      title: 'Harry Potter',
-      cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500',
-      year: 2019,
-      rating: 4.9,
-    },
-  ],
-  '3': [
-    {
-      id: 'm1',
-      title: 'NKCTHI',
-      cover: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=500',
-      year: 2018,
-      rating: 4.8,
-    },
-  ],
-  '4': [
-    {
-      id: 'd1',
-      title: 'Marmut Merah Jambu',
-      cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500',
-      year: 2022,
-      rating: 4.6,
-    },
-  ],
-};
+const API_URL = Constants.expoConfig.extra.apiUrl;
 
 export default function AuthorBooks() {
-    const navigation = useNavigation();
-    const route = useRoute();
-    const { id } = route.params;
-  
-    const author = AUTHORS.find(a => a.id === id);
-    const authorBooks = AUTHOR_BOOKS[id as keyof typeof AUTHOR_BOOKS] || [];
-  
-    if (!author) {
-      return (
-        <View style={styles.container}>
-          <Text>Author not found</Text>
-        </View>
-      );
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { id: authorId } = route.params;
+  const [author, setAuthor] = useState(null);
+  const [authorBooks, setAuthorBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchAuthor = async () => {
+    try {
+      console.log(`Fetching author with ID: ${authorId}`);
+      const res = await axios.get(`${API_URL}/api/authors/${authorId}`);
+      console.log('Author API Response:', res.data);
+      if (res.data.status === 'Ok') {
+        setAuthor(res.data.data);
+      } else {
+        console.warn('Author not found, falling back to books data');
+        const booksRes = await axios.get(`${API_URL}/api/authors/${authorId}/books`);
+        if (booksRes.data.status === 'Ok' && booksRes.data.data.length > 0) {
+          const firstBook = booksRes.data.data[0];
+          setAuthor({
+            author_id: authorId,
+            name: firstBook.author_name,
+            photo: 'https://via.placeholder.com/120',
+            bio: 'No bio available',
+            books: booksRes.data.data.length,
+            followers: 'Unknown',
+          });
+        } else {
+          setError('No author or books found');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching author:', error.message);
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      }
+      setError('Failed to load author. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  
-    const navigateToBookDetails = (bookId) => {
-      navigation.navigate('BookDetails', { id: bookId });
-    };
-  
+  };
+
+  const fetchAuthorBooks = async () => {
+    try {
+      console.log(`Fetching books for author ID: ${authorId}`);
+      const res = await axios.get(`${API_URL}/api/authors/${authorId}/books`);
+      console.log('Books API Response:', res.data);
+      if (res.data.status === 'Ok') {
+        setAuthorBooks(res.data.data);
+      } else {
+        console.error('Error fetching author books:', res.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching author books:', error.message);
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchAuthor();
+    fetchAuthorBooks();
+  }, [authorId]);
+
+  const navigateToBookDetails = (book) => {
+    navigation.navigate('BookDetails', { book: book });
+  };
+
+  if (loading) {
     return (
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#146C94" />
-          </Pressable>
-        </View>
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#146C94" />
+        <Text style={styles.loadingText}>Loading author...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.scrollView} // Style for the ScrollView container
+      contentContainerStyle={styles.contentContainer} // Style for the content inside ScrollView
+    >
+      <View style={styles.header}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ArrowLeft size={24} color="#146C94" />
+        </Pressable>
+      </View>
 
       <View style={styles.profileContainer}>
-        <Image source={{ uri: author.photo }} style={styles.profilePhoto} />
+        <Image source={{ uri: author.photo || 'https://via.placeholder.com/120' }} style={styles.profilePhoto} />
         <Text style={styles.name}>{author.name}</Text>
-        <Text style={styles.bio}>{author.bio}</Text>
+        <Text style={styles.bio}>{author.bio || 'No bio available'}</Text>
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author.books}</Text>
+            <Text style={styles.statValue}>{author.books || 0}</Text>
             <Text style={styles.statLabel}>Books</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author.followers}</Text>
+            <Text style={styles.statValue}>{author.followers || '0'}</Text>
             <Text style={styles.statLabel}>Followers</Text>
           </View>
         </View>
@@ -132,20 +129,24 @@ export default function AuthorBooks() {
       <View style={styles.booksContainer}>
         <Text style={styles.sectionTitle}>Books by {author.name}</Text>
         <View style={styles.booksGrid}>
-          {authorBooks.map((book) => (
-            <Pressable
-              key={book.id}
-              style={styles.bookCard}
-              onPress={() => navigateToBookDetails(book.id)}
-            >
-              <Image source={{ uri: book.cover }} style={styles.bookCover} />
-              <View style={styles.bookInfo}>
-                <Text style={styles.bookTitle}>{book.title}</Text>
-                <Text style={styles.bookYear}>{book.year}</Text>
-                <Text style={styles.bookRating}>★ {book.rating}</Text>
-              </View>
-            </Pressable>
-          ))}
+          {authorBooks.length > 0 ? (
+            authorBooks.map((book) => (
+              <Pressable
+                key={book.book_id}
+                style={styles.bookCard}
+                onPress={() => navigateToBookDetails(book)}
+              >
+                <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.bookCover} />
+                <View style={styles.bookInfo}>
+                  <Text style={styles.bookTitle}>{book.book_name}</Text>
+                  <Text style={styles.bookYear}>{book.year_of_publication || 'N/A'}</Text>
+                  <Text style={styles.bookRating}>★ {book.rating || 'N/A'}</Text>
+                </View>
+              </Pressable>
+            ))
+          ) : (
+            <Text style={styles.noBooksText}>No books available</Text>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -153,14 +154,19 @@ export default function AuthorBooks() {
 }
 
 const styles = StyleSheet.create({
-  container: { //hello
+  scrollView: {
     flex: 1,
     backgroundColor: '#F6F1F1',
   },
+  contentContainer: {
+    justifyContent: 'center', // Moved here
+    alignItems: 'center',     // Moved here
+  },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingTop: 20,
+    paddingBottom: 0,
+    width: '100%',
   },
   backButton: {
     width: 40,
@@ -262,5 +268,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#146C94',
+  },
+  noBooksText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#146C94',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF6B6B',
+    textAlign: 'center',
   },
 });

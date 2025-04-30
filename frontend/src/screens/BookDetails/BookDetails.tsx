@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert, Modal, Dimensions, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Star } from 'lucide-react-native';
+import { ArrowLeft, Star, X } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { AdvancedImage } from 'cloudinary-react-native';
+import { Cloudinary } from '@cloudinary/url-gen';
 
-const BASE_URL = Constants.expoConfig.extra.apiUrl; // Replace with your IP or use .env
+const BASE_URL = Constants.expoConfig.extra.apiUrl;
 
 const Colors = {
   bg: '#146C94',
@@ -15,6 +17,16 @@ const Colors = {
   transparent: 'transparent',
 };
 
+// Initialize Cloudinary instance
+const cld = new Cloudinary({
+  cloud: {
+    cloudName: 'darllfja9',
+  },
+});
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH * 0.6; // 60% of screen width for carousel items
+
 export default function BookDetails() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -22,6 +34,8 @@ export default function BookDetails() {
   const [book, setBook] = useState(initialBook);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // Fetch the latest book data and user data
   const fetchBookDetails = async () => {
@@ -42,7 +56,6 @@ export default function BookDetails() {
       const user = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
       setCurrentUserEmail(user.data.data.email);
 
-      // Check if the user has a pending request for this book
       const userData = user.data.data;
       const pendingRequest = userData.books_rented.find(
         (request: any) => request.book_id === initialBook.book_id && request.status === 'pending'
@@ -53,19 +66,17 @@ export default function BookDetails() {
     }
   };
 
-  // Fetch data on mount and whenever the book or user data might change
   useEffect(() => {
     fetchBookDetails();
     fetchCurrentUser();
   }, []);
 
-  // Poll for updates every 5 seconds to ensure the button updates dynamically
   useEffect(() => {
     const interval = setInterval(() => {
       fetchBookDetails();
       fetchCurrentUser();
-    }, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval); // Cleanup on unmount
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   if (!book) {
@@ -90,7 +101,7 @@ export default function BookDetails() {
 
       if (res.data.status === 'Ok') {
         Alert.alert('Success', 'Rent request submitted. Waiting for admin approval.');
-        setHasPendingRequest(true); // Update state to reflect pending request
+        setHasPendingRequest(true);
       } else {
         Alert.alert('Error', res.data.data);
       }
@@ -104,8 +115,8 @@ export default function BookDetails() {
       const res = await axios.post(`${BASE_URL}/api/return-book`, { book_id: book.book_id });
       if (res.data.status === 'Ok') {
         Alert.alert('Success', 'Book returned successfully');
-        fetchBookDetails(); // Refresh book details
-        fetchCurrentUser(); // Refresh user data
+        fetchBookDetails();
+        fetchCurrentUser();
       } else {
         Alert.alert('Error', res.data.data);
       }
@@ -114,7 +125,6 @@ export default function BookDetails() {
     }
   };
 
-  // Determine the button state
   const renderButton = () => {
     if (book.available && !hasPendingRequest) {
       return (
@@ -150,52 +160,126 @@ export default function BookDetails() {
     }
   };
 
+  // Extract public ID from Cloudinary URL or use fallback
+  const getPublicId = (url: string | undefined) => {
+    if (!url) return 'default_image'; // Fallback public ID
+    const regex = /\/upload\/v\d+\/(.+)\.\w+$/;
+    const match = url.match(regex);
+    return match ? match[1] : 'default_image';
+  };
+
+  // Prepare image data for carousel
+  const images = [
+    { url: book.cover_image, publicId: getPublicId(book.cover_image) },
+    { url: book.thumbnail1, publicId: getPublicId(book.thumbnail1) },
+    { url: book.thumbnail2, publicId: getPublicId(book.thumbnail2) },
+  ].filter(img => img.url); // Filter out undefined URLs
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color={Colors.bg} />
-        </Pressable>
-      </View>
-
-      <View style={styles.coverContainer}>
-        <Image
-          source={{
-            uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-          }}
-          style={styles.cover}
-        />
-      </View>
-
-      <View style={styles.detailsContainer}>
-        <Text style={styles.title}>{book.book_name}</Text>
-        <Text style={styles.author}>{book.author_name}</Text>
-
-        <View style={styles.ratingContainer}>
-          <Star size={20} color="#FFB800" fill="#FFB800" />
-          <Text style={styles.rating}>5</Text>
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <ArrowLeft size={24} color={Colors.bg} />
+          </Pressable>
         </View>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>Year</Text>
-            <Text style={styles.statValue}>{book.year_of_publication}</Text>
+        <View style={styles.carouselContainer}>
+          {images.length > 0 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.carouselContent}
+              snapToInterval={CAROUSEL_ITEM_WIDTH + 16} // Item width + margin
+              decelerationRate="fast"
+            >
+              {images.map((item, index) => {
+                const cldImg = cld.image(item.publicId);
+                return (
+                  <Pressable
+                    key={index}
+                    style={styles.carouselItem}
+                    onPress={() => {
+                      setSelectedImage(item);
+                      setModalVisible(true);
+                    }}
+                  >
+                    <AdvancedImage
+                      cldImg={cldImg}
+                      style={styles.carouselImage}
+                      onError={(error) => console.log(`Image ${index} error:`, error)}
+                    />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <Image
+              source={{
+              uri: 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+              }}
+              style={styles.cover}
+            />
+          )}
+        </View>
+
+        <View style={styles.detailsContainer}>
+          <Text style={styles.title}>{book.book_name}</Text>
+          <Text style={styles.author}>{book.author_name}</Text>
+
+          <View style={styles.ratingContainer}>
+            <Star size={20} color="#FFB800" fill="#FFB800" />
+            <Text style={styles.rating}>5</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>Pages</Text>
-            <Text style={styles.statValue}>{book.pages}</Text>
+
+          <View style={styles.statsContainer}>
+            <View style={styles.stat}>
+              <Text style={styles.statLabel}>Year</Text>
+              <Text style={styles.statValue}>{book.year_of_publication}</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.stat}>
+              <Text style={styles.statLabel}>Pages</Text>
+              <Text style={styles.statValue}>{book.pages}</Text>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionTitle}>About the Book</Text>
-          <Text style={styles.description}>{book.preface}</Text>
-        </View>
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.descriptionTitle}>About the Book</Text>
+            <Text style={styles.description}>{book.preface}</Text>
+          </View>
 
-        {renderButton()}
-      </View>
-    </ScrollView>
+          {renderButton()}
+        </View>
+      </ScrollView>
+
+      {/* Full-screen image modal */}
+      <Modal
+        visible={modalVisible}
+        transparent={false}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setModalVisible(false)}
+          >
+            <X size={30} color="#fff" />
+          </TouchableOpacity>
+          {selectedImage && (
+            <View style={styles.fullScreenImageContainer}>
+              <AdvancedImage
+                cldImg={cld.image(selectedImage.publicId)}
+                style={styles.fullScreenImage}
+                onError={(error) => console.log('Full screen image error:', error)}
+              />
+            </View>
+          )}
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -217,14 +301,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  coverContainer: {
+  carouselContainer: {
+    marginVertical: 24,
     alignItems: 'center',
-    marginBottom: 24,
+  },
+  carouselContent: {
+    paddingHorizontal: (SCREEN_WIDTH - CAROUSEL_ITEM_WIDTH) / 2, // Center items
+  },
+  carouselItem: {
+    width: CAROUSEL_ITEM_WIDTH,
+    marginHorizontal: 8,
+    alignItems: 'center',
+  },
+  carouselImage: {
+    width: CAROUSEL_ITEM_WIDTH,
+    height: 300,
+    borderRadius: 12,
   },
   cover: {
     width: 200,
     height: 300,
     borderRadius: 12,
+  },
+  noImageText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 15,
+    padding: 5,
+  },
+  fullScreenImageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: SCREEN_WIDTH,
+    height: '100%',
+  },
+  fullScreenImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH * 1.5, // Adjust aspect ratio as needed
+    resizeMode: 'contain',
   },
   detailsContainer: {
     padding: 24,
@@ -308,20 +436,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pendingButton: {
-    backgroundColor: '#FFA500', // Orange for pending
+    backgroundColor: '#FFA500',
   },
   pendingText: {
     color: Colors.inactive,
   },
   readingButton: {
-    backgroundColor: '#28A745', // Green for "You are reading"
+    backgroundColor: '#28A745',
     marginBottom: 10,
   },
   readingText: {
     color: Colors.inactive,
   },
   rentedButton: {
-    backgroundColor: '#FF6B6B', // Red for "Rented by"
+    backgroundColor: '#FF6B6B',
   },
   rentedText: {
     color: Colors.inactive,

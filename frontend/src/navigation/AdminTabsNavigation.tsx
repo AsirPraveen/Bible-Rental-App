@@ -9,6 +9,8 @@ import BookAnalyticsTab from '../screens/AdminScreen/BookAnalyticsTab';
 import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
 import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
 import AboutAdminTab from '../screens/AdminScreen/AboutAdminTab';
+import PendingScreen from '../screens/AdminScreen/PendingScreen';
+import Post from '../screens/AdminScreen/Post';
 
 const Tab = createBottomTabNavigator();
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
@@ -32,8 +34,8 @@ const AdminTabsNavigation = () => {
         }}
       />
       <Tab.Screen
-        name="Pending Requests"
-        component={PendingRequestsTab}
+        name="Pending Screen"
+        component={PendingScreen}
         options={{
           tabBarIcon: ({ ref }:any) => (
             <Lottie
@@ -47,8 +49,8 @@ const AdminTabsNavigation = () => {
         }}
       />
       <Tab.Screen
-        name="Request History"
-        component={RequestHistoryTab}
+        name="Posts"
+        component={Post}
         options={{
           tabBarIcon: ({ ref }:any) => (
             <Lottie

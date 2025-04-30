@@ -15,6 +15,8 @@ import BibleComponent from '../screens/Bible/Bible';
 import MessageNotesComponent from '../screens/MessageNotes/MessageNotes';
 import AllBooks from '../screens/AllBooks/AllBooks';
 import AdminTabsNavigation from './AdminTabsNavigation'; // Import the new AdminTabsNavigation
+import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
+import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
 
 const Stack = createStackNavigator();
 
@@ -79,6 +81,16 @@ const StackNavigation = () => {
       <Stack.Screen
         name="MessageNotes"
         component={MessageNotesComponent}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Pending Requests"
+        component={PendingRequestsTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Request History"
+        component={RequestHistoryTab}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

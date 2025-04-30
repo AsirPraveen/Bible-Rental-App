@@ -21,42 +21,13 @@ const CATEGORIES = [
   { id: '5', name: 'Fellowship', color: '#146C94' },
 ];
 
-const AUTHORS = [
-  {
-    id: '1',
-    name: 'J. Patterson',
-    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    books: 45,
-    followers: '2.3M',
-  },
-  {
-    id: '2',
-    name: 'J.K Rowling',
-    photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    books: 12,
-    followers: '15M',
-  },
-  {
-    id: '3',
-    name: 'Marchella FP',
-    photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-    books: 8,
-    followers: '980K',
-  },
-  {
-    id: '4',
-    name: 'Raditya Dika',
-    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-    books: 15,
-    followers: '4.2M',
-  },
-];
 
 const HomeView = () => {
   const navigation = useNavigation();
 
   const [userData, setUserData] = useState("");
   const [books, setBooks] = useState([]);
+  const [authors, setAuthors] = useState([]);
   const [topBooks, setTopBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -85,10 +56,23 @@ const HomeView = () => {
       console.error('Error fetching books:', error);
     }
   }
+  async function fetchAuthors() {
+    try {
+      const res = await axios.get(`${API_URL}/api/authors`); // New endpoint to list all authors
+      if (res.data.status === 'Ok') {
+        setAuthors(res.data.data);
+      } else {
+        console.error('Error fetching authors:', res.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching authors:', error);
+    }
+  }
 
   useEffect(() => {
     getUserData();
     fetchBooks();
+    fetchAuthors();
   }, []);
   
   const filteredBooks = books.filter(book => book.book_name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -157,7 +141,7 @@ const HomeView = () => {
                       }}
                     >
                       <Image 
-                        source={{ uri: 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
+                        source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
                         style={styles.searchResultImage} 
                       />
                       <View style={styles.searchResultText}>
@@ -247,16 +231,20 @@ const HomeView = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Authors</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {AUTHORS.map((author) => (
-              <Pressable 
-                key={author.id} 
-                style={styles.authorCard}
-                onPress={() => navigateToAuthorBooks(author.id)}
-              >
-                <Image source={{ uri: author.photo }} style={styles.authorPhoto} />
-                <Text style={styles.authorName}>{author.name}</Text>
-              </Pressable>
-            ))}
+            {authors.length > 0 ? (
+              authors.map((author) => (
+                <Pressable
+                  key={author.author_id}
+                  style={styles.authorCard}
+                  onPress={() => navigateToAuthorBooks(author.author_id)}
+                >
+                  <Image source={{ uri: author.photo || 'https://via.placeholder.com/150' }} style={styles.authorPhoto} />
+                  <Text style={styles.authorName}>{author.name}</Text>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.noAuthorsText}>No authors available</Text>
+            )}
           </ScrollView>
         </View>
 
@@ -268,7 +256,7 @@ const HomeView = () => {
               style={styles.topBookCard}
               onPress={() => navigateToBookDetails(book)}
             >
-              <Image source={{ uri: book.cover || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
+              <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
               <View style={styles.topBookInfo}>
                 <Text style={styles.topBookTitle}>{book.book_name}</Text>
                 <View style={styles.topBookMeta}>

@@ -91,23 +91,37 @@ exports.submitRentRequest = async (req, res) => {
 exports.getPendingRentRequests = async (req, res) => {
   try {
     const users = await User.find({ 'books_rented.status': 'pending' });
+    
+    // Extract all unique book_ids from pending requests
+    const bookIds = users.flatMap(user =>
+      user.books_rented
+        .filter(request => request.status === 'pending')
+        .map(request => request.book_id)
+    ).filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
+
+    // Fetch all books in one query
+    const books = await Book.find({ book_id: { $in: bookIds } });
+    const bookMap = new Map(books.map(book => [book.book_id, book.book_name]));
+
+    // Map users to pending requests with correct book names
     const pendingRequests = users.flatMap(user =>
       user.books_rented
-        .filter((request) => request.status === 'pending')
-        .map((request) => ({
+        .filter(request => request.status === 'pending')
+        .map(request => ({
           _id: request._id,
           userEmail: user.email,
           book_id: request.book_id,
-          book_name: ( Book.findOne({ book_id: request.book_id }))?.book_name || 'Unknown',
+          book_name: bookMap.get(request.book_id) || 'Unknown',
           status: request.status
         }))
     );
+
     res.send({ status: "Ok", data: pendingRequests });
   } catch (error) {
-    res.send({ status: "error", data: error });
+    console.error('Error fetching pending rent requests:', error);
+    res.status(500).send({ status: "error", data: error.message });
   }
 };
-
 exports.approveRentRequest = async (req, res) => {
   const { userEmail, book_id } = req.body;
   try {

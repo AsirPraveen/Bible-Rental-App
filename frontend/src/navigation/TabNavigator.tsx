@@ -10,6 +10,8 @@ import Lottie from "lottie-react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import HomeComponent from "../screens/HomeScreen/HomeScreen";
 import StuffComponent from "../screens/StuffComponent/StuffComponent";
+import NotificationScreen from "../screens/NotificationScreen/NotificationScreen";
+import UserProfileScreen from "../screens/UserProfileScreen/UserProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
@@ -23,10 +25,10 @@ const HomeTabsNavigation = () => {
         <Tab.Screen name="Stuff" component={StuffComponent} options={{
           tabBarIcon: ({ ref }) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/bible.icon.json")} style={styles.icon} />, headerShown: false }}
         />
-        <Tab.Screen name="Notifications" component={HomeComponent} options={{
+        <Tab.Screen name="Notifications" component={NotificationScreen} options={{
           tabBarIcon: ({ ref }) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/notification.icon.json")} style={styles.icon} />, headerShown: false }}
         />
-        <Tab.Screen name="History" component={HomeComponent} options={{
+        <Tab.Screen name="UserProfile" component={UserProfileScreen} options={{
           tabBarIcon: ({ ref }) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/user.icon.json")} style={styles.icon} />, headerShown: false }}
         />
       </Tab.Navigator>

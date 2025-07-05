@@ -6,7 +6,7 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 
-const API_URL = Constants.expoConfig.extra.apiUrl;
+const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
 const Post = () => {
   const [title, setTitle] = useState('');

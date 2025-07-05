@@ -7,6 +7,7 @@ const authorSchema = new mongoose.Schema({
   bio: { type: String }, // Author's biography
   books: { type: Number, default: 0 }, // Total number of books by this author
   followers: { type: String, default: '0' }, // Number of followers (as string for formatting like '2.3M')
+  ministry: { type: String, default: 'Unknown' }, // Author's ministry or organization
 }, { timestamps: true });
 
 // Explicitly specify collection name

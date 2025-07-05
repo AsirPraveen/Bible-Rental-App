@@ -17,6 +17,7 @@ import AllBooks from '../screens/AllBooks/AllBooks';
 import AdminTabsNavigation from './AdminTabsNavigation'; // Import the new AdminTabsNavigation
 import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
 import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
+import ForgotPassword from '../screens/Login&Register/ForgotPassword';
 
 const Stack = createStackNavigator();
 
@@ -91,6 +92,11 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Request History"
         component={RequestHistoryTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Forgot Password"
+        component={ForgotPassword}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

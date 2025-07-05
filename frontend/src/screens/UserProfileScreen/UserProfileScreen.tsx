@@ -4,11 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig.extra.apiUrl;
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const UserProfileScreen = () => {
   const [userData, setUserData] = useState<any>(null);

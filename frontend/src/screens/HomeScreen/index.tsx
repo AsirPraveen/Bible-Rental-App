@@ -10,8 +10,8 @@ import { useNavigation } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig.extra.apiUrl;
-const APP_NAME = Constants.expoConfig.extra.appName;
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
 
 const CATEGORIES = [
   { id: '1', name: 'Faith', color: '#146C94' },
@@ -77,11 +77,11 @@ const HomeView = () => {
   
   const filteredBooks = books.filter(book => book.book_name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const navigateToBookDetails = (book) => {
+  const navigateToBookDetails = (book:any) => {
     navigation.navigate('BookDetails', { book:book });
   };
 
-  const navigateToAuthorBooks = (authorId) => {
+  const navigateToAuthorBooks = (authorId:any) => {
     navigation.navigate('AuthorBooks', { id: authorId });
   };
 
@@ -94,7 +94,7 @@ const HomeView = () => {
       <View style={styles.stickyHeader}>
         <View style={styles.header}>
           <Text style={styles.logo}>{APP_NAME}</Text>
-          <Pressable>
+          <Pressable onPress={() => navigation.navigate('Notifications')}>
             <Bell size={24} color="#146C94" />
           </Pressable>
         </View>

@@ -1,9 +1,9 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
-    
   mainContainer: {
     flex: 1,
+    backgroundColor: 'white',
   },
   textSign: {
     fontSize: 18,
@@ -27,24 +27,24 @@ const styles = StyleSheet.create({
   text_footer: {
     color: '#05375a',
     fontSize: 18,
+    textAlign: 'center',
   },
   action: {
     flexDirection: 'row',
     paddingTop: 14,
     paddingBottom: 3,
     marginTop: 15,
-
     paddingHorizontal: 15,
-
     borderWidth: 1,
     borderColor: '#3f83f3',
     borderRadius: 50,
+    alignItems: 'center',
   },
   textInput: {
     flex: 1,
     marginTop: -12,
-
     color: '#05375a',
+    paddingVertical: 5,
   },
   loginContainer: {
     backgroundColor: '#fff',
@@ -61,6 +61,8 @@ const styles = StyleSheet.create({
     color: '#3f83f3',
     fontWeight: 'bold',
     fontSize: 30,
+    textAlign: 'center',
+    marginBottom: 20,
   },
   button: {
     alignItems: 'center',
@@ -89,22 +91,24 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
   smallIcon2: {
     fontSize: 40,
-    // marginRight: 10,
   },
   bottomText: {
     color: '#000000',
     fontSize: 12,
     fontWeight: '600',
     marginTop: 5,
+    textAlign: 'center',
   },
   radioButton_div: {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 10,
   },
   radioButton_inner_div: {
     display: 'flex',
@@ -119,6 +123,14 @@ const styles = StyleSheet.create({
   radioButton_text: {
     fontSize: 16,
     color: '#000000',
+    marginRight: 5,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginLeft: 20,
+    marginTop: 5,
   },
 });
+
 export default styles;

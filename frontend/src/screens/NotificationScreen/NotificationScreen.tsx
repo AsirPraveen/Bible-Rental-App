@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons'; // For icons
+import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig.extra.apiUrl;
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const NotificationScreen = () => {
   const [posts, setPosts] = useState([]);

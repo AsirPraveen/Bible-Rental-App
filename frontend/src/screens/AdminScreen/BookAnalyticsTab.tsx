@@ -7,8 +7,9 @@ import BarChartComponent from './components/BarChartComponent';
 import PieChartComponent from './components/PieChartComponent';
 import LineChartComponent from './components/LineChartComponent';
 import AddBookForm from './components/AddBookForm';
+import Constants from 'expo-constants';
 
-const BASE_URL = 'http://192.168.29.46:5001';
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const Colors = {
   bg: '#146C94',
   active: '#AFD3E2',

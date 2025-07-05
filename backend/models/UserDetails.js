@@ -11,6 +11,8 @@ const UserDetailSchema = new mongoose.Schema(
     profession:String,
     userType:String,
     secretText:String,
+    otp: String,
+    otpExpiry: Date,
     books_rented: [{
       book_id: { type: Number },
       status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },

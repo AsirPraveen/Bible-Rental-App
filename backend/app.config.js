@@ -11,7 +11,8 @@ export default {
     extra: {
       apiUrl: process.env.API_URL,
       appName: process.env.APP_NAME,
-      secretText: process.env.SECRET_TEXT,
+      emailUser: process.env.EMAIL_USER,
+      emailPass: process.env.EMAIL_PASS,
     },
   },
 };

@@ -4,11 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import Constants from 'expo-constants';
 import { Check, LogOut, Plus, X } from 'lucide-react-native';
+import Constants from 'expo-constants';
 
-  const BASE_URL = Constants.expoConfig.extra.apiUrl; // Replace with your IP or use .env
-
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+console.log('API_URL admin screen:', BASE_URL); // Debug the API URL
 const Colors = {
   bg: '#146C94',
   active: '#AFD3E2',

@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig.extra.apiUrl;
+const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
 export default function AuthorBooks() {
   const navigation = useNavigation();
@@ -76,7 +76,7 @@ export default function AuthorBooks() {
     fetchAuthorBooks();
   }, [authorId]);
 
-  const navigateToBookDetails = (book) => {
+  const navigateToBookDetails = (book:any) => {
     navigation.navigate('BookDetails', { book: book });
   };
 
@@ -116,12 +116,12 @@ export default function AuthorBooks() {
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{author.books || 0}</Text>
-            <Text style={styles.statLabel}>Books</Text>
+            <Text style={styles.statLabel}>Available Books</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author.followers || '0'}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
+            <Text style={styles.statValue}>{author.ministry || '0'}</Text>
+            <Text style={styles.statLabel}>Ministry</Text>
           </View>
         </View>
       </View>

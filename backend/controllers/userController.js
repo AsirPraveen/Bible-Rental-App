@@ -1,7 +1,8 @@
+require('dotenv').config();
 const User = require('../models/UserDetails');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = "hvdvay6ert72839289()aiyg8t87qt72393293883uhefiuh78ttq3ifi78272jdsds039[]]pou89ywe";
+const JWT_SECRET = process.env.JWT_SECRET;
 exports.updateUser = async (req, res) => {
   const { token, name, mobile, gender, profession, image } = req.body;
   console.log(req.body);

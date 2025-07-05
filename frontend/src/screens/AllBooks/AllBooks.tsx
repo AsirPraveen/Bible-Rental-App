@@ -12,21 +12,29 @@ import {
   ScrollView
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X, Star } from 'lucide-react-native';
 import axios from "axios";
+import Constants from 'expo-constants';
+
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+type RootStackParamList = {
+  AllBooks: { books?: any[] };
+  BookDetails: { book: any };
+  // add other routes if needed
+};
 
 const AllBooks = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute();
   const [books, setBooks] = useState(route.params?.books || []);
-  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortOption, setSortOption] = useState("none");
-  const [activeFilters, setActiveFilters] = useState({
+  const [activeFilters, setActiveFilters] = useState<any>({
     year: null,
     rating: null,
     pages: null
@@ -49,7 +57,7 @@ const AllBooks = () => {
   const fetchBooks = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://192.168.29.46:5001/api/books');
+      const res = await axios.get(`${BASE_URL}/api/books`);
       setBooks(res.data.data);
       setFilteredBooks(res.data.data);
     } catch (error) {
@@ -60,7 +68,7 @@ const AllBooks = () => {
   };
 
   const applyFiltersAndSearch = () => {
-    let result = [...books];
+    let result:any[] = [...books];
     
     // Apply search filter
     if (searchQuery) {
@@ -74,7 +82,7 @@ const AllBooks = () => {
     if (activeFilters.year) {
       result = result.filter(book => {
         const year = parseInt(book.year_of_publication);
-        return year >= activeFilters.year[0] && year <= activeFilters.year[1];
+        return year >= activeFilters?.year[0] && year <= activeFilters?.year[1];
       });
     }
     
@@ -111,7 +119,7 @@ const AllBooks = () => {
     setCurrentPage(1); // Reset to first page when filters change
   };
 
-  const navigateToBookDetails = (book) => {
+  const navigateToBookDetails = (book:any) => {
     navigation.navigate('BookDetails', { book: book });
   };
 
@@ -212,7 +220,7 @@ const AllBooks = () => {
                       styles.ratingButton, 
                       activeFilters.rating === rating && styles.activeRatingButton
                     ]}
-                    onPress={() => setActiveFilters(prev => ({
+                    onPress={() => setActiveFilters((prev:any) => ({
                       ...prev, 
                       rating: prev.rating === rating ? null : rating
                     }))}
@@ -229,7 +237,7 @@ const AllBooks = () => {
               <View style={styles.optionsContainer}>
                 <Pressable 
                   style={[styles.optionButton, activeFilters.year && activeFilters.year[0] === 2000 && styles.activeOption]}
-                  onPress={() => setActiveFilters(prev => ({
+                  onPress={() => setActiveFilters((prev:any) => ({
                     ...prev, 
                     year: prev.year && prev.year[0] === 2000 ? null : [2000, 2025]
                   }))}
@@ -238,7 +246,7 @@ const AllBooks = () => {
                 </Pressable>
                 <Pressable 
                   style={[styles.optionButton, activeFilters.year && activeFilters.year[0] === 1980 && styles.activeOption]}
-                  onPress={() => setActiveFilters(prev => ({
+                  onPress={() => setActiveFilters((prev:any) => ({
                     ...prev, 
                     year: prev.year && prev.year[0] === 1980 ? null : [1980, 1999]
                   }))}
@@ -247,7 +255,7 @@ const AllBooks = () => {
                 </Pressable>
                 <Pressable 
                   style={[styles.optionButton, activeFilters.year && activeFilters.year[0] === 1900 && styles.activeOption]}
-                  onPress={() => setActiveFilters(prev => ({
+                  onPress={() => setActiveFilters((prev:any) => ({
                     ...prev, 
                     year: prev.year && prev.year[0] === 1900 ? null : [1900, 1979]
                   }))}
@@ -261,7 +269,7 @@ const AllBooks = () => {
               <View style={styles.optionsContainer}>
                 <Pressable 
                   style={[styles.optionButton, activeFilters.pages && activeFilters.pages[0] === 0 && styles.activeOption]}
-                  onPress={() => setActiveFilters(prev => ({
+                  onPress={() => setActiveFilters((prev:any) => ({
                     ...prev, 
                     pages: prev.pages && prev.pages[0] === 0 ? null : [0, 200]
                   }))}
@@ -270,7 +278,7 @@ const AllBooks = () => {
                 </Pressable>
                 <Pressable 
                   style={[styles.optionButton, activeFilters.pages && activeFilters.pages[0] === 200 && styles.activeOption]}
-                  onPress={() => setActiveFilters(prev => ({
+                  onPress={() => setActiveFilters((prev:any) => ({
                     ...prev, 
                     pages: prev.pages && prev.pages[0] === 200 ? null : [200, 400]
                   }))}
@@ -279,7 +287,7 @@ const AllBooks = () => {
                 </Pressable>
                 <Pressable 
                   style={[styles.optionButton, activeFilters.pages && activeFilters.pages[0] === 400 && styles.activeOption]}
-                  onPress={() => setActiveFilters(prev => ({
+                  onPress={() => setActiveFilters((prev:any) => ({
                     ...prev, 
                     pages: prev.pages && prev.pages[0] === 400 ? null : [400, 10000]
                   }))}
@@ -317,7 +325,7 @@ const AllBooks = () => {
     );
   };
 
-  const renderBookCard = ({ item }) => {
+  const renderBookCard = ({ item }:any) => {
     // Get random rating between 3.5 and 5 for demo purposes
     const rating = item.rating || (Math.random() * 1.5 + 3.5).toFixed(1);
     // Get random pages between 100 and 500 for demo purposes
@@ -405,7 +413,7 @@ const AllBooks = () => {
                 {activeFilters.rating && (
                   <View style={styles.filterPill}>
                     <Text style={styles.filterPillText}>{activeFilters.rating}+ Stars</Text>
-                    <Pressable onPress={() => setActiveFilters(prev => ({ ...prev, rating: null }))}>
+                    <Pressable onPress={() => setActiveFilters((prev:any)=> ({ ...prev, rating: null }))}>
                       <X size={16} color="#fff" />
                     </Pressable>
                   </View>
@@ -417,7 +425,7 @@ const AllBooks = () => {
                       {activeFilters.year[0] === 2000 ? '2000-2025' : 
                        activeFilters.year[0] === 1980 ? '1980-1999' : 'Before 1980'}
                     </Text>
-                    <Pressable onPress={() => setActiveFilters(prev => ({ ...prev, year: null }))}>
+                    <Pressable onPress={() => setActiveFilters((prev:any) => ({ ...prev, year: null }))}>
                       <X size={16} color="#fff" />
                     </Pressable>
                   </View>
@@ -429,7 +437,7 @@ const AllBooks = () => {
                       {activeFilters.pages[0] === 0 ? 'Under 200 pages' : 
                        activeFilters.pages[0] === 200 ? '200-400 pages' : 'Over 400 pages'}
                     </Text>
-                    <Pressable onPress={() => setActiveFilters(prev => ({ ...prev, pages: null }))}>
+                    <Pressable onPress={() => setActiveFilters((prev:any) => ({ ...prev, pages: null }))}>
                       <X size={16} color="#fff" />
                     </Pressable>
                   </View>

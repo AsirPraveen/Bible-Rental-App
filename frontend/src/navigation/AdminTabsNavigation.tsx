@@ -84,10 +84,10 @@ const AdminTabsNavigation = () => {
 
 const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, descriptors }: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
-  const reducer = (state, action) => [...state, { x: action.x, index: action.index }];
+  const reducer = (state:any, action:any) => [...state, { x: action.x, index: action.index }];
   const [layout, dispatch] = useReducer(reducer, []);
 
-  const handleLayout = (event, index) => {
+  const handleLayout = (event:any, index:any) => {
     dispatch({ x: event.nativeEvent.layout.x, index });
   };
 
@@ -124,7 +124,7 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
   );
 };
 
-const TabBarComponent = ({ active, options, onLayout, onPress }) => {
+const TabBarComponent = ({ active, options, onLayout, onPress }:any) => {
   const ref = useRef(null);
   useEffect(() => {
     if (active && ref?.current) {

@@ -28,6 +28,7 @@ router.get('/api/authors/:authorId', async (req, res) => {
           photo: '', // Add default or fetch from config
           bio: 'No bio available',
           followers: 'Unknown',
+          ministry: 'Unknown',
         });
         await author.save();
         console.log('Created fallback author:', author);

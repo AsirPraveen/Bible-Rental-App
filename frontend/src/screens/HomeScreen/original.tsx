@@ -7,6 +7,9 @@ import axios from "axios";
 import { TextInput, ScrollView } from "react-native";
 import { Search, Bell } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
+import Constants from 'expo-constants';
+
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const CATEGORIES = [
   { id: '1', name: 'Faith', color: '#146C94' },
@@ -125,7 +128,7 @@ const HomeView = () => {
     const token = await AsyncStorage.getItem('token');
     console.log(token);
     axios
-      .post('http://192.168.29.46:5001/userdata', {token: token})
+      .post(`${BASE_URL}/userdata`, {token: token})
       .then(res => {
         console.log(res.data);
         setUserData(res.data.data);

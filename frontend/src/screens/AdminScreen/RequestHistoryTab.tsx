@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import HistoryCard from './components/HistoryCard';
+import Constants from 'expo-constants';
 
-const BASE_URL = 'http://192.168.29.46:5001';
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const Colors = {
   bg: '#146C94',
   active: '#AFD3E2',

@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#3f83f3',
+    borderColor: '#146C94',
     borderRadius: 50,
     alignItems: 'center',
   },
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   text_header: {
-    color: '#3f83f3',
+    color: '#146C94',
     fontWeight: 'bold',
     fontSize: 30,
     textAlign: 'center',
@@ -73,14 +73,14 @@ const styles = StyleSheet.create({
   },
   inBut: {
     width: '70%',
-    backgroundColor: '#3f83f3',
+    backgroundColor: '#146C94',
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 15,
     borderRadius: 50,
   },
   inBut2: {
-    backgroundColor: '#3f83f3',
+    backgroundColor: '#146C94',
     height: 65,
     width: 65,
     borderRadius: 15,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   radioButton_title: {
     fontSize: 20,
-    color: '#3f83f3',
+    color: '#146C94',
   },
   radioButton_text: {
     fontSize: 16,

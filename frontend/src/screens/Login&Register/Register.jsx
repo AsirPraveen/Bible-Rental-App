@@ -148,7 +148,7 @@ function RegisterPage({ props }) {
 
           {userType === 'Admin' && (
             <View style={styles.action}>
-              <FontAwesome name="user-secret" color="#3f83f3" style={styles.smallIcon} />
+              <FontAwesome name="user-secret" color="#146C94" style={styles.smallIcon} />
               <TextInput
                 placeholder="Secret Text"
                 style={styles.textInput}
@@ -167,7 +167,7 @@ function RegisterPage({ props }) {
                 <Feather
                   name={showSecretText ? 'eye' : 'eye-off'}
                   style={{ marginRight: -10 }}
-                  color={secretError ? 'red' : 'green'}
+                  color={secretError ? 'red' : '#146C94'}
                   size={23}
                 />
               </TouchableOpacity>
@@ -176,7 +176,7 @@ function RegisterPage({ props }) {
           {secretError ? <Text style={styles.errorText}>{secretError}</Text> : null}
 
           <View style={styles.action}>
-            <FontAwesome name="user-o" color="#3f83f3" style={styles.smallIcon} />
+            <FontAwesome name="user-o" color="#146C94" style={styles.smallIcon} />
             <TextInput
               placeholder="Name"
               style={styles.textInput}
@@ -191,7 +191,7 @@ function RegisterPage({ props }) {
           {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
           <View style={styles.action}>
-            <Fontisto name="email" color="#3f83f3" size={24} style={{ marginLeft: 0, paddingRight: 5 }} />
+            <Fontisto name="email" color="#146C94" size={24} style={{ marginLeft: 0, paddingRight: 5 }} />
             <TextInput
               placeholder="Email"
               style={styles.textInput}
@@ -207,7 +207,7 @@ function RegisterPage({ props }) {
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
           <View style={styles.action}>
-            <FontAwesome name="mobile" color="#3f83f3" size={35} style={{ paddingRight: 10, marginTop: -7, marginLeft: 5 }} />
+            <FontAwesome name="mobile" color="#146C94" size={35} style={{ paddingRight: 10, marginTop: -7, marginLeft: 5 }} />
             <TextInput
               placeholder="Mobile"
               style={styles.textInput}
@@ -224,7 +224,7 @@ function RegisterPage({ props }) {
           {mobileError ? <Text style={styles.errorText}>{mobileError}</Text> : null}
 
           <View style={styles.action}>
-            <FontAwesome name="lock" color="#3f83f3" style={styles.smallIcon} />
+            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
             <TextInput
               placeholder="Password"
               style={styles.textInput}
@@ -240,7 +240,7 @@ function RegisterPage({ props }) {
               <Feather
                 name={showPassword ? 'eye' : 'eye-off'}
                 style={{ marginRight: -10 }}
-                color={passwordError ? 'red' : 'green'}
+                color={passwordError ? 'red' : '#146C94'}
                 size={23}
               />
             </TouchableOpacity>

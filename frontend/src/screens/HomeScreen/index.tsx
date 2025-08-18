@@ -5,6 +5,7 @@ import styles from "./style";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { TextInput, ScrollView } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Bell } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
@@ -91,11 +92,12 @@ const HomeView = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
       <View style={styles.stickyHeader}>
         <View style={styles.header}>
           <Text style={styles.logo}>{APP_NAME}</Text>
           <Pressable onPress={() => navigation.navigate('Notifications')}>
-            <Bell size={24} color="#146C94" />
+            <Bell size={24} color="#AFD3E2" />
           </Pressable>
         </View>
         <View style={styles.searchWrapper}>
@@ -271,6 +273,7 @@ const HomeView = () => {
           ))}
         </View>
       </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };

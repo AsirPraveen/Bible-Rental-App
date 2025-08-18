@@ -104,7 +104,7 @@ function LoginPage({ props }) {
         <View style={styles.loginContainer}>
           <Text style={styles.text_header}>Login !!!</Text>
           <View style={styles.action}>
-            <FontAwesome name="user-o" color="#3f83f3" style={styles.smallIcon} />
+            <FontAwesome name="user-o" color="#146C94" style={styles.smallIcon} />
             <TextInput
               placeholder="Mobile or Email"
               style={styles.textInput}
@@ -116,7 +116,7 @@ function LoginPage({ props }) {
           </View>
           {emailOrPhoneError ? <Text style={styles.errorText}>{emailOrPhoneError}</Text> : null}
           <View style={styles.action}>
-            <FontAwesome name="lock" color="#3f83f3" style={styles.smallIcon} />
+            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
             <TextInput
               placeholder="Password"
               style={styles.textInput}
@@ -128,7 +128,7 @@ function LoginPage({ props }) {
               <Feather
                 name={showPassword ? 'eye' : 'eye-off'}
                 style={{ marginRight: -10 }}
-                color={passwordError ? 'red' : '#3f83f3'}
+                color={passwordError ? 'red' : '#146C94'}
                 size={23}
               />
             </TouchableOpacity>
@@ -142,7 +142,7 @@ function LoginPage({ props }) {
               marginRight: 10,
             }}>
             <Text
-              style={{ color: '#3f83f3', fontWeight: '700' }}
+              style={{ color: '#146C94', fontWeight: '700' }}
               onPress={() => navigation.navigate('Forgot Password')}>
               Forgot Password
             </Text>

@@ -4,14 +4,17 @@ const { width, height } = Dimensions.get("window");
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#19A7CE',
+    // backgroundColor: '#19A7CE',
+  },
+  gradient: {
+    flex: 1,
   },
   container: {
     flex: 1,
-    backgroundColor: '#19A7CE',
+    // backgroundColor: '#19A7CE',
   },
   stickyHeader: {
-    backgroundColor: '#19A7CE',
+    // backgroundColor: '#19A7CE',
     zIndex: 10,
   },
   header: {
@@ -20,7 +23,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#19A7CE',
+    // backgroundColor: '#19A7CE',
   },
   logo: {
     fontSize: 24,
@@ -28,7 +31,7 @@ const styles = StyleSheet.create({
     color: '#F6F1F1',
   },
   searchWrapper: {
-    backgroundColor: '#19A7CE',
+    // backgroundColor: '#19A7CE',
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
@@ -144,7 +147,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     marginBottom: 16,
-    color: '#146C94',
+    color: '#AFD3E2',
+    textShadowColor: 'black',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   sectionHeader: {
     flexDirection: 'row',

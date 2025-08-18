@@ -195,9 +195,9 @@ const ForgotPassword = () => {
                   backgroundColor: progress.interpolate({
                     inputRange: [1, 2, 3],
                     outputRange: [
-                      s <= step ? '#3f83f3' : '#ccc',
-                      s <= step ? '#3f83f3' : '#ccc',
-                      s <= step ? '#3f83f3' : '#ccc',
+                      s <= step ? '#146C94' : '#ccc',
+                      s <= step ? '#146C94' : '#ccc',
+                      s <= step ? '#146C94' : '#ccc',
                     ],
                   }),
                   marginHorizontal: 5,
@@ -212,7 +212,7 @@ const ForgotPassword = () => {
           {step === 1 && (
             <>
               <View style={localStyles.action}>
-                <FontAwesome name="envelope-o" color="#3f83f3" style={localStyles.smallIcon} />
+                <FontAwesome name="envelope-o" color="#146C94" style={localStyles.smallIcon} />
                 <TextInput
                   placeholder="Email"
                   style={localStyles.textInput}
@@ -272,7 +272,7 @@ const ForgotPassword = () => {
           {step === 3 && (
             <>
               <View style={localStyles.action}>
-                <FontAwesome name="lock" color="#3f83f3" style={localStyles.smallIcon} />
+                <FontAwesome name="lock" color="#146C94" style={localStyles.smallIcon} />
                 <TextInput
                   placeholder="New Password"
                   style={localStyles.textInput}
@@ -286,13 +286,13 @@ const ForgotPassword = () => {
                   <Feather
                     name={showNewPassword ? 'eye' : 'eye-off'}
                     size={20}
-                    color="#3f83f3"
+                    color="#146C94"
                   />
                 </TouchableOpacity>
               </View>
               {passwordError ? <Text style={localStyles.errorText}>{passwordError}</Text> : null}
               <View style={localStyles.action}>
-                <FontAwesome name="lock" color="#3f83f3" style={localStyles.smallIcon} />
+                <FontAwesome name="lock" color="#146C94" style={localStyles.smallIcon} />
                 <TextInput
                   placeholder="Confirm Password"
                   style={localStyles.textInput}
@@ -306,7 +306,7 @@ const ForgotPassword = () => {
                   <Feather
                     name={showConfirmPassword ? 'eye' : 'eye-off'}
                     size={20}
-                    color="#3f83f3"
+                    color="#146C94"
                   />
                 </TouchableOpacity>
               </View>
@@ -357,7 +357,7 @@ const localStyles = StyleSheet.create({
     marginTop: 20,
   },
   text_header: {
-    color: '#3f83f3',
+    color: '#146C94',
     fontWeight: 'bold',
     fontSize: 30,
     textAlign: 'center',
@@ -380,7 +380,7 @@ const localStyles = StyleSheet.create({
     marginBottom: 10, // Reduced to minimize gap
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#3f83f3',
+    borderColor: '#146C94',
     borderRadius: 50,
     alignItems: 'center',
   },
@@ -397,7 +397,7 @@ const localStyles = StyleSheet.create({
   },
   inBut: {
     width: '70%',
-    backgroundColor: '#3f83f3',
+    backgroundColor: '#146C94',
     alignItems: 'center',
     paddingVertical: 15,
     borderRadius: 50,
@@ -427,7 +427,7 @@ const localStyles = StyleSheet.create({
     width: 40,
     height: 40,
     borderWidth: 1,
-    borderColor: '#3f83f3',
+    borderColor: '#146C94',
     borderRadius: 10,
     textAlign: 'center',
     fontSize: 18,

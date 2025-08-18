@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Image } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { Book, Music, FileText, MessageSquare } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function StuffComponent() {
   const navigation = useNavigation();
@@ -30,6 +31,7 @@ export default function StuffComponent() {
   ];
 
   return (
+    <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
     <View style={styles.container}>
       <View style={styles.grid}>
         {cards.map((card, index) => (
@@ -45,6 +47,7 @@ export default function StuffComponent() {
         ))}
       </View>
     </View>
+    </LinearGradient>
   );
 }
 
@@ -52,7 +55,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#19A7CE',
+    // backgroundColor: '#19A7CE',
+  },
+  gradient: {
+    flex: 1,
   },
   grid: {
     flexDirection: 'row',

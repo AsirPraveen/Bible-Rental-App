@@ -6,7 +6,7 @@ const User = require('../models/UserDetails');
 const nodemailer = require('nodemailer'); // For sending emails
 const { resetPasswordTemplate } = require('../config/emailTemplate');
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET; // Ensure this is set in your .env file
 
 exports.register = async (req, res) => {
   const { name, email, mobile, password, userType, secretText } = req.body;
@@ -35,25 +35,39 @@ exports.login = async (req, res) => {
   console.log("inside login", req.body);
   
   try {
-    // Check if the input is a phone number or email
-    const isPhone = /[6-9][0-9]{9}/.test(emailOrPhone);
+    const isPhone = /^[6-9][0-9]{9}$/.test(emailOrPhone); // tightened regex
     const query = isPhone ? { mobile: emailOrPhone } : { email: emailOrPhone };
     const oldUser = await User.findOne(query);
-    if (!oldUser) return res.send({ data: "User doesn't exist!!" });
 
-    if (await bcrypt.compare(password, oldUser.password)) {
+    console.log("oldUser:", oldUser);
+
+    if (!oldUser) {
+      console.log("User not found!");
+      return res.send({ data: "User doesn't exist!!" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, oldUser.password);
+    console.log("Password match?", passwordMatch);
+
+    if (passwordMatch) {
       const token = jwt.sign({ email: oldUser.email }, JWT_SECRET);
+      console.log("Token generated:", token);
       return res.status(201).send({
         status: "ok",
         data: token,
         userType: oldUser.userType
       });
     }
+
+    console.log("Invalid password!");
     res.send({ error: "Invalid credentials!!!" });
+    
   } catch (error) {
-    res.send({ error });
+    console.error("Login error:", error);
+    res.send({ "Asir": "123" });
   }
 };
+
 
 exports.getUserData = async (req, res) => {
   const { token } = req.body;

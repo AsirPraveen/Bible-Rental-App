@@ -66,9 +66,9 @@ function LoginPage({ props }) {
           AsyncStorage.setItem('isLoggedIn', JSON.stringify(true));
           AsyncStorage.setItem('userType', res.data.userType);
           if (res.data.userType === 'Admin') {
-            navigation.navigate('AdminScreen');
+            navigation.replace('AdminScreen');
           } else {
-            navigation.navigate('Home');
+            navigation.replace('Home');
           }
         } else {
           Alert.alert('Error', res.data.error || 'Invalid credentials!!!');

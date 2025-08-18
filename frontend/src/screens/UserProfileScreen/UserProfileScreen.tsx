@@ -7,10 +7,12 @@ import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { useNavigation } from '@react-navigation/native';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const UserProfileScreen = () => {
+  const navigation = useNavigation();
   const [userData, setUserData] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -54,6 +56,38 @@ const UserProfileScreen = () => {
 
     fetchUserData();
   }, []);
+
+  // Function to handle logout
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            try {
+              // Clear all stored data
+              await AsyncStorage.multiRemove(['token', 'isLoggedIn', 'userType']);
+              
+              // Reset navigation stack and navigate to Onboarding
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Onboarding' }],
+              });
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'An error occurred during logout.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // Function to pick a profile image
   const pickImage = async () => {
@@ -118,10 +152,16 @@ const UserProfileScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+        {/* Header with Logout Button */}
+        <View style={styles.header}>
+          <Text style={styles.headerText}>Your Profile</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
-            <Text style={styles.headerText}>Your Profile</Text>
-
             <View style={styles.profileCard}>
               <LinearGradient
                 colors={['#19A7CE', '#146C94']}
@@ -257,6 +297,26 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#F6F1F1',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 4,
+  },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 20,
@@ -264,16 +324,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-  },
-  headerText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#F6F1F1',
-    textAlign: 'center',
-    marginBottom: 24,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
   },
   profileCard: {
     backgroundColor: '#FFFFFF',

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "YouthRoom",
+    "name": "YOUTH ROOM",
     "slug": "YouthRoom",  
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./src/assets/jesus-holding-bible.avif",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,21 +13,21 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./src/assets/jesus-holding-bible.avif",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./src/assets/jesus-holding-bible.avif"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./src/assets/jesus-holding-bible.avif",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"

@@ -4,12 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from "./style";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { TextInput, ScrollView } from "react-native";
+import { TextInput, ScrollView, Alert } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Bell } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
 import Constants from 'expo-constants';
+import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
@@ -42,6 +43,36 @@ const HomeView = () => {
       console.error('Error fetching user data:', error);
     }
   }
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            try {
+              // Clear all stored data
+              await AsyncStorage.multiRemove(['token', 'isLoggedIn', 'userType']);
+              
+              // Reset navigation stack and navigate to Onboarding
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Onboarding' }],
+              });
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'An error occurred during logout.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   async function fetchBooks() {
     try {
@@ -96,8 +127,8 @@ const HomeView = () => {
       <View style={styles.stickyHeader}>
         <View style={styles.header}>
           <Text style={styles.logo}>{APP_NAME}</Text>
-          <Pressable onPress={() => navigation.navigate('Notifications')}>
-            <Bell size={24} color="#AFD3E2" />
+          <Pressable onPress={handleLogout} style={{ marginLeft: 10 }}>
+            <Ionicons name="log-out-outline" size={24} color="#AFD3E2" />
           </Pressable>
         </View>
         <View style={styles.searchWrapper}>

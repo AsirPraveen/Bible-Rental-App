@@ -3,15 +3,22 @@ import 'dotenv/config';
 export default {
   expo: {
     name: process.env.APP_NAME || "Youth Room",
-    // Add this for the new architecture warning
     newArchEnabled: true,
-    // Add this for the linking warning
     scheme: "youthroom",
-    // Keep your existing extra section for environment variables
     extra: {
       apiUrl: process.env.API_URL,
       appName: process.env.APP_NAME,
       secretText: process.env.SECRET_TEXT,
+      eas: {
+        projectId: "dc5bfe26-226c-478d-b178-14a74d6a4194"
+      }
     },
+    android: {
+      package: "com.asirpraveen.youthroom" // 👈 must be unique
+    },
+    plugins: [
+      "expo-font",
+      "expo-router"
+    ]
   },
 };

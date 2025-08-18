@@ -1,12 +1,56 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { colors } from '../../utils/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AboutAdminTab = () => {
+  const navigation = useNavigation();
+
+  // Function to handle logout
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            try {
+              // Clear all stored data
+              await AsyncStorage.multiRemove(['token', 'isLoggedIn', 'userType']);
+              
+              // Reset navigation stack and navigate to Onboarding
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Onboarding' }],
+              });
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'An error occurred during logout.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
+      {/* Header with Logout Button */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>About Admin</Text>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={24} color={colors.bg} />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About Admin</Text>
         <Image
           source={{ uri: 'https://via.placeholder.com/150' }} // Replace with admin's photo
           style={styles.adminPhoto}
@@ -28,21 +72,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.inactive,
   },
-  section: {
-    padding: 15,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: 'rgba(20, 108, 148, 0.1)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(20, 108, 148, 0.2)',
   },
-  sectionTitle: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.bg,
-    marginBottom: 20,
+  },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(20, 108, 148, 0.1)',
+  },
+  section: {
+    padding: 15,
+    alignItems: 'center',
   },
   adminPhoto: {
     width: 150,
     height: 150,
     borderRadius: 75,
     marginBottom: 20,
+    borderWidth: 3,
+    borderColor: colors.bg,
   },
   adminName: {
     fontSize: 24,
@@ -60,6 +120,7 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     marginBottom: 20,
+    lineHeight: 20,
   },
   adminContact: {
     fontSize: 14,

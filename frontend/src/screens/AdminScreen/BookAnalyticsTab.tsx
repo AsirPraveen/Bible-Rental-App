@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
 import axios from 'axios';
 import AnalyticsCard from './components/AnalyticsCard';
 import PopularBookCard from './components/PopularBookCard';
@@ -91,6 +91,7 @@ const BookAnalyticsTab = () => {
   }
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Book Analytics</Text>
@@ -127,10 +128,18 @@ const BookAnalyticsTab = () => {
         />
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.inactive,

@@ -1,9 +1,17 @@
 import { StyleSheet, Dimensions } from "react-native";
 import { colors } from "../../utils/colors";
+import { Platform, StatusBar } from 'react-native';
 
 const { width, height } = Dimensions.get("window"); // Get device width and height
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.black,

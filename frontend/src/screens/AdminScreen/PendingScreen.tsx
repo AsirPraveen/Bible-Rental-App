@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Image } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { View, StyleSheet, TouchableOpacity, Text, Image, Platform, StatusBar, SafeAreaView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { BellElectric,FileStack } from 'lucide-react-native';
 
 export default function PendingScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   const cards = [
     {
@@ -20,6 +20,7 @@ export default function PendingScreen() {
   ];
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <View style={styles.container}>
       <View style={styles.grid}>
         {cards.map((card, index) => (
@@ -35,10 +36,18 @@ export default function PendingScreen() {
         ))}
       </View>
     </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   container: {
     flex: 1,
     padding: 16,

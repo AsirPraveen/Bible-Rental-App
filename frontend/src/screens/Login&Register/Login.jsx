@@ -19,7 +19,7 @@ import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 console.log('API_URL:', API_URL);
-function LoginPage({ props }) {
+function LoginPage() {
   const navigation = useNavigation();
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');

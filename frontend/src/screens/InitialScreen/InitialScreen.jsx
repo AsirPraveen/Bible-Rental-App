@@ -2,7 +2,7 @@ import { View, Text, Image, TouchableOpacity, Dimensions } from "react-native";
 import React from "react";
 import { useFonts, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import styles from "./style";
-import { ImageBackground } from "react-native";
+import { SafeAreaView, ImageBackground } from "react-native";
 
 export default function OnboardingView({ onGetStarted }) {
   let [fontsLoaded] = useFonts({
@@ -16,6 +16,7 @@ export default function OnboardingView({ onGetStarted }) {
   const { width, height } = Dimensions.get("window"); // Get screen dimensions
 
   return (
+    <SafeAreaView style={styles.container}>
     <ImageBackground
       source={require("../../assets/background.jpg")}
       style={{ width, height, justifyContent: "center", alignItems: "center" }}
@@ -37,5 +38,6 @@ export default function OnboardingView({ onGetStarted }) {
         <Text style={styles.button_text}>Get Started</Text>
       </TouchableOpacity>
     </ImageBackground>
+    </SafeAreaView>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { Card, Paragraph } from 'react-native-paper';
 import { Stack } from 'expo-router';
 
@@ -17,7 +17,7 @@ export default function MessageNotesComponent() {
   ];
 
   return (
-    <>
+    <SafeAreaView style={styles.outer_container}>
       <View style={styles.container}>
         <FlatList
           data={messages}
@@ -34,11 +34,18 @@ export default function MessageNotesComponent() {
           )}
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F6F1F1',

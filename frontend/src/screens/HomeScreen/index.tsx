@@ -25,12 +25,28 @@ const CATEGORIES = [
 
 
 const HomeView = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   const [userData, setUserData] = useState("");
-  const [books, setBooks] = useState([]);
-  const [authors, setAuthors] = useState([]);
-  const [topBooks, setTopBooks] = useState([]);
+  type Book = {
+    book_id: string | number;
+    book_name: string;
+    author_name?: string;
+    cover_image?: string;
+    rent_count?: number;
+    year_of_publication?: string | number;
+    [key: string]: any;
+  };
+
+  const [books, setBooks] = useState<Book[]>([]);
+  type Author = {
+    author_id: string | number;
+    name: string;
+    photo?: string;
+    [key: string]: any;
+  };
+  const [authors, setAuthors] = useState<Author[]>([]);
+  const [topBooks, setTopBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
 
@@ -183,8 +199,7 @@ const HomeView = () => {
                       </View>
                     </Pressable>
                   )}
-                  style={styles.resultsList}
-                  maxHeight={300}
+                  style={[styles.resultsList, { maxHeight: 300 }]}
                 />
               ) : (
                 <View style={styles.noResultsContainer}>

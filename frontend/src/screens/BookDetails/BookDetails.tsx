@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert, Modal, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert, Modal, Dimensions, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Star, X } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,7 +8,7 @@ import Constants from 'expo-constants';
 import { AdvancedImage } from 'cloudinary-react-native';
 import { Cloudinary } from '@cloudinary/url-gen';
 
-const BASE_URL = Constants.expoConfig.extra.apiUrl;
+const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 
 const Colors = {
   bg: '#146C94',
@@ -27,15 +27,33 @@ const cld = new Cloudinary({
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH * 0.6; // 60% of screen width for carousel items
 
+type Book = {
+  book_id: string;
+  book_name: string;
+  author_name: string;
+  year_of_publication: string;
+  pages: number;
+  preface: string;
+  cover_image?: string;
+  thumbnail1?: string;
+  thumbnail2?: string;
+  available: boolean;
+  owned_by?: string;
+};
+
+type RouteParams = {
+  book: Book;
+};
+
 export default function BookDetails() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { book: initialBook } = route.params;
+  const { book: initialBook } = route.params as { book: Book };
   const [book, setBook] = useState(initialBook);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState<{ url: string | undefined; publicId: string } | null>(null);
 
   // Fetch the latest book data and user data
   const fetchBookDetails = async () => {
@@ -176,7 +194,7 @@ export default function BookDetails() {
   ].filter(img => img.url); // Filter out undefined URLs
 
   return (
-    <>
+    <SafeAreaView style={styles.outer_container}>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -279,11 +297,18 @@ export default function BookDetails() {
           )}
         </View>
       </Modal>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.inactive,

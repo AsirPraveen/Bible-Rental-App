@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, Text } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -124,8 +124,10 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
   );
 };
 
+import type LottieView from 'lottie-react-native';
+
 const TabBarComponent = ({ active, options, onLayout, onPress }:any) => {
-  const ref = useRef(null);
+  const ref = useRef<LottieView>(null);
   useEffect(() => {
     if (active && ref?.current) {
       ref.current.play();

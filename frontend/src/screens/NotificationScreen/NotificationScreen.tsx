@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons'; // For icons
 import Constants from 'expo-constants';
 
+interface Post {
+  _id: string;
+  title: string;
+  description: string;
+  date: string;
+  time?: string;
+  imageUrl?: string;
+  likes?: number;
+}
+
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const NotificationScreen = () => {
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedPosts, setLikedPosts] = useState<string[]>([]); // Track liked posts by _id
 
@@ -108,6 +118,7 @@ const NotificationScreen = () => {
   }
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
       <View style={styles.container}>
         <Text style={styles.headerText}>Notifications</Text>
@@ -124,10 +135,18 @@ const NotificationScreen = () => {
         )}
       </View>
     </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   gradient: {
     flex: 1,
   },

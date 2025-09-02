@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { colors } from '../../utils/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import type { NavigationProp } from '@react-navigation/native';
+
 const AboutAdminTab = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<Record<string, object | undefined>>>();
 
   // Function to handle logout
   const handleLogout = () => {
@@ -41,6 +43,7 @@ const AboutAdminTab = () => {
   };
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <View style={styles.container}>
       {/* Header with Logout Button */}
       <View style={styles.header}>
@@ -64,10 +67,18 @@ const AboutAdminTab = () => {
         <Text style={styles.adminContact}>Phone: +1 234 567 890</Text>
       </View>
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: colors.inactive,

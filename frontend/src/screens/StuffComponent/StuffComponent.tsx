@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Image } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { View, StyleSheet, TouchableOpacity, Text, Image, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Book, Music, FileText, MessageSquare } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function StuffComponent() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   const cards = [
     {
@@ -31,6 +31,7 @@ export default function StuffComponent() {
   ];
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
     <View style={styles.container}>
       <View style={styles.grid}>
@@ -48,10 +49,18 @@ export default function StuffComponent() {
       </View>
     </View>
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     padding: 16,

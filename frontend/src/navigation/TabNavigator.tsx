@@ -20,16 +20,16 @@ const HomeTabsNavigation = () => {
   return (
       <Tab.Navigator tabBar={(props) => <AnimatedTabBar {...props} />}> 
         <Tab.Screen name="Home" component={HomeComponent} options={{
-          tabBarIcon: ({ ref }) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/home.icon.json")} style={styles.icon} />, headerShown: false }}
+          tabBarIcon: ({ ref }:any) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/home.icon.json")} style={styles.icon} />, headerShown: false }}
         />
         <Tab.Screen name="Stuff" component={StuffComponent} options={{
-          tabBarIcon: ({ ref }) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/bible.icon.json")} style={styles.icon} />, headerShown: false }}
+          tabBarIcon: ({ ref }:any) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/bible.icon.json")} style={styles.icon} />, headerShown: false }}
         />
         <Tab.Screen name="Notifications" component={NotificationScreen} options={{
-          tabBarIcon: ({ ref }) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/notification.icon.json")} style={styles.icon} />, headerShown: false }}
+          tabBarIcon: ({ ref }:any) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/notification.icon.json")} style={styles.icon} />, headerShown: false }}
         />
         <Tab.Screen name="UserProfile" component={UserProfileScreen} options={{
-          tabBarIcon: ({ ref }) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/user.icon.json")} style={styles.icon} />, headerShown: false }}
+          tabBarIcon: ({ ref }:any) => <Lottie ref={ref} loop={false} source={require("../assets/lottie_icon/user.icon.json")} style={styles.icon} />, headerShown: false }}
         />
       </Tab.Navigator>
   );
@@ -37,10 +37,10 @@ const HomeTabsNavigation = () => {
 
 const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, descriptors }: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
-  const reducer = (state, action) => [...state, { x: action.x, index: action.index }];
+  const reducer = (state:any, action:any) => [...state, { x: action.x, index: action.index }];
   const [layout, dispatch] = useReducer(reducer, []);
 
-  const handleLayout = (event, index) => {
+  const handleLayout = (event:any, index:any) => {
     dispatch({ x: event.nativeEvent.layout.x, index });
   };
 
@@ -62,17 +62,19 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
         {routes.map((route, index) => {
           const active = index === activeIndex;
           const { options } = descriptors[route.key];
-          return <TabBarComponent key={route.key} active={active} options={options} onLayout={(e) => handleLayout(e, index)} onPress={() => navigation.navigate(route.name)} />;
+          return <TabBarComponent key={route.key} active={active} options={options} onLayout={(e:any) => handleLayout(e, index)} onPress={() => navigation.navigate(route.name)} />;
         })}
       </View>
     </View>
   );
 };
 
-const TabBarComponent = ({ active, options, onLayout, onPress }) => {
-  const ref = useRef(null);
+import type LottieView from "lottie-react-native";
+
+const TabBarComponent = ({ active, options, onLayout, onPress }:any) => {
+  const ref = useRef<LottieView>(null);
   useEffect(() => {
-    if (active && ref?.current) {
+    if (active && ref.current) {
       ref.current.play();
     }
   }, [active]);

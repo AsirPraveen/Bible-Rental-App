@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView, Image, TouchableOpacity, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -96,6 +96,7 @@ const Post = () => {
   };
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
@@ -167,10 +168,18 @@ const Post = () => {
         </View>
       </ScrollView>
     </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   gradient: {
     flex: 1,
   },

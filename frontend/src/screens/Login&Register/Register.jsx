@@ -25,7 +25,7 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const SECRET_TEXT = Constants.expoConfig.extra.secretText;
 console.log('secretText:', SECRET_TEXT);
 
-function RegisterPage({ props }) {
+function RegisterPage() {
   const navigation = useNavigation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

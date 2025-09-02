@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -17,7 +17,7 @@ const Colors = {
 };
 
 const AdminScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [requestHistory, setRequestHistory] = useState([]);
   const [analytics, setAnalytics] = useState({ totalBooks: 0, totalRented: 0, popularBooks: [] });
@@ -358,6 +358,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.inactive,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   loadingContainer: {
     flex: 1,

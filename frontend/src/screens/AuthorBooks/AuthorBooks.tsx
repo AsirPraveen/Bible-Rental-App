@@ -1,20 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { View, Text, Image, ScrollView, StyleSheet, Pressable, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ArrowLeft } from 'lucide-react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
+type AuthorBooksRouteParams = {
+  id: string;
+};
+
 export default function AuthorBooks() {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<{ params: AuthorBooksRouteParams }, 'params'>>();
   const { id: authorId } = route.params;
-  const [author, setAuthor] = useState(null);
-  const [authorBooks, setAuthorBooks] = useState([]);
+  type Author = {
+    author_id: string;
+    name: string;
+    photo: string;
+    bio: string;
+    books: number;
+    followers?: string;
+    ministry?: string;
+  };
+  
+  const [author, setAuthor] = useState<Author | null>(null);
+  type Book = {
+    book_id: string;
+    book_name: string;
+    cover_image?: string;
+    year_of_publication?: string;
+    rating?: number | string;
+    author_name?: string;
+  };
+  const [authorBooks, setAuthorBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAuthor = async () => {
     try {
@@ -41,10 +63,15 @@ export default function AuthorBooks() {
         }
       }
     } catch (error) {
-      console.error('Error fetching author:', error.message);
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
+      if (axios.isAxiosError(error)) {
+        console.error('Error fetching author:', error.message);
+        if (typeof error === 'object' && error !== null && 'response' in error) {
+            const err = error as { response: any };
+            console.error('Error response data:', err.response.data);
+            console.error('Error response status:', err.response.status);
+        }
+      } else {
+        console.error('Error fetching author:', error);
       }
       setError('Failed to load author. Please try again.');
     } finally {
@@ -63,9 +90,16 @@ export default function AuthorBooks() {
         console.error('Error fetching author books:', res.data.data);
       }
     } catch (error) {
-      console.error('Error fetching author books:', error.message);
-      if (error.response) {
+      if (typeof error === 'object' && error !== null && 'message' in error) {
+        // @ts-ignore
+        console.error('Error fetching author books:', error.message);
+      } else {
+        console.error('Error fetching author books:', error);
+      }
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        // @ts-ignore
         console.error('Error response data:', error.response.data);
+        // @ts-ignore
         console.error('Error response status:', error.response.status);
       }
     }
@@ -98,6 +132,7 @@ export default function AuthorBooks() {
   }
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <ScrollView
       style={styles.scrollView} // Style for the ScrollView container
       contentContainerStyle={styles.contentContainer} // Style for the content inside ScrollView
@@ -109,25 +144,25 @@ export default function AuthorBooks() {
       </View>
 
       <View style={styles.profileContainer}>
-        <Image source={{ uri: author.photo || 'https://via.placeholder.com/120' }} style={styles.profilePhoto} />
-        <Text style={styles.name}>{author.name}</Text>
-        <Text style={styles.bio}>{author.bio || 'No bio available'}</Text>
+        <Image source={{ uri: author?.photo || 'https://via.placeholder.com/120' }} style={styles.profilePhoto} />
+        <Text style={styles.name}>{author?.name ?? ''}</Text>
+        <Text style={styles.bio}>{author?.bio || 'No bio available'}</Text>
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author.books || 0}</Text>
+            <Text style={styles.statValue}>{author?.books || 0}</Text>
             <Text style={styles.statLabel}>Available Books</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author.ministry || '0'}</Text>
+            <Text style={styles.statValue}>{author?.ministry || '0'}</Text>
             <Text style={styles.statLabel}>Ministry</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.booksContainer}>
-        <Text style={styles.sectionTitle}>Books by {author.name}</Text>
+        <Text style={styles.sectionTitle}>Books by {author?.name}</Text>
         <View style={styles.booksGrid}>
           {authorBooks.length > 0 ? (
             authorBooks.map((book) => (
@@ -150,10 +185,25 @@ export default function AuthorBooks() {
         </View>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 24,
+  },
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   scrollView: {
     flex: 1,
     backgroundColor: '#F6F1F1',

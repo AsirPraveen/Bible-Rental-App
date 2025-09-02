@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView } from 'react-native';
 import axios from 'axios';
 import RequestCard from './components/RequestCard';
 import Constants from 'expo-constants';
@@ -67,6 +67,7 @@ const PendingRequestsTab = () => {
   }
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Pending Rent Requests</Text>
@@ -84,10 +85,18 @@ const PendingRequestsTab = () => {
         )}
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.inactive,

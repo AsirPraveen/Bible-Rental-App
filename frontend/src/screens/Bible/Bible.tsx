@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { RadioButton, Button } from 'react-native-paper';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -204,6 +204,7 @@ const BibleComponent = () => {
   }
 
   return (
+    <SafeAreaView style={styles.outer_container}>
     <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
@@ -356,10 +357,18 @@ const BibleComponent = () => {
         </View>
       </Modal>
     </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },  
   gradient: {
     flex: 1,
   },

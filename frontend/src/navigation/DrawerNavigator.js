@@ -1,14 +1,22 @@
 import React from 'react';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {createDrawerNavigator} from '@react-navigation/drawer';
-import {Platform} from 'react-native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { Platform } from 'react-native';
 import HomeTabsNavigation from './TabNavigator';
 import History from '../screens/History/History';
 
 const Drawer = createDrawerNavigator();
 
+// Define Colors at the top
+const Colors = {
+  bg: '#146C94',
+  active: '#AFD3E2',
+  inactive: '#F6F1F1',
+  transparent: 'transparent',
+};
+
 const DrawerNavigator = () => {
-  const drawerIcon = ({focused, size}, name) => {
+  const drawerIcon = ({ focused, size }, name) => {
     return (
       <Icon
         name={name}
@@ -17,6 +25,7 @@ const DrawerNavigator = () => {
       />
     );
   };
+
   return (
     <Drawer.Navigator
       drawerType="slide"
@@ -62,10 +71,3 @@ const DrawerNavigator = () => {
 };
 
 export default DrawerNavigator;
-
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
-};

@@ -1,5 +1,5 @@
+// src/navigation/StackNavigation.tsx
 import React from 'react';
-import "@expo/metro-runtime";
 import { createStackNavigator } from "@react-navigation/stack";
 import OnboardingComponent from "../screens/InitialScreen/index";
 import HomeTabsNavigation from "../navigation/TabNavigator";
@@ -14,7 +14,7 @@ import BookPdfComponent from '../screens/BookPdf/BookPdf';
 import BibleComponent from '../screens/Bible/Bible';
 import MessageNotesComponent from '../screens/MessageNotes/MessageNotes';
 import AllBooks from '../screens/AllBooks/AllBooks';
-import AdminTabsNavigation from './AdminTabsNavigation'; // Import the new AdminTabsNavigation
+import AdminTabsNavigation from './AdminTabsNavigation';
 import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
 import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
 import ForgotPassword from '../screens/Login&Register/ForgotPassword';
@@ -46,7 +46,7 @@ const StackNavigation = () => {
       />
       <Stack.Screen
         name="AdminScreen"
-        component={AdminTabsNavigation} // Replace AdminScreen with AdminTabsNavigation
+        component={AdminTabsNavigation}
         options={{ headerShown: false }}
       />
       <Stack.Screen

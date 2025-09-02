@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { Card, IconButton } from 'react-native-paper';
 import { Stack } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
@@ -22,14 +22,7 @@ export default function BookPdfComponent() {
   };
 
   return (
-    <>
-      <Stack.Screen 
-        options={{
-          title: 'Books',
-          headerStyle: { backgroundColor: '#19A7CE' },
-          headerTintColor: '#F6F1F1',
-        }} 
-      />
+    <SafeAreaView style={styles.outer_container}>
       <View style={styles.container}>
         <FlatList
           data={books}
@@ -51,11 +44,18 @@ export default function BookPdfComponent() {
           )}
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  outer_container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F6F1F1',

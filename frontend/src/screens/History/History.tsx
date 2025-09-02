@@ -6,8 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { ArrowLeft } from 'lucide-react-native';
 import Constants from 'expo-constants';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const BASE_URL = Constants.expoConfig.extra.apiUrl; // Replace with your IP or use .env
+const BASE_URL = Constants?.expoConfig?.extra?.apiUrl; // Replace with your IP or use .env
 
 const Colors = {
   bg: '#146C94',
@@ -17,9 +18,10 @@ const Colors = {
 };
 
 const History = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [rentHistory, setRentHistory] = useState([]);
-  const [books, setBooks] = useState([]);
+  type Book = { book_id: string | number; book_name: string };
+  const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch user data and rent history
@@ -77,6 +79,7 @@ const History = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
       <View style={styles.header}>
         <Pressable onPress={openDrawer} style={styles.menuButton}>
           <Text style={styles.menuText}>Menu</Text>
@@ -120,6 +123,7 @@ const History = () => {
           <Text style={styles.noDataText}>No rent history available</Text>
         )}
       </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -164,6 +168,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     padding: 15,
+  },
+  gradient: {
+    flex: 1,
   },
   historyCard: {
     backgroundColor: '#fff',

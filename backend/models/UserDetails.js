@@ -6,18 +6,19 @@ const UserDetailSchema = new mongoose.Schema(
     email: { type: String, unique: true },
     mobile: String,
     password: String,
-    image:String,
-    gender:String,
-    profession:String,
-    userType:String,
-    secretText:String,
+    image: String,
+    gender: String,
+    profession: String,
+    userType: String,
+    secretText: String,
     otp: String,
     otpExpiry: Date,
     books_rented: [{
       book_id: { type: Number },
       status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
       requested_at: { type: Date, default: Date.now }
-    }]
+    }],
+    favouriteBooks: [{ type: Number, ref: 'Book' }] // New field for wishlist
   },
   {
     collection: "UserInfo",

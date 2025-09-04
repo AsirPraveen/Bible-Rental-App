@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import { Ionicons } from '@expo/vector-icons'; // For icons
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 interface Post {
@@ -13,6 +14,7 @@ interface Post {
   time?: string;
   imageUrl?: string;
   likes?: number;
+  likedBy?: string[]; // Add likedBy to the interface
 }
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
@@ -20,12 +22,20 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const NotificationScreen = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [likedPosts, setLikedPosts] = useState<string[]>([]); // Track liked posts by _id
+  const [userEmail, setUserEmail] = useState<string | null>(null); // Store user's email
 
-  // Load posts from MongoDB via API when the screen mounts
+  // Load posts and user data when the screen mounts
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchPostsAndUser = async () => {
       try {
+        // Fetch user email from token
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const userRes = await axios.post(`${API_URL}/api/auth/userdata`, { token });
+          setUserEmail(userRes.data.data.email);
+        }
+
+        // Fetch posts
         const response = await axios.get(`${API_URL}/api/posts`);
         console.log('API Response:', response.data);
         if (response.data.status === "Ok") {
@@ -36,40 +46,54 @@ const NotificationScreen = () => {
         }
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error('Error fetching posts or user:', error);
         setPosts([]);
         setLoading(false);
       }
     };
 
-    fetchPosts();
+    fetchPostsAndUser();
   }, []);
 
   // Handle like/unlike action
   const toggleLike = async (postId: string) => {
-    const isLiked = likedPosts.includes(postId);
+    if (!userEmail) return; // Exit if user email is not available
+
+    const currentPost = posts.find(post => post._id === postId);
+    if (!currentPost) return;
+
+    const isLiked = currentPost.likedBy?.includes(userEmail) ?? false;
+    const newLikedBy = isLiked 
+      ? currentPost.likedBy?.filter(email => email !== userEmail) ?? []
+      : [...(currentPost.likedBy ?? []), userEmail];
+    const newLikes = isLiked ? (currentPost.likes ?? 0) - 1 : (currentPost.likes ?? 0) + 1;
+
+    // Optimistically update the state
+    setPosts(posts.map(post =>
+      post._id === postId ? { ...post, likes: newLikes, likedBy: newLikedBy } : post
+    ));
+
     try {
-      const response = await axios.put(`${API_URL}/api/posts/${postId}/likes`, { increment: !isLiked });
-      if (response.data.status === "Ok") {
-        // Update posts state with new likes count
-        setPosts(posts.map(post =>
-          post._id === postId ? { ...post, likes: response.data.data.likes } : post
-        ));
-        // Update likedPosts state
-        if (isLiked) {
-          setLikedPosts(likedPosts.filter(id => id !== postId));
-        } else {
-          setLikedPosts([...likedPosts, postId]);
-        }
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.put(`${API_URL}/api/posts/${postId}/likes`, { userEmail, token });
+      if (response.data.status !== "Ok") {
+        throw new Error('Failed to toggle like');
       }
+      // Use the full updated post from the response to ensure accuracy
+      const updatedPost = response.data.data;
+      setPosts(posts.map(post => post._id === postId ? updatedPost : post));
     } catch (error) {
       console.error('Error toggling like:', error);
+      // Revert to original state if the request fails
+      setPosts(posts.map(post =>
+        post._id === postId ? { ...post, likes: currentPost.likes, likedBy: currentPost.likedBy } : post
+      ));
     }
   };
 
   // Render each post as a card
-  const renderPost = ({ item }: any) => {
-    const isLiked = likedPosts.includes(item._id);
+  const renderPost = ({ item }: { item: Post }) => {
+    const isLiked = item.likedBy?.includes(userEmail ?? '') ?? false;
     return (
       <View style={styles.postCard}>
         <LinearGradient
@@ -119,22 +143,22 @@ const NotificationScreen = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-    <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
-      <View style={styles.container}>
-        <Text style={styles.headerText}>Notifications</Text>
-        {posts.length === 0 ? (
-          <Text style={styles.noPostsText}>No notifications available.</Text>
-        ) : (
-          <FlatList
-            data={posts}
-            renderItem={renderPost}
-            keyExtractor={(item) => item._id}
-            contentContainerStyle={styles.listContainer}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
-    </LinearGradient>
+      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+        <View style={styles.container}>
+          <Text style={styles.headerText}>Notifications</Text>
+          {posts.length === 0 ? (
+            <Text style={styles.noPostsText}>No notifications available.</Text>
+          ) : (
+            <FlatList
+              data={posts}
+              renderItem={renderPost}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={styles.listContainer}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -144,13 +168,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
   },
   gradient: {
     flex: 1,
   },
-  container: {
+  container: { 
     flex: 1,
     padding: 12,
   },
@@ -170,15 +192,15 @@ const styles = StyleSheet.create({
   postCard: {
     marginBottom: 20,
     borderRadius: 16,
-    overflow: 'hidden', // Ensures the gradient border clips correctly
+    overflow: 'hidden',
   },
   cardBorder: {
     borderRadius: 16,
-    padding: 2, // Creates the gradient border effect
+    padding: 2,
   },
   cardInner: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14, // Slightly smaller to fit within the gradient border
+    borderRadius: 14,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

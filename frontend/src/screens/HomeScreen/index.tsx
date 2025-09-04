@@ -11,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
+import { Animated } from 'react-native';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
@@ -23,11 +24,91 @@ const CATEGORIES = [
   { id: '5', name: 'Fellowship', color: '#146C94' },
 ];
 
+// Custom Skeleton Animation Component
+type SkeletonBoxProps = {
+  width: number;
+  height: number;
+  borderRadius?: number;
+  style?: object;
+};
+
+const SkeletonBox = ({ width, height, borderRadius = 4, style = {} }: SkeletonBoxProps) => {
+  const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    animation.start();
+
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  const backgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#146C94', '#19A7CE'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+// Skeleton Components
+const BookCardSkeleton = () => (
+  <View style={[styles.bookCard, { backgroundColor: 'transparent' }]}>
+    <SkeletonBox width={120} height={160} borderRadius={8} style={{ marginBottom: 8 }} />
+    <SkeletonBox width={100} height={12} style={{ marginBottom: 4 }} />
+    <SkeletonBox width={80} height={10} />
+  </View>
+);
+
+const AuthorCardSkeleton = () => (
+  <View style={[styles.authorCard, { backgroundColor: 'transparent' }]}>
+    <SkeletonBox width={80} height={80} borderRadius={40} style={{ marginBottom: 8 }} />
+    <SkeletonBox width={70} height={12} />
+  </View>
+);
+
+const TopBookCardSkeleton = () => (
+  <View style={[styles.topBookCard, { backgroundColor: 'transparent' }]}>
+    <SkeletonBox width={60} height={80} borderRadius={4} style={{ marginRight: 12 }} />
+    <View style={styles.topBookInfo}>
+      <SkeletonBox width={200} height={16} style={{ marginBottom: 8 }} />
+      <SkeletonBox width={120} height={12} style={{ marginBottom: 4 }} />
+      <SkeletonBox width={100} height={12} style={{ marginBottom: 8 }} />
+      <SkeletonBox width={50} height={14} />
+    </View>
+  </View>
+);
 
 const HomeView = () => {
   const navigation = useNavigation<any>();
 
   const [userData, setUserData] = useState("");
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
+  
   type Book = {
     book_id: string | number;
     book_name: string;
@@ -39,13 +120,17 @@ const HomeView = () => {
   };
 
   const [books, setBooks] = useState<Book[]>([]);
+  const [isLoadingBooks, setIsLoadingBooks] = useState(true);
+  
   type Author = {
     author_id: string | number;
     name: string;
     photo?: string;
     [key: string]: any;
   };
+  
   const [authors, setAuthors] = useState<Author[]>([]);
+  const [isLoadingAuthors, setIsLoadingAuthors] = useState(true);
   const [topBooks, setTopBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -53,12 +138,17 @@ const HomeView = () => {
   async function getUserData() {
     const token = await AsyncStorage.getItem('token');
     try {
+      setIsLoadingUserData(true);
+      console.log("Fetching user data with token:", API_URL);
       const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
       setUserData(res.data.data);
     } catch (error) {
       console.error('Error fetching user data:', error);
+    } finally {
+      setIsLoadingUserData(false);
     }
   }
+
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -72,10 +162,7 @@ const HomeView = () => {
           text: 'Logout',
           onPress: async () => {
             try {
-              // Clear all stored data
               await AsyncStorage.multiRemove(['token', 'isLoggedIn', 'userType']);
-              
-              // Reset navigation stack and navigate to Onboarding
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Onboarding' }],
@@ -92,6 +179,7 @@ const HomeView = () => {
 
   async function fetchBooks() {
     try {
+      setIsLoadingBooks(true);
       const res = await axios.get(`${API_URL}/api/books`);
       setBooks(res.data.data);
 
@@ -102,11 +190,15 @@ const HomeView = () => {
 
     } catch (error) {
       console.error('Error fetching books:', error);
+    } finally {
+      setIsLoadingBooks(false);
     }
   }
+
   async function fetchAuthors() {
     try {
-      const res = await axios.get(`${API_URL}/api/authors`); // New endpoint to list all authors
+      setIsLoadingAuthors(true);
+      const res = await axios.get(`${API_URL}/api/authors`); 
       if (res.data.status === 'Ok') {
         setAuthors(res.data.data);
       } else {
@@ -114,6 +206,8 @@ const HomeView = () => {
       }
     } catch (error) {
       console.error('Error fetching authors:', error);
+    } finally {
+      setIsLoadingAuthors(false);
     }
   }
 
@@ -125,16 +219,20 @@ const HomeView = () => {
   
   const filteredBooks = books.filter(book => book.book_name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const navigateToBookDetails = (book:any) => {
-    navigation.navigate('BookDetails', { book:book });
+  const navigateToBookDetails = (book: any) => {
+    navigation.navigate('BookDetails', { book });
   };
 
-  const navigateToAuthorBooks = (authorId:any) => {
+  const navigateToAuthorBooks = (authorId: any) => {
     navigation.navigate('AuthorBooks', { id: authorId });
   };
 
   const navigateToAllBooks = () => {
-    navigation.navigate('AllBooks', { books: books });
+    navigation.navigate('AllBooks', { books });
+  };
+
+  const navigateToAllAuthors = () => {
+    navigation.navigate('AllAuthors', { authors });
   };
 
   return (
@@ -231,6 +329,7 @@ const HomeView = () => {
           ))}
         </ScrollView>
 
+        {/* Books Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Books</Text>
@@ -242,81 +341,108 @@ const HomeView = () => {
             </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {books && books.length > 0 && 
-              [...books]
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 5)
-                .map((book) => (
-                  <Pressable 
-                    key={book.book_id} 
-                    style={styles.bookCard}
-                    onPress={() => navigateToBookDetails(book)}
-                  >
-                    <Image
-                      source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
-                      style={styles.bookCover} 
-                    />
-                    <Text 
-                      numberOfLines={2} 
-                      ellipsizeMode="tail" 
-                      style={styles.bookTitle}
-                    >
-                      {book.book_name}
-                    </Text>
-                    <Text 
-                      numberOfLines={1}
-                      ellipsizeMode="tail" 
-                      style={styles.bookAuthor}
-                    >
-                      {book.author_name}
-                    </Text>
-                  </Pressable>
-                ))
-            }
-          </ScrollView>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Authors</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {authors.length > 0 ? (
-              authors.map((author) => (
-                <Pressable
-                  key={author.author_id}
-                  style={styles.authorCard}
-                  onPress={() => navigateToAuthorBooks(author.author_id)}
-                >
-                  <Image source={{ uri: author.photo || 'https://via.placeholder.com/150' }} style={styles.authorPhoto} />
-                  <Text style={styles.authorName}>{author.name}</Text>
-                </Pressable>
+            {isLoadingBooks ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <BookCardSkeleton key={index} />
               ))
             ) : (
-              <Text style={styles.noAuthorsText}>No authors available</Text>
+              books && books.length > 0 && 
+                [...books]
+                  .sort(() => 0.5 - Math.random())
+                  .slice(0, 5)
+                  .map((book) => (
+                    <Pressable 
+                      key={book.book_id} 
+                      style={styles.bookCard}
+                      onPress={() => navigateToBookDetails(book)}
+                    >
+                      <Image
+                        source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
+                        style={styles.bookCover} 
+                      />
+                      <Text 
+                        numberOfLines={2} 
+                        ellipsizeMode="tail" 
+                        style={styles.bookTitle}
+                      >
+                        {book.book_name}
+                      </Text>
+                      <Text 
+                        numberOfLines={1}
+                        ellipsizeMode="tail" 
+                        style={styles.bookAuthor}
+                      >
+                        {book.author_name}
+                      </Text>
+                    </Pressable>
+                  ))
             )}
           </ScrollView>
         </View>
 
+        {/* Authors Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Top 10 Reads </Text>
-          {topBooks.slice(0,10).map((book) => (
-            <Pressable 
-              key={book.book_id}
-              style={styles.topBookCard}
-              onPress={() => navigateToBookDetails(book)}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Authors</Text>
+            <TouchableOpacity 
+              style={styles.viewAllButton}
+              onPress={navigateToAllAuthors}
             >
-              <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
-              <View style={styles.topBookInfo}>
-                <Text style={styles.topBookTitle}>{book.book_name}</Text>
-                <View style={styles.topBookMeta}>
-                  <Text style={styles.topBookMetaText}>Published: {book.year_of_publication}</Text>
-                  <Text style={styles.topBookMetaText}>Read by: {book.rent_count}</Text>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {isLoadingAuthors ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <AuthorCardSkeleton key={index} />
+              ))
+            ) : (
+              authors.length > 0 ? (
+                authors.map((author) => (
+                  <Pressable
+                    key={author.author_id}
+                    style={styles.authorCard}
+                    onPress={() => navigateToAuthorBooks(author.author_id)}
+                  >
+                    <Image source={{ uri: author.photo || 'https://via.placeholder.com/150' }} style={styles.authorPhoto} />
+                    <Text style={styles.authorName}>{author.name}</Text>
+                  </Pressable>
+                ))
+              ) : (
+                <Text style={styles.noAuthorsText}>No authors available</Text>
+              )
+            )}
+          </ScrollView>
+        </View>
+
+        {/* Top Books Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Top 10 Reads</Text>
+          {isLoadingBooks ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <TopBookCardSkeleton key={index} />
+            ))
+          ) : (
+            topBooks.slice(0, 10).map((book) => (
+              <Pressable 
+                key={book.book_id}
+                style={styles.topBookCard}
+                onPress={() => navigateToBookDetails(book)}
+              >
+                <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
+                <View style={styles.topBookInfo}>
+                  <Text style={styles.topBookTitle}>{book.book_name}</Text>
+                  <View style={styles.topBookMeta}>
+                    <Text style={styles.topBookMetaText}>Published: {book.year_of_publication}</Text>
+                    <Text style={styles.topBookMetaText}>Read by: {book.rent_count}</Text>
+                  </View>
+                  <View style={styles.ratingContainer}>
+                    <Text style={styles.rating}>★ 5</Text>
+                  </View>
                 </View>
-                <View style={styles.ratingContainer}>
-                  <Text style={styles.rating}>★ 5</Text>
-                </View>
-              </View>
-            </Pressable>
-          ))}
+              </Pressable>
+            ))
+          )}
         </View>
       </ScrollView>
       </LinearGradient>

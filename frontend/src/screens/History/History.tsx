@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -8,7 +7,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const BASE_URL = Constants?.expoConfig?.extra?.apiUrl; // Replace with your IP or use .env
+const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 
 const Colors = {
   bg: '#146C94',
@@ -24,18 +23,15 @@ const History = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch user data and rent history
   const fetchRentHistory = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       const userRes = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
       const user = userRes.data.data;
 
-      // Fetch all books to map book_id to book_name
       const booksRes = await axios.get(`${BASE_URL}/api/books`);
       setBooks(Array.isArray(booksRes.data.data) ? booksRes.data.data : []);
 
-      // Sort rent history by requested_at (newest first)
       const sortedHistory = (Array.isArray(user.books_rented) ? user.books_rented : []).sort(
         (a: any, b: any) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime()
       );
@@ -49,22 +45,14 @@ const History = () => {
     }
   };
 
-  // Fetch history on mount
   useEffect(() => {
     fetchRentHistory();
   }, []);
 
-  // Polling for updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchRentHistory();
-    }, 10000); // Poll every 10 seconds
+    const interval = setInterval(fetchRentHistory, 10000);
     return () => clearInterval(interval);
   }, []);
-
-  const openDrawer = () => {
-    navigation.openDrawer();
-  };
 
   if (isLoading) {
     return (
@@ -79,50 +67,52 @@ const History = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
-      <View style={styles.header}>
-        <Pressable onPress={openDrawer} style={styles.menuButton}>
-          <Text style={styles.menuText}>Menu</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Rent History</Text>
-      </View>
+      <LinearGradient colors={[Colors.bg, '#19A7CE']} style={styles.gradient}>
+        <View style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <ArrowLeft size={24} color={Colors.inactive} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Rent History</Text>
+        </View>
 
-      <ScrollView style={styles.scrollView}>
-        {rentHistory.length > 0 ? (
-          rentHistory.map((request: any, index: number) => {
-            const book = books.find((b: any) => b.book_id === request.book_id);
-            const bookName = book ? book.book_name : 'Unknown Book';
+        <ScrollView style={styles.scrollView}>
+          {rentHistory.length > 0 ? (
+            rentHistory.map((request: any, index: number) => {
+              const book = books.find((b: any) => b.book_id === request.book_id);
+              const bookName = book ? book.book_name : 'Unknown Book';
 
-            return (
-              <View key={`${request.book_id}-${request.requested_at}`} style={styles.historyCard}>
-                <View style={styles.historyContent}>
-                  <View style={styles.historyIndicator} />
-                  <View style={styles.historyDetails}>
-                    <Text style={styles.bookTitle}>{bookName}</Text>
-                    <Text style={styles.requestDate}>
-                      Requested on: {new Date(request.requested_at).toLocaleString()}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.statusText,
-                        request.status === 'pending' && styles.statusPending,
-                        request.status === 'approved' && styles.statusApproved,
-                        request.status === 'rejected' && styles.statusRejected,
-                      ]}
-                    >
-                      {request.status === 'pending' && 'Request Pending...'}
-                      {request.status === 'approved' && 'Request Approved'}
-                      {request.status === 'rejected' && 'Request Rejected'}
-                    </Text>
+              return (
+                <View key={`${request.book_id}-${request.requested_at}`} style={styles.historyCard}>
+                  <View style={styles.historyContent}>
+                    <View style={styles.historyIndicator} />
+                    <View style={styles.historyDetails}>
+                      <Text style={styles.bookTitle}>{bookName}</Text>
+                      <Text style={styles.requestDate}>
+                        Requested on: {new Date(request.requested_at).toLocaleString()}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.statusText,
+                          request.status === 'pending' && styles.statusPending,
+                          request.status === 'approved' && styles.statusApproved,
+                          request.status === 'rejected' && styles.statusRejected,
+                        ]}
+                      >
+                        {request.status === 'pending' && 'Request Pending...'}
+                        {request.status === 'approved' && 'Request Approved'}
+                        {request.status === 'rejected' && 'Request Rejected'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            );
-          })
-        ) : (
-          <Text style={styles.noDataText}>No rent history available</Text>
-        )}
-      </ScrollView>
+              );
+            })
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No rent history available</Text>
+            </View>
+          )}
+        </ScrollView>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -131,7 +121,11 @@ const History = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.inactive,
+  },
+  gradient: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -149,15 +143,12 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: Colors.bg,
   },
-  menuButton: {
-    padding: 5,
+  backButton: {
+    padding: 8,
     backgroundColor: Colors.active,
-    borderRadius: 5,
-  },
-  menuText: {
-    color: Colors.bg,
-    fontSize: 16,
-    fontWeight: '600',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
@@ -168,9 +159,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     padding: 15,
-  },
-  gradient: {
-    flex: 1,
   },
   historyCard: {
     backgroundColor: '#fff',
@@ -223,11 +211,15 @@ const styles = StyleSheet.create({
   statusRejected: {
     color: '#FF6B6B',
   },
-  noDataText: {
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
     fontSize: 16,
     color: '#666',
-    textAlign: 'center',
-    marginTop: 20,
   },
 });
 

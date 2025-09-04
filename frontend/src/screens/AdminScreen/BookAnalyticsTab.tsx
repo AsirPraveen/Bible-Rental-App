@@ -1,35 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+  Platform,
+  StatusBar,
+  Animated,
+  Dimensions,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import axios from 'axios';
 import AnalyticsCard from './components/AnalyticsCard';
 import PopularBookCard from './components/PopularBookCard';
 import BarChartComponent from './components/BarChartComponent';
 import PieChartComponent from './components/PieChartComponent';
 import LineChartComponent from './components/LineChartComponent';
-import AddBookForm from './components/AddBookForm';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width, height } = Dimensions.get('window');
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
+  primary: '#146C94',
+  secondary: '#AFD3E2',
+  background: '#F6F1F1',
+  white: '#FFFFFF',
+  dark: '#1a1a2e',
+  accent: '#16213e',
+  glow: '#00d2ff',
+  purple: '#667eea',
 };
 
 const BookAnalyticsTab = () => {
   const [analytics, setAnalytics] = useState({ totalBooks: 0, totalRented: 0, popularBooks: [] });
   const [isLoading, setIsLoading] = useState(true);
-  const [showAddBookForm, setShowAddBookForm] = useState(false);
-  const [newBook, setNewBook] = useState({
-    book_name: '',
-    author_name: '',
-    pages: '',
-    preface: '',
-    year_of_publication: '',
-    author_id: '',
-    book_id: '',
-  });
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
+  const [currentChartIndex, setCurrentChartIndex] = useState(0);
+  const chartCarouselRef = useRef(null);
+
+  const [userData, setUserData] = useState<any>(null);
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [image, setImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          Alert.alert('Error', 'No Admin token found. Please log in again.');
+          return;
+        }
+
+        const response = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
+        if (response.data.status === 'Ok') {
+          const data = response.data.data;
+          setUserData(data);
+          setName(data.name || '');
+          setImage(data.image || null);
+        } else {
+          Alert.alert('Error', 'Failed to fetch admin data.');
+        }
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+        Alert.alert('Error', 'An error occurred while fetching admin data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  // Chart data configuration
+  const chartData = [
+    {
+      id: 'line',
+      title: 'Rental Trends',
+      icon: '📈',
+      component: LineChartComponent,
+    },
+    {
+      id: 'bar',
+      title: 'Book Popularity',
+      icon: '📊',
+      component: BarChartComponent,
+    },
+    {
+      id: 'pie',
+      title: 'Distribution Analysis',
+      icon: '🥧',
+      component: PieChartComponent,
+    },
+  ];
 
   const fetchAnalytics = async () => {
     try {
@@ -45,6 +117,19 @@ const BookAnalyticsTab = () => {
       setAnalytics({ totalBooks: 0, totalRented: 0, popularBooks: [] });
     } finally {
       setIsLoading(false);
+      // Animate content in
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   };
 
@@ -57,128 +142,451 @@ const BookAnalyticsTab = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleAddBook = async () => {
-    try {
-      const res = await axios.post(`${BASE_URL}/api/add-book`, newBook);
-      if (res.data.status === 'Ok') {
-        alert('Book added successfully');
-        setNewBook({
-          book_name: '',
-          author_name: '',
-          pages: '',
-          preface: '',
-          year_of_publication: '',
-          author_id: '',
-          book_id: '',
-        });
-        setShowAddBookForm(false);
-        await fetchAnalytics();
-      } else {
-        alert(res.data.data);
-      }
-    } catch (error) {
-      alert('Failed to add book');
+  const renderChartItem = ({ item, index }) => {
+    const ChartComponent = item.component;
+    return (
+      <View style={[styles.chartContainer, { width: width - 30 }]}>
+        <View style={styles.chartHeader}>
+          <Text style={styles.chartIcon}>{item.icon}</Text>
+          <Text style={styles.chartTitle}>{item.title}</Text>
+        </View>
+        <ChartComponent data={analytics.popularBooks} />
+      </View>
+    );
+  };
+
+  const onChartScroll = (event) => {
+    const slideSize = width - 30;
+    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    setCurrentChartIndex(index);
+  };
+
+  const scrollToChart = (index) => {
+    if (chartCarouselRef.current) {
+      chartCarouselRef.current.scrollToIndex({ index, animated: true });
     }
   };
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.bg} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={Colors.white} />
+          <Text style={styles.loadingText}>Initializing Dashboard...</Text>
+          <View style={styles.loadingBar}>
+            <View style={styles.loadingProgress} />
+          </View>
+        </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <SafeAreaView style={styles.outer_container}>
-    <ScrollView style={styles.container}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Book Analytics</Text>
-        <View style={styles.analyticsContainer}>
-          <AnalyticsCard title="Total Books" value={analytics.totalBooks} />
-          <AnalyticsCard title="Total Rented" value={analytics.totalRented} />
-        </View>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+      
+      {/* Header with gradient */}
+      <LinearGradient
+        colors={['#146C94', '#19A7CE']}
+        style={styles.header}
+      >
+        <BlurView intensity={20} style={styles.headerBlur}>
+          <Text style={styles.headerTitle}>Admin Dashboard</Text>
+          <Text style={styles.headerSubtitle}>YOUTH ROOM</Text>
+        </BlurView>
+      </LinearGradient>
+      
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Analytics Cards */}
+          <View style={styles.section}>
+            <Text style={styles.greeting}>Welcome {name} !!!</Text>
+            <Text style={styles.sectionTitle}>
+              <Text style={styles.titleIcon}>📊 </Text>
+              Analytics Overview
+            </Text>
+            <View style={styles.analyticsContainer}>
+              <AnalyticsCard title="Total Books" value={analytics.totalBooks} />
+              <AnalyticsCard title="Total Rented" value={analytics.totalRented} />
+            </View>
+          </View>
 
-        {/* Charts and Graphs */}
-        <Text style={styles.subSectionTitle}>Rental Trends (Line Chart)</Text>
-        <LineChartComponent data={analytics.popularBooks} />
+          {/* Charts Carousel Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              <Text style={styles.titleIcon}>📈 </Text>
+              Data Visualization
+            </Text>
+            
+            {/* Chart Carousel */}
+            <FlatList
+              ref={chartCarouselRef}
+              data={chartData}
+              renderItem={renderChartItem}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={onChartScroll}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.chartCarouselContainer}
+              snapToInterval={width - 30}
+              decelerationRate="fast"
+              snapToAlignment="start"
+            />
 
-        <Text style={styles.subSectionTitle}>Book Popularity (Bar Chart)</Text>
-        <BarChartComponent data={analytics.popularBooks} />
+            {/* Chart Indicators */}
+            <View style={styles.indicatorContainer}>
+              {chartData.map((_, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => scrollToChart(index)}
+                  style={[
+                    styles.indicator,
+                    {
+                      backgroundColor: currentChartIndex === index 
+                        ? Colors.white 
+                        : 'rgba(255,255,255,0.3)'
+                    }
+                  ]}
+                />
+              ))}
+            </View>
 
-        <Text style={styles.subSectionTitle}>Rental Distribution (Pie Chart)</Text>
-        <PieChartComponent data={analytics.popularBooks} />
+            {/* Chart Navigation */}
+            <View style={styles.chartNavigation}>
+              {chartData.map((chart, index) => (
+                <TouchableOpacity
+                  key={chart.id}
+                  onPress={() => scrollToChart(index)}
+                  style={[
+                    styles.navButton,
+                    {
+                      backgroundColor: currentChartIndex === index 
+                        ? Colors.white 
+                        : 'rgba(255,255,255,0.2)'
+                    }
+                  ]}
+                >
+                  <Text style={[
+                    styles.navButtonIcon,
+                    { opacity: currentChartIndex === index ? 1 : 0.6 }
+                  ]}>
+                    {chart.icon}
+                  </Text>
+                  <Text style={[
+                    styles.navButtonText,
+                    { 
+                      color: currentChartIndex === index ? Colors.primary : Colors.white,
+                      opacity: currentChartIndex === index ? 1 : 0.8
+                    }
+                  ]}>
+                    {chart.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-        <Text style={styles.subSectionTitle}>Popular Books</Text>
-        {analytics.popularBooks?.length > 0 ? (
-          analytics.popularBooks.map((book: any) => (
-            <PopularBookCard key={book.book_id} book={book} />
-          ))
-        ) : (
-          <Text style={styles.noDataText}>No popular books available</Text>
-        )}
-
-        <AddBookForm
-          visible={showAddBookForm}
-          onToggle={() => setShowAddBookForm(!showAddBookForm)}
-          newBook={newBook}
-          setNewBook={setNewBook}
-          onAddBook={handleAddBook}
-        />
+          {/* Popular Books */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              <Text style={styles.titleIcon}>🔥 </Text>
+              Trending Books
+            </Text>
+            {analytics.popularBooks?.length > 0 ? (
+              analytics.popularBooks.map((book, index) => (
+                <Animated.View
+                  key={book.book_id}
+                  style={[
+                    styles.bookItem,
+                    {
+                      opacity: fadeAnim,
+                      transform: [
+                        {
+                          translateX: slideAnim.interpolate({
+                            inputRange: [0, 50],
+                            outputRange: [0, index % 2 === 0 ? -50 : 50],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  {/* 👇 Pass index */}
+                  <PopularBookCard book={book} totalRented={analytics.totalRented} index={index} />
+                </Animated.View>
+              ))
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No trending books available</Text>
+                <Text style={styles.noDataSubtext}>Add some books to see trends</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+        
+      </Animated.View>
+      
+      {/* Floating background elements */}
+      <View style={styles.floatingElements}>
+        <View style={[styles.floatingCircle, styles.circle1]} />
+        <View style={[styles.floatingCircle, styles.circle2]} />
+        <View style={[styles.floatingCircle, styles.circle3]} />
       </View>
-    </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  outer_container: {
-    flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
-  },
   container: {
     flex: 1,
-    backgroundColor: Colors.inactive,
+    backgroundColor: '#19A7CE',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingContent: {
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    alignItems: 'center',
+  },
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: Colors.bg,
+    marginTop: 15,
+    fontSize: 18,
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  cardBorder: {
+    borderRadius: 16,
+    padding: 2,
+  },
+  loadingBar: {
+    width: 200,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+    marginTop: 20,
+    overflow: 'hidden',
+  },
+  loadingProgress: {
+    width: '70%',
+    height: '100%',
+    backgroundColor: Colors.white,
+    borderRadius: 2,
+  },
+  header: {
+    height: 120,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    // borderBottomLeftRadius: 25,
+    // borderBottomRightRadius: 25,
+  },
+  headerBlur: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.white,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  greeting: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'left',
+    marginTop: 5,
+  },
+  headerGlow: {
+    position: 'absolute',
+    bottom: -20,
+    width: 100,
+    height: 4,
+    backgroundColor: Colors.glow,
+    borderRadius: 2,
+    shadowColor: Colors.glow,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+  },
+  content: {
+    flex: 1,
+    marginTop: -15,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  gradient: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 30,
   },
   section: {
-    padding: 15,
+    margin: 15,
+    marginBottom: 5,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: Colors.bg,
-    marginBottom: 10,
-  },
-  subSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.bg,
+    color: Colors.white,
+    marginBottom: 15,
+    textAlign: 'left',
     marginTop: 10,
-    marginBottom: 5,
+  },
+  titleIcon: {
+    fontSize: 20,
   },
   analyticsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  chartCarouselContainer: {
+    paddingHorizontal: 0,
+  },
+  chartContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 15,
   },
-  noDataText: {
+  chartIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  chartTitle: {
     fontSize: 16,
+    fontWeight: '600',
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+  indicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  chartNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+  },
+  navButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginHorizontal: 4,
+    borderRadius: 12,
+    minHeight: 60,
+    justifyContent: 'center',
+  },
+  navButtonIcon: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  navButtonText: {
+    fontSize: 11,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  bookItem: {
+    marginBottom: 10,
+  },
+  noDataContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
+  },
+  noDataText: {
+    fontSize: 18,
+    color: Colors.primary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  noDataSubtext: {
+    fontSize: 14,
     color: '#666',
     textAlign: 'center',
+    marginTop: 5,
+  },
+  floatingElements: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
+  },
+  floatingCircle: {
+    position: 'absolute',
+    borderRadius: 50,
+    opacity: 0.1,
+  },
+  circle1: {
+    width: 100,
+    height: 100,
+    backgroundColor: Colors.primary,
+    top: 100,
+    right: -50,
+  },
+  circle2: {
+    width: 150,
+    height: 150,
+    backgroundColor: Colors.secondary,
+    bottom: 200,
+    left: -75,
+  },
+  circle3: {
+    width: 80,
+    height: 80,
+    backgroundColor: Colors.glow,
+    top: 300,
+    left: 50,
   },
 });
 

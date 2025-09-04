@@ -1,21 +1,21 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Image, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { BellElectric,FileStack } from 'lucide-react-native';
+import { SquarePen, BookPlus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function PendingScreen() {
+export default function CreateScreen() {
   const navigation = useNavigation<any>();
 
   const cards = [
     {
-      title: 'Pending Requests',
-      icon: <BellElectric color="#146C94" size={32} />,
+      title: 'Create Post',
+      icon: <SquarePen color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
     },
     {
-      title: 'Request History',
-      icon: <FileStack color="#146C94" size={32} />,
+      title: 'Add Book',
+      icon: <BookPlus color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
     }
   ];

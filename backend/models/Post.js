@@ -29,6 +29,10 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0, // Default likes to 0
   },
+  likedBy: [{
+    type: String, // Store user email or ID
+    ref: 'UserInfo', // Reference to UserInfo model
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

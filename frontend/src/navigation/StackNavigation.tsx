@@ -18,6 +18,9 @@ import AdminTabsNavigation from './AdminTabsNavigation';
 import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
 import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
 import ForgotPassword from '../screens/Login&Register/ForgotPassword';
+import AllAuthors from '../screens/AllAuthors/AllAuthors';
+import CreatePostTab from '../screens/AdminScreen/CreatePostTab';
+import CreateBookTab from '../screens/AdminScreen/CreateBookTab';
 
 const Stack = createStackNavigator();
 
@@ -52,6 +55,11 @@ const StackNavigation = () => {
       <Stack.Screen
         name="AllBooks"
         component={AllBooks}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AllAuthors"
+        component={AllAuthors}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -92,6 +100,16 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Request History"
         component={RequestHistoryTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Create Post"
+        component={CreatePostTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Add Book"
+        component={CreateBookTab}
         options={{ headerShown: false }}
       />
       <Stack.Screen

@@ -4,6 +4,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Platform } from 'react-native';
 import HomeTabsNavigation from './TabNavigator';
 import History from '../screens/History/History';
+import Wishlist from '../screens/WishList/WishList';
 
 const Drawer = createDrawerNavigator();
 
@@ -54,7 +55,7 @@ const DrawerNavigator = () => {
       />
       <Drawer.Screen
         name="Wishlist"
-        component={HomeTabsNavigation}
+        component={Wishlist}
         options={{
           drawerIcon: options => drawerIcon(options, 'heart-outline'),
         }}

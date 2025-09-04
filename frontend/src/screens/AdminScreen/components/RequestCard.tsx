@@ -3,14 +3,30 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Check, X } from 'lucide-react-native';
 import { colors } from '../../../utils/colors';
 
-const RequestCard = ({ request, onApprove, onReject }) => {
+type Request = {
+  book_id: number;
+  book_name: string;
+  userEmail: string;
+  userName: string;
+  requested_at: string;
+};
+
+type RequestCardProps = {
+  request: Request;
+  onApprove: (userEmail: string, book_id: number) => void;
+  onReject: (userEmail: string, book_id: number) => void;
+};
+
+const RequestCard: React.FC<RequestCardProps> = ({ request, onApprove, onReject }) => {
+  console.log('Rendering RequestCard for:', request);
   return (
     <View style={styles.card}>
       <View style={styles.content}>
         <View style={styles.indicator} />
         <View style={styles.details}>
           <Text style={styles.title}>{request.book_name}</Text>
-          <Text style={styles.detail}>Requested by: {request.userEmail}</Text>
+          <Text style={styles.detail}>Requested by: {request.userName}</Text>
+          <Text style={styles.detail}>Requested on: {new Date(request.requested_at).toLocaleString()}</Text>
         </View>
       </View>
       <View style={styles.actions}>

@@ -4,6 +4,6 @@ const postController = require('../controllers/postController');
 
 router.post('/posts', postController.createPost);
 router.get('/posts', postController.getAllPosts);
-router.put('/posts/:postId/likes', postController.updatePostLikes); // New route for liking/unliking
+router.put('/posts/:postId/likes', postController.toggleLike);
 
 module.exports = router;

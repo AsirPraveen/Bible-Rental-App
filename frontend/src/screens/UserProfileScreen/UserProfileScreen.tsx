@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,8 +11,15 @@ import { useNavigation } from '@react-navigation/native';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  Onboarding: undefined;
+  // Add other routes here if needed
+};
+
 const UserProfileScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [userData, setUserData] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -20,8 +27,10 @@ const UserProfileScreen = () => {
   const [mobile, setMobile] = useState('');
   const [gender, setGender] = useState('');
   const [profession, setProfession] = useState('');
-  const [image, setImage] = useState<string | null>(null);
+  const [image, setImage] = useState<string | null>(null); // Local image URI
+  const [imageUrl, setImageUrl] = useState<string | null>(null); // Cloudinary URL
   const [loading, setLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false); // Track upload status for loader
 
   // Fetch user data using token from AsyncStorage
   useEffect(() => {
@@ -42,7 +51,7 @@ const UserProfileScreen = () => {
           setMobile(data.mobile || '');
           setGender(data.gender || '');
           setProfession(data.profession || '');
-          setImage(data.image || null);
+          setImageUrl(data.image || null); // Set the Cloudinary URL from database
         } else {
           Alert.alert('Error', 'Failed to fetch user data.');
         }
@@ -89,6 +98,45 @@ const UserProfileScreen = () => {
     );
   };
 
+  // Function to upload image to Cloudinary using axios
+  const uploadImage = async (uri: string) => {
+    setIsUploading(true);
+    try {
+      const fileExtension = uri.split('.').pop()?.toLowerCase();
+      const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        type: mimeType,
+        name: `profile_image_${Date.now()}.${fileExtension || 'jpg'}`,
+      } as any);
+      formData.append('upload_preset', 'book_images');
+
+      console.log('Uploading to:', `https://api.cloudinary.com/v1_1/darllfja9/image/upload`);
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/darllfja9/image/upload`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      if (response.data && response.data.secure_url) {
+        setImageUrl(response.data.secure_url);
+        Alert.alert('Success', 'Profile image uploaded successfully!');
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error.response ? error.response.data : error.message);
+      Alert.alert('Error', `Failed to upload image. Details: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
+      setImage(null); // Clear local image if upload fails
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Function to pick a profile image
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -106,6 +154,7 @@ const UserProfileScreen = () => {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      await uploadImage(result.assets[0].uri);
     }
   };
 
@@ -124,13 +173,14 @@ const UserProfileScreen = () => {
         mobile,
         gender,
         profession,
-        image, // In a real app, you'd upload this to a server and store the URL
+        image: imageUrl, // Save the Cloudinary URL instead of local URI
       };
 
       const response = await axios.put(`${API_URL}/api/users/update`, updatedData);
       if (response.data.status === 'Ok') {
         setUserData({ ...userData, ...updatedData });
         setIsEditing(false);
+        setImage(null); // Clear local image after successful save
         Alert.alert('Success', 'Profile updated successfully!');
       } else {
         Alert.alert('Error', 'Failed to update profile.');
@@ -148,6 +198,9 @@ const UserProfileScreen = () => {
       </View>
     );
   }
+
+  // Determine which image to display (local or Cloudinary URL)
+  const displayImage = image || imageUrl;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -170,15 +223,24 @@ const UserProfileScreen = () => {
                 end={{ x: 1, y: 1 }}
               >
                 <View style={styles.profileImageContainer}>
-                  {image ? (
-                    <Image source={{ uri: image }} style={styles.profileImage} />
+                  {displayImage ? (
+                    <Image source={{ uri: displayImage }} style={styles.profileImage} />
                   ) : (
                     <Ionicons name="person-circle-outline" size={120} color="#F6F1F1" />
                   )}
                   {isEditing && (
-                    <TouchableOpacity style={styles.editImageButton} onPress={pickImage}>
+                    <TouchableOpacity 
+                      style={styles.editImageButton} 
+                      onPress={pickImage}
+                      disabled={isUploading}
+                    >
                       <Ionicons name="camera" size={24} color="#F6F1F1" />
                     </TouchableOpacity>
+                  )}
+                  {isUploading && (
+                    <View style={styles.uploadingOverlay}>
+                      <ActivityIndicator size="large" color="#146C94" />
+                    </View>
                   )}
                 </View>
               </LinearGradient>
@@ -253,6 +315,7 @@ const UserProfileScreen = () => {
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={() => (isEditing ? saveProfile() : setIsEditing(true))}
+                  disabled={isUploading}
                 >
                   <LinearGradient
                     colors={['#146C94', '#19A7CE']}
@@ -349,6 +412,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    position: 'relative',
   },
   profileImage: {
     width: '100%',
@@ -361,6 +425,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#146C94',
     borderRadius: 20,
     padding: 8,
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoContainer: {
     marginTop: 10,

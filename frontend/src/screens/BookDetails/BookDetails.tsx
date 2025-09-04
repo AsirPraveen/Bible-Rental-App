@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert, Modal, Dimensions, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Star, X } from 'lucide-react-native';
+import { ArrowLeft, Star, X, Heart } from 'lucide-react-native'; // Added Heart icon
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -54,8 +54,8 @@ export default function BookDetails() {
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ url: string | undefined; publicId: string } | null>(null);
+  const [isFavourite, setIsFavourite] = useState(false); // Track if book is in wishlist
 
-  // Fetch the latest book data and user data
   const fetchBookDetails = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/api/books`);
@@ -79,6 +79,9 @@ export default function BookDetails() {
         (request: any) => request.book_id === initialBook.book_id && request.status === 'pending'
       );
       setHasPendingRequest(!!pendingRequest);
+
+      // Check if book is in favouriteBooks
+      setIsFavourite(userData.favouriteBooks.includes(parseInt(initialBook.book_id)));
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
@@ -106,40 +109,86 @@ export default function BookDetails() {
   }
 
   const handleRentRequest = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      const user = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
-      const userEmail = user.data.data.email;
+    Alert.alert(
+      'Confirm Rent Request',
+      'Are you sure you want to request this book?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              const user = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
+              const userEmail = user.data.data.email;
 
-      const res = await axios.post(`${BASE_URL}/api/submit-rent-request`, {
-        userEmail,
-        book_id: book.book_id,
-        book_name: book.book_name,
-      });
+              const res = await axios.post(`${BASE_URL}/api/submit-rent-request`, {
+                userEmail,
+                book_id: book.book_id,
+                book_name: book.book_name,
+              });
 
-      if (res.data.status === 'Ok') {
-        Alert.alert('Success', 'Rent request submitted. Waiting for admin approval.');
-        setHasPendingRequest(true);
-      } else {
-        Alert.alert('Error', res.data.data);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to submit rent request');
-    }
+              if (res.data.status === 'Ok') {
+                Alert.alert('Success', 'Rent request submitted. Waiting for admin approval.');
+                setHasPendingRequest(true);
+              } else {
+                Alert.alert('Error', res.data.data);
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to submit rent request');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleReturnBook = async () => {
+    Alert.alert(
+      'Confirm Return',
+      'Are you sure you want to return this book?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              const res = await axios.post(`${BASE_URL}/api/return-book`, { book_id: book.book_id });
+              if (res.data.status === 'Ok') {
+                Alert.alert('Success', 'Book returned successfully');
+                fetchBookDetails();
+                fetchCurrentUser();
+              } else {
+                Alert.alert('Error', res.data.data);
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to return book');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const toggleFavourite = async () => {
     try {
-      const res = await axios.post(`${BASE_URL}/api/return-book`, { book_id: book.book_id });
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.post(`${BASE_URL}/api/toggle-favourite`, {
+        userEmail: currentUserEmail,
+        book_id: book.book_id,
+      });
+
       if (res.data.status === 'Ok') {
-        Alert.alert('Success', 'Book returned successfully');
-        fetchBookDetails();
-        fetchCurrentUser();
+        setIsFavourite(!isFavourite);
+        Alert.alert('Success', `Book ${isFavourite ? 'removed from' : 'added to'} wishlist.`);
+        fetchCurrentUser(); // Refresh user data to update favouriteBooks
       } else {
         Alert.alert('Error', res.data.data);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to return book');
+      Alert.alert('Error', 'Failed to update wishlist');
     }
   };
 
@@ -178,20 +227,18 @@ export default function BookDetails() {
     }
   };
 
-  // Extract public ID from Cloudinary URL or use fallback
   const getPublicId = (url: string | undefined) => {
-    if (!url) return 'default_image'; // Fallback public ID
+    if (!url) return 'default_image';
     const regex = /\/upload\/v\d+\/(.+)\.\w+$/;
     const match = url.match(regex);
     return match ? match[1] : 'default_image';
   };
 
-  // Prepare image data for carousel
   const images = [
     { url: book.cover_image, publicId: getPublicId(book.cover_image) },
     { url: book.thumbnail1, publicId: getPublicId(book.thumbnail1) },
     { url: book.thumbnail2, publicId: getPublicId(book.thumbnail2) },
-  ].filter(img => img.url); // Filter out undefined URLs
+  ].filter(img => img.url);
 
   return (
     <SafeAreaView style={styles.outer_container}>
@@ -199,6 +246,9 @@ export default function BookDetails() {
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
             <ArrowLeft size={24} color={Colors.bg} />
+          </Pressable>
+          <Pressable onPress={toggleFavourite} style={styles.favouriteButton}>
+            <Heart size={24} color={isFavourite ? Colors.bg : '#666'} fill={isFavourite ? Colors.bg : 'none'} />
           </Pressable>
         </View>
 
@@ -209,7 +259,7 @@ export default function BookDetails() {
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.carouselContent}
-              snapToInterval={CAROUSEL_ITEM_WIDTH + 16} // Item width + margin
+              snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
               decelerationRate="fast"
             >
               {images.map((item, index) => {
@@ -235,7 +285,7 @@ export default function BookDetails() {
           ) : (
             <Image
               source={{
-              uri: 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                uri: 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
               }}
               style={styles.cover}
             />
@@ -272,7 +322,6 @@ export default function BookDetails() {
         </View>
       </ScrollView>
 
-      {/* Full-screen image modal */}
       <Modal
         visible={modalVisible}
         transparent={false}
@@ -306,8 +355,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
   },
   container: {
     flex: 1,
@@ -317,8 +364,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.active,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favouriteButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -331,7 +389,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   carouselContent: {
-    paddingHorizontal: (SCREEN_WIDTH - CAROUSEL_ITEM_WIDTH) / 2, // Center items
+    paddingHorizontal: (SCREEN_WIDTH - CAROUSEL_ITEM_WIDTH) / 2,
   },
   carouselItem: {
     width: CAROUSEL_ITEM_WIDTH,
@@ -376,7 +434,7 @@ const styles = StyleSheet.create({
   },
   fullScreenImage: {
     width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * 1.5, // Adjust aspect ratio as needed
+    height: SCREEN_WIDTH * 1.5,
     resizeMode: 'contain',
   },
   detailsContainer: {

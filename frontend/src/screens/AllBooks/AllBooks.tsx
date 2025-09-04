@@ -26,7 +26,11 @@ type RootStackParamList = {
 
 const AllBooks = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const route = useRoute();
+  const route = useRoute<{
+    key: string;
+    name: string;
+    params?: { books?: any[] };
+  }>();
   const [books, setBooks] = useState(route.params?.books || []);
   const [filteredBooks, setFilteredBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

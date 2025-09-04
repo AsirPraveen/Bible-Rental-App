@@ -49,8 +49,8 @@ const AdminTabsNavigation = () => {
         }}
       />
       <Tab.Screen
-        name="Posts"
-        component={Post}
+        name="Create"
+        component={CreateScreen}
         options={{
           tabBarIcon: ({ ref }:any) => (
             <Lottie
@@ -125,6 +125,7 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
 };
 
 import type LottieView from 'lottie-react-native';
+import CreateScreen from '../screens/AdminScreen/CreateScreen';
 
 const TabBarComponent = ({ active, options, onLayout, onPress }:any) => {
   const ref = useRef<LottieView>(null);

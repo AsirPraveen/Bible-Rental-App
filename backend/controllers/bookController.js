@@ -110,9 +110,11 @@ exports.getPendingRentRequests = async (req, res) => {
         .map(request => ({
           _id: request._id,
           userEmail: user.email,
+          userName: user.name,
           book_id: request.book_id,
           book_name: bookMap.get(request.book_id) || 'Unknown',
-          status: request.status
+          status: request.status,
+          requested_at: request.requested_at
         }))
     );
 
@@ -130,6 +132,7 @@ exports.approveRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "User not found" });
     }
 
+    // Find the specific pending request by book_id and status
     const request = user.books_rented.find(
       (r) => r.book_id === book_id && r.status === 'pending'
     );
@@ -142,6 +145,7 @@ exports.approveRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Book not found" });
     }
 
+    // Update the book availability and ownership
     await Book.updateOne(
       { book_id },
       { 
@@ -154,16 +158,19 @@ exports.approveRentRequest = async (req, res) => {
       }
     );
 
+    // Update the specific request status using its _id
     await User.updateOne(
-      { email: userEmail, 'books_rented.book_id': book_id },
+      { email: userEmail, 'books_rented._id': request._id },
       { $set: { 'books_rented.$.status': 'approved' } }
     );
 
     // Save to request history
     await RequestHistory.create({
+      userName: user.name,
       userEmail,
       book_id,
       book_name: book.book_name,
+      requested_at: request.requested_at,
       status: 'approved',
     });
 
@@ -239,5 +246,45 @@ exports.returnBook = async (req, res) => {
     res.send({ status: "Ok", data: "Book returned successfully" });
   } catch (error) {
     res.send({ status: "error", data: error });
+  }
+};
+
+exports.toggleFavourite = async (req, res) => {
+  const { userEmail, book_id } = req.body;
+  console.log('Toggle favourite called with:', { userEmail, book_id });
+  try {
+    // Verify token and fetch user
+    const user = await User.findOne({ email: userEmail });
+    console.log("user",user);
+    if (!user) {
+      return res.status(404).send({ status: "error", data: "User not found" });
+    }
+
+    const book = await Book.findOne({ book_id });
+    if (!book) {
+      return res.status(404).send({ status: "error", data: "Book not found" });
+    }
+
+    // Check if the book is already in favouriteBooks
+    const isFavourite = user.favouriteBooks.includes(book_id);
+    
+    if (isFavourite) {
+      // Remove book from favouriteBooks
+      await User.updateOne(
+        { email: userEmail },
+        { $pull: { favouriteBooks: book_id } }
+      );
+      res.send({ status: "Ok", data: "Book removed from wishlist" });
+    } else {
+      // Add book to favouriteBooks
+      await User.updateOne(
+        { email: userEmail },
+        { $addToSet: { favouriteBooks: book_id } } // $addToSet prevents duplicates
+      );
+      res.send({ status: "Ok", data: "Book added to wishlist" });
+    }
+  } catch (error) {
+    console.error('Error toggling favourite:', error);
+    res.status(500).send({ status: "error", data: error.message });
   }
 };

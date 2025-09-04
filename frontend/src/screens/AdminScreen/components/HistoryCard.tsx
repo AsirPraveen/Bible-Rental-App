@@ -2,14 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../../../utils/colors';
 
-const HistoryCard = ({ history }) => {
+const HistoryCard = ({ history }:any) => {
   return (
     <View style={styles.card}>
       <View style={styles.content}>
         <View style={styles.indicator} />
         <View style={styles.details}>
           <Text style={styles.title}>{history.book_name}</Text>
-          <Text style={styles.detail}>User: {history.userEmail}</Text>
+          <Text style={styles.detail}>User: {history.userName}</Text>
+          <Text style={styles.detail}>Requested on: {new Date(history.requested_at).toLocaleString()}</Text>
           <Text style={styles.detail}>Processed on: {new Date(history.processed_at).toLocaleString()}</Text>
           <Text
             style={[

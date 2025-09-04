@@ -9,7 +9,7 @@ import DateTimePicker from '@react-native-community/datetimepicker'; // Updated 
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
-const Post = () => {
+const CreatePostTab = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState<Date | null>(null); // Store date as Date object
@@ -160,7 +160,7 @@ const Post = () => {
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
-            <Text style={styles.headerText}>Create a New Post</Text>
+            <Text style={styles.headerText}>Create New Post</Text>
 
             <View style={styles.formCard}>
               <Text style={styles.label}>Title *</Text>
@@ -406,4 +406,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Post;
+export default CreatePostTab;

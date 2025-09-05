@@ -6,4 +6,11 @@ router.put('/update', userController.updateUser);
 router.get('/get-all-user', userController.getAllUsers);
 router.post('/delete-user', userController.deleteUser);
 
+// New credit-related routes
+router.get('/credits', userController.getUserCredits);
+router.post('/deduct-credit', userController.deductCredit);
+router.post('/add-credits', userController.addCredits); // Admin route
+router.post('/reset-all-credits', userController.resetAllCredits); // Admin route
+
+
 module.exports = router;

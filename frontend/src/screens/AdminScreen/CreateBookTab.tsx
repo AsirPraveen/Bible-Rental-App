@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, Platform, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, Platform, StatusBar, SafeAreaView, Image, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import * as ImagePicker from 'expo-image-picker';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
+const uploadPresentBibleBooks = Constants.expoConfig?.extra?.uploadPresentBibleBooks ?? '';
 
 const CreateBookTab = () => {
   const [bookName, setBookName] = useState('');
@@ -15,7 +18,15 @@ const CreateBookTab = () => {
   const [yearOfPublication, setYearOfPublication] = useState('');
   const [authorId, setAuthorId] = useState('');
   const [bookId, setBookId] = useState('');
+  const [availableCount, setAvailableCount] = useState('');
+  const [coverImageUri, setCoverImageUri] = useState('');
+  const [thumbnail1Uri, setThumbnail1Uri] = useState('');
+  const [thumbnail2Uri, setThumbnail2Uri] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [thumbnail1Url, setThumbnail1Url] = useState('');
+  const [thumbnail2Url, setThumbnail2Url] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState('');
 
   // Function to validate form inputs
   const validateForm = () => {
@@ -43,12 +54,112 @@ const CreateBookTab = () => {
       Alert.alert('Error', 'Please enter book ID.');
       return false;
     }
+    if (!availableCount.trim() || isNaN(Number(availableCount)) || Number(availableCount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid available count.');
+      return false;
+    }
     return true;
+  };
+
+  // Function to upload image to Cloudinary
+  const uploadImage = async (uri, imageType) => {
+    setUploadingImage(imageType);
+    try {
+      const fileExtension = uri.split('.').pop()?.toLowerCase();
+      const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        type: mimeType,
+        name: `book_${imageType}_${Date.now()}.${fileExtension || 'jpg'}`,
+      });
+      formData.append('upload_preset', uploadPresentBibleBooks);
+
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      if (response.data && response.data.secure_url) {
+        switch (imageType) {
+          case 'cover':
+            setCoverImageUrl(response.data.secure_url);
+            break;
+          case 'thumbnail1':
+            setThumbnail1Url(response.data.secure_url);
+            break;
+          case 'thumbnail2':
+            setThumbnail2Url(response.data.secure_url);
+            break;
+        }
+        Alert.alert('Success', `${imageType} image uploaded successfully!`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Error', `Failed to upload ${imageType} image.`);
+      // Reset the URI if upload failed
+      switch (imageType) {
+        case 'cover':
+          setCoverImageUri('');
+          break;
+        case 'thumbnail1':
+          setThumbnail1Uri('');
+          break;
+        case 'thumbnail2':
+          setThumbnail2Uri('');
+          break;
+      }
+    } finally {
+      setUploadingImage('');
+    }
+  };
+
+  // Function to pick an image
+  const pickImage = async (imageType) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need permission to access your photos to select an image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: imageType === 'cover' ? [3, 4] : [1, 1], // Cover image taller, thumbnails square
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      switch (imageType) {
+        case 'cover':
+          setCoverImageUri(uri);
+          break;
+        case 'thumbnail1':
+          setThumbnail1Uri(uri);
+          break;
+        case 'thumbnail2':
+          setThumbnail2Uri(uri);
+          break;
+      }
+      await uploadImage(uri, imageType);
+    }
   };
 
   // Function to handle adding a book
   const handleAddBook = async () => {
     if (!validateForm()) {
+      return;
+    }
+
+    if (uploadingImage) {
+      Alert.alert('Please wait', 'Image upload is in progress. Please wait for it to complete.');
       return;
     }
 
@@ -62,6 +173,10 @@ const CreateBookTab = () => {
         year_of_publication: yearOfPublication.trim(),
         author_id: authorId.trim(),
         book_id: bookId.trim(),
+        available_count: availableCount.trim(),
+        cover_image: coverImageUrl || null,
+        thumbnail1: thumbnail1Url || null,
+        thumbnail2: thumbnail2Url || null,
       };
 
       const response = await axios.post(`${API_URL}/api/add-book`, newBook);
@@ -76,6 +191,13 @@ const CreateBookTab = () => {
         setYearOfPublication('');
         setAuthorId('');
         setBookId('');
+        setAvailableCount('');
+        setCoverImageUri('');
+        setThumbnail1Uri('');
+        setThumbnail2Uri('');
+        setCoverImageUrl('');
+        setThumbnail1Url('');
+        setThumbnail2Url('');
       } else {
         Alert.alert('Error', response.data.data || 'Failed to add book.');
       }
@@ -86,6 +208,29 @@ const CreateBookTab = () => {
       setIsSubmitting(false);
     }
   };
+
+  const renderImagePicker = (imageType, uri, label) => (
+    <View style={styles.imageSection}>
+      <Text style={styles.label}>{label}</Text>
+      <Button
+        mode="outlined"
+        onPress={() => pickImage(imageType)}
+        style={styles.imagePickerButton}
+        labelStyle={styles.imagePickerText}
+        disabled={uploadingImage === imageType}
+      >
+        {uploadingImage === imageType ? 'Uploading...' : `Select ${label}`}
+      </Button>
+      {uri && (
+        <View style={styles.imageContainer}>
+          <Image source={{ uri }} style={imageType === 'cover' ? styles.coverImage : styles.thumbnailImage} resizeMode="cover" />
+          {uploadingImage === imageType && (
+            <ActivityIndicator size="large" color="#146C94" style={styles.loader} />
+          )}
+        </View>
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.outer_container}>
@@ -119,6 +264,16 @@ const CreateBookTab = () => {
                 value={pages}
                 onChangeText={setPages}
                 placeholder="Enter number of pages"
+                placeholderTextColor="#999"
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Available Count *</Text>
+              <TextInput
+                style={styles.input}
+                value={availableCount}
+                onChangeText={setAvailableCount}
+                placeholder="Enter number of copies available"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
               />
@@ -162,12 +317,16 @@ const CreateBookTab = () => {
                 placeholderTextColor="#999"
               />
 
+              {renderImagePicker('cover', coverImageUri, 'Cover Image (Optional)')}
+              {renderImagePicker('thumbnail1', thumbnail1Uri, 'Thumbnail 1 (Optional)')}
+              {renderImagePicker('thumbnail2', thumbnail2Uri, 'Thumbnail 2 (Optional)')}
+
               <Button
                 mode="contained"
                 onPress={handleAddBook}
                 style={styles.addButton}
                 labelStyle={styles.buttonText}
-                disabled={isSubmitting}
+                disabled={isSubmitting || uploadingImage !== ''}
                 loading={isSubmitting}
               >
                 {isSubmitting ? 'Adding Book...' : 'Add Book'}
@@ -232,6 +391,38 @@ const styles = StyleSheet.create({
   descriptionInput: {
     height: 100,
     textAlignVertical: 'top',
+  },
+  imageSection: {
+    marginBottom: 16,
+  },
+  imagePickerButton: {
+    borderColor: '#146C94',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  imagePickerText: {
+    fontSize: 14,
+    color: '#146C94',
+  },
+  imageContainer: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  coverImage: {
+    width: 120,
+    height: 160,
+    borderRadius: 8,
+  },
+  thumbnailImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  loader: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -25 }, { translateY: -25 }],
   },
   addButton: {
     backgroundColor: '#146C94',

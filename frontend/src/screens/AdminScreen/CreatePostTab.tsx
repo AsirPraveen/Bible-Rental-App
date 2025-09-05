@@ -8,6 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Updated to compatible version
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
+const uploadPresentPosts = Constants.expoConfig?.extra?.uploadPresentPosts ?? '';
 
 const CreatePostTab = () => {
   const [title, setTitle] = useState('');
@@ -54,11 +56,11 @@ const CreatePostTab = () => {
         type: mimeType,
         name: `post_image_${Date.now()}.${fileExtension || 'jpg'}`,
       });
-      formData.append('upload_preset', 'book_images');
+      formData.append('upload_preset', uploadPresentPosts);
 
-      console.log('Uploading to:', `https://api.cloudinary.com/v1_1/darllfja9/image/upload`);
+      console.log('Uploading to:', `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`);
       const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/darllfja9/image/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

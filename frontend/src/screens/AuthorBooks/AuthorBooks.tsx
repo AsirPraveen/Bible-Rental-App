@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, Pressable, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Heart } from 'lucide-react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
@@ -33,6 +33,7 @@ export default function AuthorBooks() {
     year_of_publication?: string;
     rating?: number | string;
     author_name?: string;
+    likes?: number;
   };
   const [authorBooks, setAuthorBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,8 +175,13 @@ export default function AuthorBooks() {
                 <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.bookCover} />
                 <View style={styles.bookInfo}>
                   <Text style={styles.bookTitle}>{book.book_name}</Text>
-                  <Text style={styles.bookYear}>{book.year_of_publication || 'N/A'}</Text>
-                  <Text style={styles.bookRating}>★ {book.rating || 'N/A'}</Text>
+                  <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <Text style={styles.bookYear}>{book.year_of_publication || 'N/A'}</Text>
+                    <View style={styles.likesContainer}>
+                      <Heart size={15} color="#146C94" fill="#146C94" />
+                      <Text style={styles.bookRating}>{book.likes || 0}</Text>
+                    </View>
+                  </View>
                 </View>
               </Pressable>
             ))
@@ -211,6 +217,13 @@ const styles = StyleSheet.create({
   contentContainer: {
     justifyContent: 'center', // Moved here
     alignItems: 'center',     // Moved here
+  },
+  likesContainer: {
+    top: 0,
+    right: 0,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   header: {
     paddingHorizontal: 16,
@@ -310,12 +323,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   bookYear: {
-    fontSize: 12,
+    fontSize: 16,
+    fontWeight: '600',
     color: '#19A7CE',
     marginBottom: 4,
   },
   bookRating: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
     color: '#146C94',
   },

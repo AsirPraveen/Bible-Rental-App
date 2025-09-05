@@ -32,6 +32,13 @@ export default {
       eas: {
         projectId: "dc5bfe26-226c-478d-b178-14a74d6a4194",
       },
+      cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      uploadPresentPosts: process.env.UPLOAD_PRESENT_POSTS,
+      uploadPresentProfiles: process.env.UPLOAD_PRESENT_PROFILES,
+      uploadPresentBibleBooks: process.env.UPLOAD_PRESENT_BIBLEBOOKS,
+
+      stabilityApiKey: process.env.STABILITY_API_KEY,
+      stabilityApiUrl: process.env.STABILITY_API_URL,
     },
     plugins: [
       "expo-font",

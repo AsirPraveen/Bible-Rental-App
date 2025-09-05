@@ -10,6 +10,8 @@ import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
+const uploadPresentProfiles = Constants.expoConfig?.extra?.uploadPresentProfiles ?? '';
 
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -98,10 +100,70 @@ const AboutAdminTab = () => {
     );
   };
 
+  // Function to extract public_id from Cloudinary URL
+  const extractPublicIdFromUrl = (url: string | null) => {
+    if (!url) return null;
+    
+    try {
+      // Extract public_id from Cloudinary URL
+      // URL format: https://res.cloudinary.com/{cloud_name}/{resource_type}/{type}/{version}/{public_id}.{format}
+      const urlParts = url.split('/');
+      const lastPart = urlParts[urlParts.length - 1]; // Get the filename with extension
+      const publicId = lastPart.split('.')[0]; // Remove the file extension
+      
+      // Handle versioned URLs (with v1234567890 in the path)
+      const versionIndex = urlParts.findIndex(part => part.startsWith('v') && /^\d+$/.test(part.substring(1)));
+      if (versionIndex !== -1 && versionIndex < urlParts.length - 1) {
+        // If there's a version, the public_id might include folder structure
+        const pathAfterVersion = urlParts.slice(versionIndex + 1);
+        return pathAfterVersion.join('/').split('.')[0];
+      }
+      
+      return publicId;
+    } catch (error) {
+      console.error('Error extracting public_id:', error);
+      return null;
+    }
+  };
+
+  // Function to delete image from Cloudinary
+  const deleteImageFromCloudinary = async (imageUrl: string | null) => {
+    try {
+      const publicId = extractPublicIdFromUrl(imageUrl);
+      if (!publicId) {
+        console.log('No valid public_id found for deletion');
+        return;
+      }
+
+      console.log('Attempting to delete image with public_id:', publicId);
+
+      const token = await AsyncStorage.getItem('token');
+      
+      const response = await axios.post(`${API_URL}/api/cloudinary/delete`, {
+        token,
+        publicId: publicId
+      });
+
+      if (response.data.status === 'Ok') {
+        console.log('Old image deleted successfully');
+      } else {
+        console.log('Failed to delete old image:', response.data.data);
+      }
+    } catch (error) {
+      console.error('Error deleting old image:', error);
+      // Don't throw error here as we don't want to block the new upload
+    }
+  };
+
   // Function to upload image to Cloudinary using axios
   const uploadImage = async (uri: string) => {
     setIsUploading(true);
     try {
+      // Delete old image first if it exists
+      if (imageUrl) {
+        await deleteImageFromCloudinary(imageUrl);
+      }
+
       const fileExtension = uri.split('.').pop()?.toLowerCase();
       const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
 
@@ -111,11 +173,11 @@ const AboutAdminTab = () => {
         type: mimeType,
         name: `profile_image_${Date.now()}.${fileExtension || 'jpg'}`,
       } as any);
-      formData.append('upload_preset', 'book_images');
+      formData.append('upload_preset', uploadPresentProfiles);
 
-      console.log('Uploading to:', `https://api.cloudinary.com/v1_1/darllfja9/image/upload`);
+      console.log('Uploading to:', `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`);
       const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/darllfja9/image/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

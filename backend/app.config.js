@@ -9,7 +9,6 @@ export default {
     scheme: "youthroom",
     // Keep your existing extra section for environment variables
     extra: {
-      apiUrl: process.env.API_URL,
       appName: process.env.APP_NAME,
       emailUser: process.env.EMAIL_USER,
       emailPass: process.env.EMAIL_PASS,

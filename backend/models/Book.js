@@ -10,11 +10,13 @@ const bookSchema = new mongoose.Schema({
   thumbnail2: {type:String},
   year_of_publication: { type: Number },
   author_id: { type: Number },
+  available_count: { type: Number, default: 1 },
   rent_count: { type: Number, default: 0 },
   book_id: { type: Number },
   available: { type: Boolean, default: true },
   owned_by: { type: String, default: null },
-  rent_from: { type: Date, default: null }
+  rent_from: { type: Date, default: null },
+  likes: { type: Number, default: 0 }
 }, { timestamps: true });
 
 // Explicitly specify collection name

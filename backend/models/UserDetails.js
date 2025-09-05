@@ -18,7 +18,11 @@ const UserDetailSchema = new mongoose.Schema(
       status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
       requested_at: { type: Date, default: Date.now }
     }],
-    favouriteBooks: [{ type: Number, ref: 'Book' }] // New field for wishlist
+    favouriteBooks: [{ type: Number, ref: 'Book' }],
+    image_generation_credits_available: { 
+      type: Number, 
+      default: 5 
+    },
   },
   {
     collection: "UserInfo",

@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { TextInput, ScrollView, Alert } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
-import { Search, Bell } from 'lucide-react-native';
+import { Search, Bell, Heart } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
 import Constants from 'expo-constants';
@@ -17,11 +17,21 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
 
 const CATEGORIES = [
-  { id: '1', name: 'Faith', color: '#146C94' },
-  { id: '2', name: 'Brotherhood', color: '#146C94' },
-  { id: '3', name: 'Prayer', color: '#146C94' },
-  { id: '4', name: 'Bible', color: '#146C94' },
-  { id: '5', name: 'Fellowship', color: '#146C94' },
+  { id: '1', name: 'Bible', color: '#146C94' },
+  { id: '2', name: 'Prayer', color: '#146C94' },
+  { id: '3', name: 'Fellowship', color: '#146C94' },
+  { id: '4', name: 'Faith', color: '#146C94' },
+  { id: '5', name: 'Brotherhood', color: '#146C94' },
+  { id: '6', name: 'Worship', color: '#146C94' },
+  { id: '7', name: 'Grace', color: '#146C94' },
+  { id: '8', name: 'Salvation', color: '#146C94' },
+  { id: '9', name: 'Hope', color: '#146C94' },
+  { id: '10', name: 'Love', color: '#146C94' },
+  { id: '11', name: 'Charity', color: '#146C94' },
+  { id: '12', name: 'Holiness', color: '#146C94' },
+  { id: '13', name: 'Forgiveness', color: '#146C94' },
+  { id: '14', name: 'Eternal Life', color: '#146C94' }
+
 ];
 
 // Custom Skeleton Animation Component
@@ -117,6 +127,7 @@ const HomeView = () => {
     rent_count?: number;
     year_of_publication?: string | number;
     [key: string]: any;
+    likes?: number;
   };
 
   const [books, setBooks] = useState<Book[]>([]);
@@ -148,6 +159,22 @@ const HomeView = () => {
       setIsLoadingUserData(false);
     }
   }
+
+  // Inside HomeView component
+  const scrollX = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(scrollX, {
+        toValue: -CATEGORIES.length * 120, // width * items
+        duration: 27000, // speed (ms)
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const categoryItemWidth = 120; // adjust based on your button width
+
 
   const handleLogout = () => {
     Alert.alert(
@@ -310,24 +337,35 @@ const HomeView = () => {
       </View>
 
       <ScrollView style={styles.container}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-        >
-          {CATEGORIES.map((category) => (
-            <Pressable
-              key={category.id}
-              style={[styles.categoryButton, { backgroundColor: category.color }]}
-            >
-              <Text style={[styles.categoryText, 
-                { color: category.color === '#F6F1F1' ? '#146C94' : '#F6F1F1' }
-              ]}>
-                {category.name}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        {/* Categories Section (Auto-scrolling) */}
+        <View style={{ height: 50, overflow: 'hidden' }}>
+          <Animated.View
+            style={{
+              flexDirection: 'row',
+              transform: [{ translateX: scrollX }],
+            }}
+          >
+            {/* Duplicate categories for infinite loop */}
+            {[...CATEGORIES, ...CATEGORIES].map((category, index) => (
+              <Pressable
+                key={`${category.id}-${index}`}
+                style={[
+                  styles.categoryButton,
+                  { backgroundColor: category.color, width: categoryItemWidth },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.categoryText,
+                    { color: category.color === '#F6F1F1' ? '#146C94' : '#F6F1F1' },
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </Pressable>
+            ))}
+          </Animated.View>
+        </View>
 
         {/* Books Section */}
         <View style={styles.section}>
@@ -437,7 +475,8 @@ const HomeView = () => {
                     <Text style={styles.topBookMetaText}>Read by: {book.rent_count}</Text>
                   </View>
                   <View style={styles.ratingContainer}>
-                    <Text style={styles.rating}>★ 5</Text>
+                    <Text style={styles.likesCount}>{book.likes || 0}</Text>
+                    <Heart size={15} color="#146C94" fill="#146C94" />
                   </View>
                 </View>
               </Pressable>

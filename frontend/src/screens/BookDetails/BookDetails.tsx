@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert, Modal, Dimensions, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Star, X, Heart } from 'lucide-react-native'; // Added Heart icon
+import { ArrowLeft, Star, X, Heart } from 'lucide-react-native'; // Changed Star to Heart for likes display
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -9,6 +9,7 @@ import { AdvancedImage } from 'cloudinary-react-native';
 import { Cloudinary } from '@cloudinary/url-gen';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
+const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
 
 const Colors = {
   bg: '#146C94',
@@ -20,7 +21,7 @@ const Colors = {
 // Initialize Cloudinary instance
 const cld = new Cloudinary({
   cloud: {
-    cloudName: 'darllfja9',
+    cloudName: cloudinaryCloudName,
   },
 });
 
@@ -39,6 +40,7 @@ type Book = {
   thumbnail2?: string;
   available: boolean;
   owned_by?: string;
+  likes?: number; // Added likes field
 };
 
 type RouteParams = {
@@ -183,7 +185,9 @@ export default function BookDetails() {
       if (res.data.status === 'Ok') {
         setIsFavourite(!isFavourite);
         Alert.alert('Success', `Book ${isFavourite ? 'removed from' : 'added to'} wishlist.`);
-        fetchCurrentUser(); // Refresh user data to update favouriteBooks
+        // Refresh both book details and user data to get updated likes count
+        await fetchBookDetails();
+        await fetchCurrentUser();
       } else {
         Alert.alert('Error', res.data.data);
       }
@@ -296,9 +300,11 @@ export default function BookDetails() {
           <Text style={styles.title}>{book.book_name}</Text>
           <Text style={styles.author}>{book.author_name}</Text>
 
-          <View style={styles.ratingContainer}>
-            <Star size={20} color="#FFB800" fill="#FFB800" />
-            <Text style={styles.rating}>5</Text>
+          {/* Updated to show likes instead of rating */}
+          <View style={styles.likesContainer}>
+            <Heart size={20} color="#FF6B6B" fill="#FF6B6B" />
+            <Text style={styles.likesCount}>{book.likes || 0}</Text>
+            <Text style={styles.likesLabel}>likes</Text>
           </View>
 
           <View style={styles.statsContainer}>
@@ -454,16 +460,22 @@ const styles = StyleSheet.create({
     color: '#19A7CE',
     marginBottom: 16,
   },
-  ratingContainer: {
+  // Updated styles for likes instead of rating
+  likesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
   },
-  rating: {
+  likesCount: {
     marginLeft: 8,
+    marginRight: 4,
     fontSize: 16,
     fontWeight: '600',
     color: Colors.bg,
+  },
+  likesLabel: {
+    fontSize: 14,
+    color: '#19A7CE',
   },
   statsContainer: {
     flexDirection: 'row',

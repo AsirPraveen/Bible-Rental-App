@@ -12,26 +12,68 @@ exports.getAllBooks = async (req, res) => {
 };
 
 exports.addBook = async (req, res) => {
-  const { book_name, author_name, pages, preface, year_of_publication, author_id, book_id } = req.body;
+  const { 
+    book_name, 
+    author_name, 
+    pages, 
+    preface, 
+    year_of_publication, 
+    author_id, 
+    book_id, 
+    available_count,
+    cover_image,
+    thumbnail1,
+    thumbnail2
+  } = req.body;
+
   try {
+    // Check if book ID already exists
     const existingBook = await Book.findOne({ book_id });
     if (existingBook) {
       return res.status(400).send({ status: "error", data: "Book ID already exists" });
     }
+
+    // Validate required fields
+    if (!book_name || !author_name || !pages || !year_of_publication || !author_id || !book_id || !available_count) {
+      return res.status(400).send({ status: "error", data: "Missing required fields" });
+    }
+
+    // Validate numeric fields
+    if (isNaN(Number(pages)) || Number(pages) <= 0) {
+      return res.status(400).send({ status: "error", data: "Pages must be a valid positive number" });
+    }
+
+    if (isNaN(Number(available_count)) || Number(available_count) <= 0) {
+      return res.status(400).send({ status: "error", data: "Available count must be a valid positive number" });
+    }
+
+    if (isNaN(Number(year_of_publication))) {
+      return res.status(400).send({ status: "error", data: "Year of publication must be a valid number" });
+    }
+
+    // Create new book
     await Book.create({
-      book_name,
-      author_name,
-      pages,
-      preface,
-      year_of_publication,
-      author_id,
-      book_id,
+      book_name: book_name.trim(),
+      author_name: author_name.trim(),
+      pages: Number(pages),
+      preface: preface?.trim() || '',
+      cover_image: cover_image || null,
+      thumbnail1: thumbnail1 || null,
+      thumbnail2: thumbnail2 || null,
+      year_of_publication: Number(year_of_publication),
+      author_id: Number(author_id),
+      available_count: Number(available_count),
+      book_id: Number(book_id),
       rent_count: 0,
-      available: true
+      available: true,
+      owned_by: null,
+      rent_from: null
     });
+
     res.send({ status: "Ok", data: "Book added successfully" });
   } catch (error) {
-    res.send({ status: "error", data: error });
+    console.error("Error adding book:", error);
+    res.status(500).send({ status: "error", data: "Internal server error while adding book" });
   }
 };
 
@@ -47,7 +89,7 @@ exports.getBookAnalytics = async (req, res) => {
       data: {
         totalBooks: totalBooks || 0,
         totalRented: rentedBooks[0]?.totalRented || 0,
-        popularBooks: popularBooks || []
+        popularBooks: popularBooks || [],
       }
     });
   } catch (error) {
@@ -269,18 +311,30 @@ exports.toggleFavourite = async (req, res) => {
     const isFavourite = user.favouriteBooks.includes(book_id);
     
     if (isFavourite) {
-      // Remove book from favouriteBooks
+      // Remove book from favouriteBooks and decrement likes
       await User.updateOne(
         { email: userEmail },
         { $pull: { favouriteBooks: book_id } }
       );
+      
+      await Book.updateOne(
+        { book_id: book_id },
+        { $inc: { likes: -1 } } // Decrement likes by 1
+      );
+      
       res.send({ status: "Ok", data: "Book removed from wishlist" });
     } else {
-      // Add book to favouriteBooks
+      // Add book to favouriteBooks and increment likes
       await User.updateOne(
         { email: userEmail },
         { $addToSet: { favouriteBooks: book_id } } // $addToSet prevents duplicates
       );
+      
+      await Book.updateOne(
+        { book_id: book_id },
+        { $inc: { likes: 1 } } // Increment likes by 1
+      );
+      
       res.send({ status: "Ok", data: "Book added to wishlist" });
     }
   } catch (error) {

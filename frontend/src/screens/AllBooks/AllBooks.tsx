@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
-import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X, Star } from 'lucide-react-native';
+import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X, Heart } from 'lucide-react-native';
 import axios from "axios";
 import Constants from 'expo-constants';
 
@@ -40,7 +40,7 @@ const AllBooks = () => {
   const [sortOption, setSortOption] = useState("none");
   const [activeFilters, setActiveFilters] = useState<any>({
     year: null,
-    rating: null,
+    likes: null,
     pages: null
   });
   
@@ -90,11 +90,11 @@ const AllBooks = () => {
       });
     }
     
-    // Apply rating filter
-    if (activeFilters.rating) {
+    // Apply likes filter
+    if (activeFilters.likes) {
       result = result.filter(book => {
-        const rating = book.rating || 0;
-        return rating >= activeFilters.rating;
+        const likes = book.likes || 0;
+        return likes >= activeFilters.likes;
       });
     }
     
@@ -115,8 +115,8 @@ const AllBooks = () => {
       result.sort((a, b) => (a.year_of_publication || 0) - (b.year_of_publication || 0));
     } else if (sortOption === "yearDesc") {
       result.sort((a, b) => (b.year_of_publication || 0) - (a.year_of_publication || 0));
-    } else if (sortOption === "ratingDesc") {
-      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortOption === "likesDesc") {
+      result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
     }
     
     setFilteredBooks(result);
@@ -207,30 +207,30 @@ const AllBooks = () => {
                   <Text style={styles.optionText}>Year (Newest)</Text>
                 </Pressable>
                 <Pressable 
-                  style={[styles.optionButton, sortOption === "ratingDesc" && styles.activeOption]}
-                  onPress={() => setSortOption("ratingDesc")}
+                  style={[styles.optionButton, sortOption === "likesDesc" && styles.activeOption]}
+                  onPress={() => setSortOption("likesDesc")}
                 >
-                  <Text style={styles.optionText}>Rating (High to Low)</Text>
+                  <Text style={styles.optionText}>Likes (High to Low)</Text>
                 </Pressable>
               </View>
               
-              {/* Rating Filter */}
-              <Text style={styles.sectionTitle}>Rating</Text>
-              <View style={styles.ratingOptions}>
-                {[5, 4, 3, 2, 1].map(rating => (
+              {/* Likes Filter */}
+              <Text style={styles.sectionTitle}>Likes</Text>
+              <View style={styles.likesOptions}>
+                {[10, 5, 3, 1].map(likes => (
                   <Pressable 
-                    key={rating}
+                    key={likes}
                     style={[
-                      styles.ratingButton, 
-                      activeFilters.rating === rating && styles.activeRatingButton
+                      styles.likesButton, 
+                      activeFilters.likes === likes && styles.activeLikesButton
                     ]}
                     onPress={() => setActiveFilters((prev:any) => ({
                       ...prev, 
-                      rating: prev.rating === rating ? null : rating
+                      likes: prev.likes === likes ? null : likes
                     }))}
                   >
-                    <Text style={styles.ratingButtonText}>
-                      {rating}+ <Star size={12} color={activeFilters.rating === rating ? "#fff" : "#146C94"} />
+                    <Text style={styles.likesButtonText}>
+                      {likes}+ <Heart size={12} color={activeFilters.likes === likes ? "#fff" : "#146C94"} />
                     </Text>
                   </Pressable>
                 ))}
@@ -306,7 +306,7 @@ const AllBooks = () => {
                 onPress={() => {
                   setActiveFilters({
                     year: null,
-                    rating: null,
+                    likes: null,
                     pages: null
                   });
                   setSortOption("none");
@@ -315,7 +315,6 @@ const AllBooks = () => {
                 <Text style={styles.resetButtonText}>Reset All Filters</Text>
               </Pressable>
             </ScrollView>
-            
             
           </View>
           <Pressable 
@@ -330,10 +329,8 @@ const AllBooks = () => {
   };
 
   const renderBookCard = ({ item }:any) => {
-    // Get random rating between 3.5 and 5 for demo purposes
-    const rating = item.rating || (Math.random() * 1.5 + 3.5).toFixed(1);
     // Get random pages between 100 and 500 for demo purposes
-    const pages = item.pages || Math.floor(Math.random() * 400 + 100);
+    const pages = item.pages || 0;
     
     return (
       <Pressable 
@@ -352,7 +349,7 @@ const AllBooks = () => {
             <Text style={styles.detailText}>{pages} pages</Text>
           </View>
           <View style={styles.ratingContainer}>
-            <Text style={styles.rating}>★ {rating}</Text>
+            <Text style={styles.rating}>❤︎ {item.likes || 0}</Text>
           </View>
         </View>
       </Pressable>
@@ -396,7 +393,7 @@ const AllBooks = () => {
       ) : (
         <>
           {/* Active Filters */}
-          {(activeFilters.year || activeFilters.rating || activeFilters.pages || sortOption !== "none") && (
+          {(activeFilters.year || activeFilters.likes || activeFilters.pages || sortOption !== "none") && (
             <View style={styles.activeFiltersContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {sortOption !== "none" && (
@@ -406,7 +403,7 @@ const AllBooks = () => {
                        sortOption === "titleDesc" ? "Title (Z-A)" :
                        sortOption === "yearAsc" ? "Year (Oldest)" :
                        sortOption === "yearDesc" ? "Year (Newest)" :
-                       sortOption === "ratingDesc" ? "Rating (High-Low)" : ""}
+                       sortOption === "likesDesc" ? "Likes (High-Low)" : ""}
                     </Text>
                     <Pressable onPress={() => setSortOption("none")}>
                       <X size={16} color="#fff" />
@@ -414,10 +411,10 @@ const AllBooks = () => {
                   </View>
                 )}
                 
-                {activeFilters.rating && (
+                {activeFilters.likes && (
                   <View style={styles.filterPill}>
-                    <Text style={styles.filterPillText}>{activeFilters.rating}+ Stars</Text>
-                    <Pressable onPress={() => setActiveFilters((prev:any)=> ({ ...prev, rating: null }))}>
+                    <Text style={styles.filterPillText}>{activeFilters.likes}+ Likes</Text>
+                    <Pressable onPress={() => setActiveFilters((prev:any)=> ({ ...prev, likes: null }))}>
                       <X size={16} color="#fff" />
                     </Pressable>
                   </View>
@@ -470,7 +467,7 @@ const AllBooks = () => {
                     setSearchQuery("");
                     setActiveFilters({
                       year: null,
-                      rating: null,
+                      likes: null,
                       pages: null
                     });
                     setSortOption("none");
@@ -724,12 +721,12 @@ const styles = StyleSheet.create({
   activeOptionText: {
     color: '#FFFFFF',
   },
-  ratingOptions: {
+  likesOptions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  ratingButton: {
+  likesButton: {
     backgroundColor: '#F0F8FF',
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -739,17 +736,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  ratingButtonText: {
+  likesButtonText: {
     fontSize: 14,
     color: '#146C94',
     flexDirection: 'row',
     alignItems: 'center',
   },
-  activeRatingButton: {
+  activeLikesButton: {
     backgroundColor: '#19A7CE',
     borderColor: '#19A7CE',
   },
-  activeRatingButtonText: {
+  activeLikesButtonText: {
     color: '#FFFFFF',
   },
   resetButton: {

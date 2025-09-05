@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   categoryButton: {
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -169,6 +170,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  likesCount: {
+    marginLeft: 8,
+    marginRight: 4,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#146C94',
+  },
   bookCard: {
     height: 275,
     width: 160,
@@ -198,6 +206,7 @@ const styles = StyleSheet.create({
     width: 120,
     alignItems: 'center',
     marginRight: 16,
+    marginBottom: 16,
   },
   authorPhoto: {
     width: 80,
@@ -264,6 +273,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   rating: {
     fontSize: 14,

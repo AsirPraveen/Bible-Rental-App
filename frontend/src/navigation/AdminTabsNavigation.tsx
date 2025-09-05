@@ -1,81 +1,83 @@
-import React, { useEffect, useReducer, useRef } from 'react';
-import { Pressable, StyleSheet, View, Text } from 'react-native';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View, Keyboard } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { useAnimatedStyle, withTiming, useDerivedValue } from 'react-native-reanimated';
 import Lottie from 'lottie-react-native';
+import type LottieView from 'lottie-react-native';
+
 import BookAnalyticsTab from '../screens/AdminScreen/BookAnalyticsTab';
-import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
-import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
 import AboutAdminTab from '../screens/AdminScreen/AboutAdminTab';
 import PendingScreen from '../screens/AdminScreen/PendingScreen';
-import Post from '../screens/AdminScreen/Post';
+import CreateScreen from '../screens/AdminScreen/CreateScreen';
 
 const Tab = createBottomTabNavigator();
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
 
 const AdminTabsNavigation = () => {
   return (
-    <Tab.Navigator tabBar={(props) => <AnimatedTabBar {...props} />}>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarHideOnKeyboard: false, // 👈 prevents collapse when keyboard dismisses
+      }}
+      tabBar={(props) => <AnimatedTabBar {...props} />}
+    >
       <Tab.Screen
         name="Book Analytics"
         component={BookAnalyticsTab}
         options={{
-          tabBarIcon: ({ ref }:any) => (
+          tabBarIcon: ({ ref }: any) => (
             <Lottie
               ref={ref}
               loop={false}
-              source={require('../assets/lottie_icon/book-analytics.icon.json')} // Replace with your Lottie file
+              source={require('../assets/lottie_icon/book-analytics.icon.json')}
               style={styles.icon}
             />
           ),
-          headerShown: false,
         }}
       />
       <Tab.Screen
         name="Pending Screen"
         component={PendingScreen}
         options={{
-          tabBarIcon: ({ ref }:any) => (
+          tabBarIcon: ({ ref }: any) => (
             <Lottie
               ref={ref}
               loop={false}
-              source={require('../assets/lottie_icon/pending-requests.icon.json')} // Replace with your Lottie file
+              source={require('../assets/lottie_icon/notification.icon.json')}
               style={styles.icon}
             />
           ),
-          headerShown: false,
         }}
       />
       <Tab.Screen
         name="Create"
         component={CreateScreen}
         options={{
-          tabBarIcon: ({ ref }:any) => (
+          tabBarIcon: ({ ref }: any) => (
             <Lottie
               ref={ref}
               loop={false}
-              source={require('../assets/lottie_icon/history.icon.json')} // Replace with your Lottie file
+              source={require('../assets/lottie_icon/history.icon.json')}
               style={styles.icon}
             />
           ),
-          headerShown: false,
         }}
       />
       <Tab.Screen
         name="About Admin"
         component={AboutAdminTab}
         options={{
-          tabBarIcon: ({ ref }:any) => (
+          tabBarIcon: ({ ref }: any) => (
             <Lottie
               ref={ref}
               loop={false}
-              source={require('../assets/lottie_icon/user.icon.json')} // Replace with your Lottie file
+              source={require('../assets/lottie_icon/user.icon.json')}
               style={styles.icon}
             />
           ),
-          headerShown: false,
         }}
       />
     </Tab.Navigator>
@@ -84,11 +86,24 @@ const AdminTabsNavigation = () => {
 
 const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, descriptors }: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
-  const reducer = (state:any, action:any) => [...state, { x: action.x, index: action.index }];
+  const reducer = (state: any, action: any) => [...state, { x: action.x, index: action.index }];
   const [layout, dispatch] = useReducer(reducer, []);
 
-  const handleLayout = (event:any, index:any) => {
-    dispatch({ x: event.nativeEvent.layout.x, index });
+  // track keyboard visibility
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleLayout = (event: any, index: any) => {
+    if (!keyboardVisible) {
+      dispatch({ x: event.nativeEvent.layout.x, index });
+    }
   };
 
   const xOffset = useDerivedValue(() => {
@@ -101,10 +116,21 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
   }));
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: bottom }]}>
-      <AnimatedSvg width={110} height={60} viewBox="0 0 110 60" style={[styles.activeBackground, animatedStyles]}>
-        <Path fill="#19A7CE" d="M20 0H0c11.046 0 20 8.953 20 20v5c0 19.33 15.67 35 35 35s35-15.67 35-35v-5c0-11.045 8.954-20 20-20H20z" />
+    <View style={[styles.tabBar, { height: 60 + bottom }]}>
+      {/* background highlight bubble */}
+      <AnimatedSvg
+        width={110}
+        height={60}
+        viewBox="0 0 110 60"
+        style={[styles.activeBackground, animatedStyles]}
+      >
+        <Path
+          fill="#19A7CE"
+          d="M20 0H0c11.046 0 20 8.953 20 20v5c0 19.33 15.67 35 35 35s35-15.67 35-35v-5c0-11.045 8.954-20 20-20H20z"
+        />
       </AnimatedSvg>
+
+      {/* icons */}
       <View style={styles.tabBarContainer}>
         {routes.map((route, index) => {
           const active = index === activeIndex;
@@ -114,7 +140,7 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
               key={route.key}
               active={active}
               options={options}
-              onLayout={(e:any) => handleLayout(e, index)}
+              onLayout={(e: any) => handleLayout(e, index)}
               onPress={() => navigation.navigate(route.name)}
             />
           );
@@ -124,10 +150,7 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
   );
 };
 
-import type LottieView from 'lottie-react-native';
-import CreateScreen from '../screens/AdminScreen/CreateScreen';
-
-const TabBarComponent = ({ active, options, onLayout, onPress }:any) => {
+const TabBarComponent = ({ active, options, onLayout, onPress }: any) => {
   const ref = useRef<LottieView>(null);
   useEffect(() => {
     if (active && ref?.current) {
@@ -147,7 +170,7 @@ const TabBarComponent = ({ active, options, onLayout, onPress }:any) => {
     <Pressable onPress={onPress} onLayout={onLayout} style={styles.component}>
       <Animated.View style={[styles.componentCircle, animatedComponentCircleStyles]} />
       <Animated.View style={[styles.iconContainer, animatedIconContainerStyles]}>
-        {options.tabBarIcon ? options.tabBarIcon({ ref }) : <Text>?</Text>}
+        {options.tabBarIcon ? options.tabBarIcon({ ref }) : null}
       </Animated.View>
     </Pressable>
   );
@@ -159,7 +182,15 @@ const styles = StyleSheet.create({
   tabBarContainer: { flexDirection: 'row', justifyContent: 'space-evenly' },
   component: { height: 60, width: 60, marginTop: -5 },
   componentCircle: { flex: 1, borderRadius: 30, backgroundColor: 'white' },
-  iconContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
+  iconContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   icon: { height: 56, width: 56 },
 });
 

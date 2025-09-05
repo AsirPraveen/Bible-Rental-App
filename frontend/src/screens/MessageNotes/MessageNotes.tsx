@@ -1,38 +1,20 @@
 import React from 'react';
-import { View, StyleSheet, FlatList, Platform, StatusBar, SafeAreaView } from 'react-native';
-import { Card, Paragraph } from 'react-native-paper';
-import { Stack } from 'expo-router';
+import { View, StyleSheet, Platform, StatusBar, SafeAreaView, Text } from 'react-native';
+import { Card } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MessageNotesComponent() {
-  const messages = [
-    {
-      id: '1',
-      date: '2024-02-10',
-      preacher: 'Rev. John Smith',
-      meetingName: 'Sunday Service',
-      timing: '10:00 AM - 11:30 AM',
-      notes: 'Key points discussed: Faith, Hope, and Love...',
-    },
-    // Add more messages
-  ];
-
   return (
     <SafeAreaView style={styles.outer_container}>
       <View style={styles.container}>
-        <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Card style={styles.card}>
-              <Card.Title title={item.meetingName} subtitle={item.date} />
-              <Card.Content>
-                <Paragraph style={styles.detail}>Preacher: {item.preacher}</Paragraph>
-                <Paragraph style={styles.detail}>Time: {item.timing}</Paragraph>
-                <Paragraph style={styles.notes}>{item.notes}</Paragraph>
-              </Card.Content>
-            </Card>
-          )}
-        />
+        <View style={styles.comingSoonContainer}>
+          <Ionicons name="document-text" size={80} color="#146C94" />
+          <Text style={styles.comingSoonTitle}>Message Notes</Text>
+          <Text style={styles.comingSoonText}>Coming Soon</Text>
+          <Text style={styles.comingSoonDescription}>
+            Message notes of Prayercell, special meetings, Bible studies & summaries will be available here
+          </Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -43,24 +25,35 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
   },
   container: {
     flex: 1,
     backgroundColor: '#F6F1F1',
-    padding: 16,
   },
-  card: {
-    marginBottom: 16,
-    backgroundColor: '#fff',
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
   },
-  detail: {
+  comingSoonTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
     color: '#146C94',
-    marginBottom: 4,
+    marginTop: 20,
+    marginBottom: 10,
   },
-  notes: {
-    marginTop: 8,
-    color: '#333',
+  comingSoonText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#19A7CE',
+    marginBottom: 20,
+  },
+  comingSoonDescription: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 300,
   },
 });

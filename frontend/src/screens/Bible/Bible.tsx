@@ -3,12 +3,18 @@ import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Mo
 import { RadioButton, Button } from 'react-native-paper';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import Constants from 'expo-constants';
 
-// Import the JSON data
-import bibleData from './test.Bible.json'; // Adjust the path
+import bibleData from './test.Bible.json';
+import tamilBibleData from './test.Tamil Bible.json';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? ''; 
+const STABILITY_API_URL = Constants.expoConfig?.extra?.stabilityApiUrl ?? '';
 
 const BibleComponent = () => {
   const [language, setLanguage] = useState('english');
@@ -25,14 +31,67 @@ const BibleComponent = () => {
   const [openChapter, setOpenChapter] = useState(false);
   const [openVerse, setOpenVerse] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isScrollEnabled, setIsScrollEnabled] = useState(true); // Control ScrollView scrolling
+  const [isCompareModalVisible, setIsCompareModalVisible] = useState(false);
+  const [imageGenerationCredits, setImageGenerationCredits] = useState(5);
+  const [userToken, setUserToken] = useState(null);
+  const [userData, setUserData] = useState(null);
 
-  // Sample Tamil translations
-  const tamilTranslations = {
-    "Genesis 1:1": "ஆதியில் தேவன் வானத்தையும் பூமியையும் படைத்தார்.",
-    "Genesis 1:2": "பூமி வடிவமற்றதாகவும், வெறுமையாகவும் இருந்தது; ஆழத்தின் மேல் இருள் இருந்தது.",
-    "Genesis 1:23": "மாலையும் காலையும் ஐந்தாம் நாளாக இருந்தன.",
-    "Exodus 1:1": "இஸ்ரவேல் புத்திரரின் பெயர்கள் இவை, அவர்கள் எகிப்திற்கு வந்தவர்கள்; ஒவ்வொருவரும் தங்கள் குடும்பத்துடன் யாக்கோபுடன் வந்தனர்.",
+  // Create a lookup map for Tamil translations
+  const [tamilTranslationsMap, setTamilTranslationsMap] = useState({});
+
+  // Get user token and data on component mount
+  useEffect(() => {
+    const initializeUserData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          setUserToken(token);
+          await fetchUserData(token);
+        } else {
+          Alert.alert('Error', 'No user token found. Please log in again.');
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing user data:', error);
+        setLoading(false);
+      }
+    };
+
+    initializeUserData();
+  }, []);
+
+  // Process Tamil Bible data into a lookup map
+  useEffect(() => {
+    try {
+      const tamilMap = {};
+      tamilBibleData.forEach(item => {
+        if (item['Book Name'] && item.Chapter && item.Verse && item.Text) {
+          const citation = `${item['Book Name']} ${item.Chapter}:${item.Verse}`;
+          tamilMap[citation] = item.Text;
+        }
+      });
+      setTamilTranslationsMap(tamilMap);
+    } catch (error) {
+      console.error('Error processing Tamil Bible data:', error);
+    }
+  }, []);
+
+  // Fetch user data and credits from backend
+  const fetchUserData = async (token) => {
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/userdata`, { token });
+      if (response.data.status === 'Ok') {
+        const data = response.data.data;
+        setUserData(data);
+        // Assuming credits are stored in user data, adjust field name as needed
+        setImageGenerationCredits(data.image_generation_credits_available || 5);
+      } else {
+        Alert.alert('Error', 'Failed to fetch user data.');
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      Alert.alert('Error', 'An error occurred while fetching user data.');
+    }
   };
 
   // Load books from the JSON data
@@ -90,29 +149,70 @@ const BibleComponent = () => {
     if (selectedVerse) {
       const verseData = verses.find(item => item.value === selectedVerse);
       if (verseData) {
-        const verseText = language === 'tamil' && tamilTranslations[verseData.citation]
-          ? tamilTranslations[verseData.citation]
+        const tamilText = tamilTranslationsMap[verseData.citation];
+        const verseText = language === 'tamil' && tamilText
+          ? tamilText
           : verseData.text;
         setCurrentVerse({
           citation: verseData.citation,
           text: verseText,
+          englishText: verseData.text, // Always keep the English text
+          tamilText: tamilText || 'Tamil translation not available',
         });
       }
     }
-  }, [selectedVerse, language]);
+  }, [selectedVerse, language, tamilTranslationsMap]);
 
-  // Common prompt for all verses
+  // Common prompt for all verses - always use English text
   const generatePrompt = (verse) => {
-    return `A professional and detailed illustration of a biblical scene inspired by the verse "${verse.text}" (${verse.citation}) from the Holy Bible. Depict a serene and sacred setting with elements of divine creation or redemption, such as a radiant light, ancient landscapes, or spiritual figures, rendered in a classical religious art style with rich, vibrant colors, intricate details, and a sense of divine reverence and peace.`;
+    return `A professional and detailed illustration of a biblical scene inspired by the verse "${verse.englishText}" (${verse.citation}) from the Holy Bible.`;
+  };
+
+  // Deduct credit from backend
+  const deductCredit = async () => {
+    if (!userToken) {
+      Alert.alert('Error', 'User token not found. Please log in again.');
+      return false;
+    }
+
+    try {
+      const response = await axios.post(`${API_URL}/api/users/deduct-credit`, {}, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+      
+      if (response.data.status === 'Ok') {
+        setImageGenerationCredits(response.data.remainingCredits || response.data.image_generation_credits_available);
+        return true;
+      } else {
+        Alert.alert('Error', response.data.message || 'Failed to deduct credit.');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deducting credit:', error);
+      Alert.alert('Error', 'Failed to deduct credit. Please try again.');
+      return false;
+    }
   };
 
   // Handle "Generate Image" button click with AI
   const handleGenerateImage = async () => {
     if (!currentVerse) return;
 
+    // Check if user has credits
+    if (imageGenerationCredits <= 0) {
+      Alert.alert(
+        'No Credits Available',
+        'You have used all your image generation credits. Please contact admin to get more credits.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Generate Image',
-      `Would you like to generate an AI image for the verse "${currentVerse.citation}"?`,
+      `Would you like to generate an AI image for the verse "${currentVerse.citation}"? This will use 1 of your ${imageGenerationCredits} remaining credits.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -122,16 +222,17 @@ const BibleComponent = () => {
               setLoading(true); // Show loading state while generating
 
               // Hardcode the Stability AI API key
-              const apiKey = 'sk-xC3G7XlRQkbHNdIUIJBf5P4p3i1eRcyQrFjqqfa7UiCtflJo';
+              const apiKey = STABILITY_API_KEY;
               if (!apiKey) {
                 throw new Error('Stability AI key is missing. Please provide a valid API key.');
               }
 
-              // Generate the common prompt
+              // Generate the common prompt using English text
               const prompt = generatePrompt(currentVerse);
               console.log('Generated Prompt:', prompt);
+              
               const response = await axios.post(
-                'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
+                STABILITY_API_URL,
                 {
                   text_prompts: [
                     {
@@ -156,8 +257,16 @@ const BibleComponent = () => {
 
               const imageBase64 = response.data.artifacts[0].base64;
               const imageUrl = `data:image/png;base64,${imageBase64}`;
-              setVerseImage(imageUrl);
-              Alert.alert('Success', 'AI image generated successfully!');
+              
+              // Only deduct credit after successful image generation
+              const creditDeducted = await deductCredit();
+              if (creditDeducted) {
+                setVerseImage(imageUrl);
+                Alert.alert(
+                  'Success', 
+                  `AI image generated successfully! You have ${imageGenerationCredits - 1} credits remaining.`
+                );
+              }
             } catch (error) {
               console.error('Error generating AI image:', error);
               if (error.response) {
@@ -194,6 +303,11 @@ const BibleComponent = () => {
     }
   };
 
+  // Handle compare button click
+  const handleCompare = () => {
+    setIsCompareModalVisible(true);
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -209,11 +323,18 @@ const BibleComponent = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         nestedScrollEnabled={true}
-        scrollEnabled={isScrollEnabled} // Dynamically enable/disable scrolling
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
           {/* Header */}
           <Text style={styles.headerText}>Bible Reader</Text>
+
+          {/* Credits Display */}
+          <View style={styles.creditsContainer}>
+            <Text style={styles.creditsText}>
+              Image Generation Credits Remaining: {imageGenerationCredits}/5
+            </Text>
+          </View>
 
           {/* Language Selector */}
           <View style={styles.languageSelector}>
@@ -234,22 +355,38 @@ const BibleComponent = () => {
 
           {/* Dropdowns for Book, Chapter, and Verse */}
           <View style={styles.dropdownContainer}>
-            <Text style={styles.sectionTitle}>Select Verse</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Select Verse</Text>
+              <TouchableOpacity 
+                  onPress={handleCompare}
+                  style={styles.compareButton}
+              >
+                  <Text style={styles.compareText}>Compare</Text>
+              </TouchableOpacity>
+            </View>
             <DropDownPicker
               open={openBook}
               value={selectedBook}
               items={books}
-              setOpen={(isOpen) => {
-                setOpenBook(isOpen);
-                setIsScrollEnabled(!isOpen); // Disable ScrollView scrolling when dropdown is open
-              }}
+              setOpen={setOpenBook}
               setValue={setSelectedBook}
               setItems={setBooks}
               placeholder="Select Book"
               style={styles.dropdown}
               textStyle={styles.dropdownText}
               dropDownContainerStyle={styles.dropdownMenu}
-              listMode="SCROLLVIEW" // Use SCROLLVIEW mode for better scrolling
+              listMode="MODAL"
+              modalProps={{
+                animationType: "slide",
+                transparent: false,
+                statusBarTranslucent: false,
+              }}
+              modalContentContainerStyle={styles.modalContent}
+              modalTitle="Select Book"
+              modalTitleStyle={styles.modalTitle}
+              searchable={true}
+              searchPlaceholder="Search books..."
+              searchTextInputStyle={styles.searchInput}
               zIndex={3000}
               zIndexInverse={1000}
             />
@@ -257,17 +394,25 @@ const BibleComponent = () => {
               open={openChapter}
               value={selectedChapter}
               items={chapters}
-              setOpen={(isOpen) => {
-                setOpenChapter(isOpen);
-                setIsScrollEnabled(!isOpen); // Disable ScrollView scrolling when dropdown is open
-              }}
+              setOpen={setOpenChapter}
               setValue={setSelectedChapter}
               setItems={setChapters}
               placeholder="Select Chapter"
               style={styles.dropdown}
               textStyle={styles.dropdownText}
               dropDownContainerStyle={styles.dropdownMenu}
-              listMode="SCROLLVIEW" // Use SCROLLVIEW mode for better scrolling
+              listMode="MODAL"
+              modalProps={{
+                animationType: "slide",
+                transparent: false,
+                statusBarTranslucent: false,
+              }}
+              modalContentContainerStyle={styles.modalContent}
+              modalTitle="Select Chapter"
+              modalTitleStyle={styles.modalTitle}
+              searchable={true}
+              searchPlaceholder="Search chapters..."
+              searchTextInputStyle={styles.searchInput}
               disabled={!selectedBook}
               zIndex={2000}
               zIndexInverse={2000}
@@ -276,17 +421,25 @@ const BibleComponent = () => {
               open={openVerse}
               value={selectedVerse}
               items={verses}
-              setOpen={(isOpen) => {
-                setOpenVerse(isOpen);
-                setIsScrollEnabled(!isOpen); // Disable ScrollView scrolling when dropdown is open
-              }}
+              setOpen={setOpenVerse}
               setValue={setSelectedVerse}
               setItems={setVerses}
               placeholder="Select Verse"
               style={styles.dropdown}
               textStyle={styles.dropdownText}
               dropDownContainerStyle={styles.dropdownMenu}
-              listMode="SCROLLVIEW" // Use SCROLLVIEW mode for better scrolling
+              listMode="MODAL"
+              modalProps={{
+                animationType: "slide",
+                transparent: false,
+                statusBarTranslucent: false,
+              }}
+              modalContentContainerStyle={styles.modalContent}
+              modalTitle="Select Verse"
+              modalTitleStyle={styles.modalTitle}
+              searchable={true}
+              searchPlaceholder="Search verses..."
+              searchTextInputStyle={styles.searchInput}
               disabled={!selectedChapter}
               zIndex={1000}
               zIndexInverse={3000}
@@ -299,14 +452,24 @@ const BibleComponent = () => {
               <>
                 <Text style={styles.citationText}>{currentVerse.citation}</Text>
                 <Text style={styles.verseText}>{currentVerse.text}</Text>
-                <Button
-                  mode="contained"
-                  onPress={handleGenerateImage}
-                  style={styles.generateButton}
-                  labelStyle={styles.buttonText}
-                >
-                  Generate Image
-                </Button>
+                
+                {/* Button Container */}
+                <View style={styles.buttonContainer}>
+                  <Button
+                    mode="contained"
+                    onPress={handleGenerateImage}
+                    style={[
+                      styles.actionButton,
+                      styles.generateButton,
+                      imageGenerationCredits <= 0 && styles.disabledButton
+                    ]}
+                    labelStyle={styles.buttonText}
+                    disabled={imageGenerationCredits <= 0}
+                  >
+                    Generate Image ({imageGenerationCredits} credits left)
+                  </Button>
+                </View>
+                
                 {verseImage && (
                   <View>
                     <TouchableOpacity onPress={() => setIsFullScreen(true)}>
@@ -315,7 +478,7 @@ const BibleComponent = () => {
                     <Button
                       mode="contained"
                       onPress={handleDownloadImage}
-                      style={[styles.generateButton, styles.downloadButton]}
+                      style={[styles.actionButton, styles.downloadButton]}
                       labelStyle={styles.buttonText}
                     >
                       Download Image
@@ -329,6 +492,52 @@ const BibleComponent = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Compare Modal */}
+      <Modal
+        visible={isCompareModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsCompareModalVisible(false)}
+      >
+        <View style={styles.compareModalOverlay}>
+          <View style={styles.compareModalContainer}>
+            <View style={styles.compareModalHeader}>
+              <Text style={styles.compareModalTitle}>Compare Versions</Text>
+              <TouchableOpacity
+                style={styles.compareCloseButton}
+                onPress={() => setIsCompareModalVisible(false)}
+              >
+                <Text style={styles.compareCloseButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.compareScrollContainer} showsVerticalScrollIndicator={false}>
+              {currentVerse && (
+                <>
+                  <Text style={styles.compareCitationText}>{currentVerse.citation}</Text>
+                  
+                  {/* English Version */}
+                  <View style={styles.compareVersionContainer}>
+                    <Text style={styles.compareVersionTitle}>English</Text>
+                    <View style={styles.compareTextContainer}>
+                      <Text style={styles.compareVerseText}>{currentVerse.englishText}</Text>
+                    </View>
+                  </View>
+                  
+                  {/* Tamil Version */}
+                  <View style={styles.compareVersionContainer}>
+                    <Text style={styles.compareVersionTitle}>Tamil</Text>
+                    <View style={styles.compareTextContainer}>
+                      <Text style={styles.compareVerseText}>{currentVerse.tamilText}</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Full-Screen Image Modal */}
       <Modal
@@ -366,8 +575,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
   },  
   gradient: {
     flex: 1,
@@ -384,7 +591,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#F6F1F1',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  userInfoContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  userNameText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#146C94',
+  },
+  creditsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  creditsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#146C94',
   },
   languageSelector: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -419,7 +650,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
     borderWidth: 0,
-    minHeight: 50, // Ensure enough height for touch area
+    minHeight: 50,
   },
   dropdownText: {
     fontSize: 16,
@@ -429,7 +660,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#F6F1F1',
     borderRadius: 8,
     borderWidth: 0,
-    maxHeight: 300, // Increased max height for better scrolling
+    maxHeight: 300,
+  },
+  modalContent: {
+    backgroundColor: '#F6F1F1',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#146C94',
+    textAlign: 'center',
+    paddingVertical: 15,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#146C94',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    margin: 10,
+    fontSize: 16,
   },
   verseCard: {
     backgroundColor: '#FFFFFF',
@@ -463,17 +713,33 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
   },
-  generateButton: {
-    backgroundColor: '#146C94',
+  buttonContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 10,
+  },
+  actionButton: {
     borderRadius: 8,
     paddingVertical: 8,
-    marginTop: 16,
+    paddingHorizontal: 12,
+    minWidth: 120,
+  },
+  generateButton: {
+    backgroundColor: '#146C94',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
   },
   downloadButton: {
+    backgroundColor: '#146C94',
     marginTop: 8,
+    width: '100%',
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#F6F1F1',
   },
   verseImage: {
@@ -524,6 +790,103 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginTop: 20,
     width: '80%',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  compareButton: {
+    backgroundColor: '#AFD3E2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  compareText: {
+    color: '#146C94',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Compare Modal Styles
+  compareModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  compareModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  compareModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  compareModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#146C94',
+  },
+  compareCloseButton: {
+    padding: 8,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compareCloseButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#666',
+  },
+  compareScrollContainer: {
+    padding: 20,
+  },
+  compareCitationText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#146C94',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  compareVersionContainer: {
+    marginBottom: 20,
+  },
+  compareVersionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#146C94',
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  compareTextContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#19A7CE',
+  },
+  compareVerseText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#333',
+    textAlign: 'justify',
   },
 });
 

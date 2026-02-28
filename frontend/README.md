@@ -1,7 +1,3 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
 ## Get started
 
 1. Install dependencies
@@ -25,26 +21,32 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## Get a fresh project
 
-When you're ready, run:
+# Comments to start locally
 
-```bash
-npm run reset-project
-```
+frontend - npx expo start
+backend - nodemon start
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+# Build commands
 
-## Learn more
+eas build:configure
+eas build -p android --profile preview
 
-To learn more about developing your project with Expo, look at the following resources:
+# Requirements
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+*Notepad.
+*Bible historical maps.
+*Christian Quotes.
+*Share prayer request.
+*Fasting tracker or Fasting plan.
+*Instant bible answers.
+*Bible tamil and English terms meaning.
+*Meeting messages/notes available.
+*Discussion forum for asking and discussing questions.
 
-## Join the community
+# Finished
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+*Add bilingual bible alongside if possible - done
+*give updates about meeting date and time - done
+*Wednesday/Thursday meeting or special meeting remainder - done
+*Daily bible reading progress noter - done

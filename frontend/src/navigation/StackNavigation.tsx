@@ -21,6 +21,8 @@ import ForgotPassword from '../screens/Login&Register/ForgotPassword';
 import AllAuthors from '../screens/AllAuthors/AllAuthors';
 import CreatePostTab from '../screens/AdminScreen/CreatePostTab';
 import CreateBookTab from '../screens/AdminScreen/CreateBookTab';
+import ReadingPlannerComponent from '../screens/PlannerTracker/ReadingPlannerComponent';
+import ReadingTrackerComponent from '../screens/PlannerTracker/ReadingTrackerComponent';
 
 const Stack = createStackNavigator();
 
@@ -90,6 +92,16 @@ const StackNavigation = () => {
       <Stack.Screen
         name="MessageNotes"
         component={MessageNotesComponent}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ReadingPlanner"
+        component={ReadingPlannerComponent}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ReadingTracker"
+        component={ReadingTrackerComponent}
         options={{ headerShown: false }}
       />
       <Stack.Screen

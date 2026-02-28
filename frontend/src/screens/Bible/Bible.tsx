@@ -176,6 +176,7 @@ const BibleComponent = () => {
     }
 
     try {
+      console.log('Deducting credit with token:', userToken, API_URL);
       const response = await axios.post(`${API_URL}/api/users/deduct-credit`, {}, {
         headers: {
           Authorization: `Bearer ${userToken}`,

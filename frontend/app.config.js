@@ -43,6 +43,7 @@ export default {
     plugins: [
       "expo-font",
       "expo-router",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {

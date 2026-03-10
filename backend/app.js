@@ -9,7 +9,13 @@ const bookRoutes = require('./routes/bookRoutes');
 const authorRoutes = require('./routes/authorRoutes');
 const postRoutes = require('./routes/postRoutes'); // Add post routes
 const cloudinaryRoutes = require('./routes/cloudinaryRoutes');
-
+const prayerRoutes = require('./routes/prayerRoutes');
+const fastingRoutes = require('./routes/fastingRoutes');
+const forumRoutes = require('./routes/forumRoutes');
+const mapRoutes = require('./routes/mapRoutes');
+const adminAnalyticsRoutes = require('./routes/adminAnalyticsRoutes');
+const readingStatRoutes = require('./routes/readingStatRoutes');
+const moderationRoutes = require('./routes/moderationRoutes');
 
 const mongoUrl = process.env.MONGO_URL;
 const PORT = process.env.PORT || 5001;
@@ -30,6 +36,13 @@ app.use('/api', bookRoutes);
 app.use('/', authorRoutes);
 app.use('/api', postRoutes); // Add post routes to the /api prefix
 app.use('/api/cloudinary', cloudinaryRoutes);
+app.use('/api', prayerRoutes); // prayer requests
+app.use('/api', fastingRoutes); // fasting
+app.use('/api', forumRoutes); // forum
+app.use('/api', mapRoutes); // historical maps
+app.use('/api', adminAnalyticsRoutes); // admin analytics
+app.use('/api', readingStatRoutes); // reading stats sync
+app.use('/api', moderationRoutes); // moderation
 
 app.listen(PORT, () => {
   console.log(`Node js server started on port ${PORT}`);

@@ -23,6 +23,15 @@ import CreatePostTab from '../screens/AdminScreen/CreatePostTab';
 import CreateBookTab from '../screens/AdminScreen/CreateBookTab';
 import ReadingPlannerComponent from '../screens/PlannerTracker/ReadingPlannerComponent';
 import ReadingTrackerComponent from '../screens/PlannerTracker/ReadingTrackerComponent';
+import PrayerRequestsScreen from '../screens/PrayerRequests/PrayerRequestsScreen';
+import FastingTrackerScreen from '../screens/FastingTracker/FastingTrackerScreen';
+import HistoricalMapsScreen from '../screens/HistoricalMaps/HistoricalMapsScreen';
+import ForumListScreen from '../screens/DiscussionForum/ForumListScreen';
+import MapViewerScreen from '../screens/HistoricalMaps/MapViewerScreen';
+import QuestionDetailsScreen from '../screens/DiscussionForum/QuestionDetailsScreen';
+import AppAnalyticsTab from '../screens/AdminScreen/AppAnalyticsTab';
+import ModerationTab from '../screens/AdminScreen/ModerationTab';
+import ManageMapsTab from '../screens/AdminScreen/ManageMapsTab';
 
 const Stack = createStackNavigator();
 
@@ -127,6 +136,51 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Forgot Password"
         component={ForgotPassword}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PrayerRequests"
+        component={PrayerRequestsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FastingTracker"
+        component={FastingTrackerScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HistoricalMaps"
+        component={HistoricalMapsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MapViewer"
+        component={MapViewerScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="DiscussionForum"
+        component={ForumListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="QuestionDetails"
+        component={QuestionDetailsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="App Analytics"
+        component={AppAnalyticsTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Moderation"
+        component={ModerationTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Manage Maps"
+        component={ManageMapsTab}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

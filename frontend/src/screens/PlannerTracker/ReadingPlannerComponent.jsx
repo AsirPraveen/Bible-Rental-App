@@ -3,6 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, SafeAreaVi
 import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, CheckCircle, Circle, Plus, Trash2, X, Shuffle, List } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import Constants from 'expo-constants';
+
+const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
 // Bible books structure with chapters
 const BIBLE_STRUCTURE = {
@@ -151,8 +155,45 @@ const ReadingPlannerComponent = () => {
     try {
       await AsyncStorage.setItem('bibleReadingPlans', JSON.stringify(plans));
       setActivePlans(plans);
+      
+      // Perform silent background sync of reading stats to the cloud for Admin Analytics
+      syncReadingStatsToCloud(plans);
     } catch (error) {
       console.error('Error saving plans:', error);
+    }
+  };
+
+  const syncReadingStatsToCloud = async (plans) => {
+    try {
+      // Calculate total chapters read across all plans
+      let totalChaptersRead = 0;
+      plans.forEach(p => {
+        p.plan.forEach(day => {
+          if (day.completed) {
+            totalChaptersRead += day.readings.length;
+          }
+        });
+      });
+
+      // Fetch user ID (defaulting back to anonymous storage if needed, though this helps Admins see active user count)
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        // First get user ID
+        const userRes = await axios.get(`${apiUrl}/api/auth/userdata`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (userRes.data && userRes.data.data && userRes.data.data._id) {
+          await axios.post(`${apiUrl}/api/stats/reading/sync`, {
+            userId: userRes.data.data._id,
+            totalChaptersRead: totalChaptersRead,
+            activePlans: plans.length
+          });
+        }
+      }
+    } catch (error) {
+      // Fail silently to not disrupt the user's offline reading experience
+      console.log('Background sync skipped:', error.message);
     }
   };
 

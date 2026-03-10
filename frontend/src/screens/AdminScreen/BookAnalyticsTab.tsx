@@ -40,12 +40,12 @@ const Colors = {
 };
 
 const BookAnalyticsTab = () => {
-  const [analytics, setAnalytics] = useState({ totalBooks: 0, totalRented: 0, popularBooks: [] });
+  const [analytics, setAnalytics] = useState<{ totalBooks: number; totalRented: number; popularBooks: any[] }>({ totalBooks: 0, totalRented: 0, popularBooks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const [currentChartIndex, setCurrentChartIndex] = useState(0);
-  const chartCarouselRef = useRef(null);
+  const chartCarouselRef = useRef<FlatList>(null);
 
   const [userData, setUserData] = useState<any>(null);
   const [name, setName] = useState('');
@@ -142,7 +142,7 @@ const BookAnalyticsTab = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const renderChartItem = ({ item, index }) => {
+  const renderChartItem = ({ item, index }:any) => {
     const ChartComponent = item.component;
     return (
       <View style={[styles.chartContainer, { width: width - 30 }]}>
@@ -155,13 +155,13 @@ const BookAnalyticsTab = () => {
     );
   };
 
-  const onChartScroll = (event) => {
+  const onChartScroll = (event:any) => {
     const slideSize = width - 30;
     const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
     setCurrentChartIndex(index);
   };
 
-  const scrollToChart = (index) => {
+  const scrollToChart = (index:any) => {
     if (chartCarouselRef.current) {
       chartCarouselRef.current.scrollToIndex({ index, animated: true });
     }
@@ -267,7 +267,7 @@ const BookAnalyticsTab = () => {
             </View>
 
             {/* Chart Navigation */}
-            <View style={styles.chartNavigation}>
+            {/* <View style={styles.chartNavigation}>
               {chartData.map((chart, index) => (
                 <TouchableOpacity
                   key={chart.id}
@@ -298,7 +298,7 @@ const BookAnalyticsTab = () => {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </View> */}
           </View>
 
           {/* Popular Books */}

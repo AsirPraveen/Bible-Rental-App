@@ -55,7 +55,7 @@ const CreatePostTab = () => {
         uri,
         type: mimeType,
         name: `post_image_${Date.now()}.${fileExtension || 'jpg'}`,
-      });
+      } as any);
       formData.append('upload_preset', uploadPresentPosts);
 
       console.log('Uploading to:', `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`);
@@ -73,7 +73,7 @@ const CreatePostTab = () => {
       } else {
         throw new Error('Upload failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error.response ? error.response.data : error.message);
       Alert.alert('Error', `Failed to upload image. Details: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
       setImageUri(null);

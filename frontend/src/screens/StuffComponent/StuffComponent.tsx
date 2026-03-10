@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Platform, StatusBar, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Book, Music, FileText, MessageSquare, Target, Calendar } from 'lucide-react-native';
+import { Book, Music, FileText, MessageSquare, Target, Calendar, HandHeart, Map as MapIcon, Users } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function StuffComponent() {
@@ -19,6 +19,7 @@ export default function StuffComponent() {
       icon: <Music color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
       isNew: false,
+      isComingSoon: true,
     },
     {
       title: 'ReadingPlanner',
@@ -33,23 +34,49 @@ export default function StuffComponent() {
       isNew: true,
     },
     {
+      title: 'PrayerRequests',
+      icon: <HandHeart color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+      isNew: true,
+    },
+    {
+      title: 'FastingTracker',
+      icon: <Calendar color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+      isNew: true,
+    },
+    {
+      title: 'HistoricalMaps',
+      icon: <MapIcon color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+      isNew: true,
+    },
+    {
+      title: 'DiscussionForum',
+      icon: <Users color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+      isNew: true,
+    },
+    {
       title: 'BookPdf',
       icon: <FileText color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
       isNew: false,
+      isComingSoon: true,
     },
     {
       title: 'MessageNotes',
       icon: <MessageSquare color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
       isNew: false,
+      isComingSoon: true,
     },
   ];
 
   return (
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
-        <View style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
             {cards.map((card, index) => (
               <TouchableOpacity
@@ -61,6 +88,11 @@ export default function StuffComponent() {
                     <Text style={styles.newBadgeText}>NEW</Text>
                   </View>
                 )}
+                {card.isComingSoon && (
+                  <View style={styles.comingSoonBadge}>
+                    <Text style={styles.comingSoonBadgeText}>COMING SOON</Text>
+                  </View>
+                )}
                 <View style={styles.cardContent}>
                   {card.icon}
                   <Text style={styles.cardTitle}>{card.title}</Text>
@@ -68,7 +100,7 @@ export default function StuffComponent() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </ScrollView>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -85,7 +117,10 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 20,
   },
   grid: {
     flexDirection: 'row',
@@ -95,7 +130,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '47.5%',
-    aspectRatio: 0.765,
+    aspectRatio: 0.760,
     borderRadius: 16,
     padding: 16,
     elevation: 10,
@@ -131,6 +166,23 @@ const styles = StyleSheet.create({
   newBadgeText: {
     color: '#fff',
     fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  comingSoonBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#9E9E9E',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 12,
+    zIndex: 1,
+  },
+  comingSoonBadgeText: {
+    color: '#fff',
+    fontSize: 8,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },

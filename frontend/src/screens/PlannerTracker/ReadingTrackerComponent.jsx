@@ -3,6 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Pla
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import Constants from 'expo-constants';
+
+const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
 // Bible books structure with chapters
 const BIBLE_STRUCTURE = {
@@ -48,8 +52,38 @@ const ReadingTrackerComponent = () => {
     try {
       await AsyncStorage.setItem('completedChapters', JSON.stringify(chapters));
       setCompletedChapters(chapters);
+
+      // Perform silent background sync of reading stats to the cloud for Admin Analytics
+      syncReadingStatsToCloud(chapters);
     } catch (error) {
       console.error('Error saving completed chapters:', error);
+    }
+  };
+
+  const syncReadingStatsToCloud = async (chapters) => {
+    try {
+      // Calculate total chapters read 
+      const totalChaptersRead = Object.values(chapters).filter(v => v).length;
+
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        // First get user ID
+        const userRes = await axios.get(`${apiUrl}/api/auth/userdata`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (userRes.data && userRes.data.data && userRes.data.data._id) {
+          // We fetch the current active plans from the DB first so we don't accidentally overwrite them with 0
+          // But our sync endpoint only updates the fields we pass.
+          await axios.post(`${apiUrl}/api/stats/reading/sync`, {
+            userId: userRes.data.data._id,
+            totalChaptersRead: totalChaptersRead
+          });
+        }
+      }
+    } catch (error) {
+      // Fail silently to not disrupt the user's offline reading experience
+      console.log('Background tracker sync skipped:', error.message);
     }
   };
 

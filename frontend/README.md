@@ -35,14 +35,10 @@ eas build -p android --profile preview
 # Requirements
 
 *Notepad.
-*Bible historical maps.
 *Christian Quotes.
-*Share prayer request.
-*Fasting tracker or Fasting plan.
 *Instant bible answers.
 *Bible tamil and English terms meaning.
 *Meeting messages/notes available.
-*Discussion forum for asking and discussing questions.
 
 # Finished
 
@@ -50,3 +46,7 @@ eas build -p android --profile preview
 *give updates about meeting date and time - done
 *Wednesday/Thursday meeting or special meeting remainder - done
 *Daily bible reading progress noter - done
+*Bible historical map locations - done
+*Share prayer request - done
+*Fasting tracker or Fasting plan - done
+*Discussion forum for asking and discussing questions - done

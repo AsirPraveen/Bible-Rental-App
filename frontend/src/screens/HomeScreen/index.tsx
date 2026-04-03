@@ -320,7 +320,7 @@ const HomeView = () => {
                       }}
                     >
                       <Image 
-                        source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
+                        source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
                         style={styles.searchResultImage} 
                       />
                       <View style={styles.searchResultText}>
@@ -400,7 +400,7 @@ const HomeView = () => {
                       onPress={() => navigateToBookDetails(book)}
                     >
                       <Image
-                        source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
+                        source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
                         style={styles.bookCover} 
                       />
                       <Text 
@@ -440,20 +440,29 @@ const HomeView = () => {
                 <AuthorCardSkeleton key={index} />
               ))
             ) : (
-              authors.length > 0 ? (
-                authors.map((author) => (
-                  <Pressable
-                    key={author.author_id}
-                    style={styles.authorCard}
-                    onPress={() => navigateToAuthorBooks(author.author_id)}
-                  >
-                    <Image source={{ uri: author.photo || 'https://via.placeholder.com/150' }} style={styles.authorPhoto} />
-                    <Text style={styles.authorName}>{author.name}</Text>
-                  </Pressable>
-                ))
-              ) : (
-                <Text style={styles.noAuthorsText}>No authors available</Text>
-              )
+              authors && authors.length > 0 && 
+                [...authors]
+                  .sort(() => 0.5 - Math.random())
+                  .slice(0, 5)
+                  .map((author) => (
+                    <Pressable
+                      key={author.author_id}
+                      style={styles.authorCard}
+                      onPress={() => navigateToAuthorBooks(author.author_id)}
+                    >
+                      <Image 
+                        source={{ uri: author.photo || 'https://plus.unsplash.com/premium_photo-1770559520599-881a099cc6e9?q=80&w=1976&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} 
+                        style={styles.authorPhoto} 
+                      />
+                      <Text 
+                        numberOfLines={2} 
+                        ellipsizeMode="tail" 
+                        style={styles.authorName}
+                      >
+                        {author.name}
+                      </Text>
+                    </Pressable>
+                  ))
             )}
           </ScrollView>
         </View>
@@ -472,7 +481,7 @@ const HomeView = () => {
                 style={styles.topBookCard}
                 onPress={() => navigateToBookDetails(book)}
               >
-                <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
+                <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
                 <View style={styles.topBookInfo}>
                   <Text style={styles.topBookTitle}>{book.book_name}</Text>
                   <View style={styles.topBookMeta}>

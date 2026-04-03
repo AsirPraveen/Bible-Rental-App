@@ -181,7 +181,7 @@ const AllAuthors = () => {
         onPress={() => navigateToAuthorBooks(item.author_id)}
       >
         <Image
-          source={{ uri: item.photo || 'https://via.placeholder.com/150' }}
+          source={{ uri: item.photo || 'https://plus.unsplash.com/premium_photo-1770559520599-881a099cc6e9?q=80&w=1976&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
           style={styles.authorPhoto}
         />
         <Text style={styles.authorName}>{item.name}</Text>

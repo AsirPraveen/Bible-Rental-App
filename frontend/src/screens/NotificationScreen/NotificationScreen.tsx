@@ -5,6 +5,7 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 interface Post {
   _id: string;
@@ -133,12 +134,7 @@ const NotificationScreen = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#146C94" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading notifications..." />;
   }
 
   return (

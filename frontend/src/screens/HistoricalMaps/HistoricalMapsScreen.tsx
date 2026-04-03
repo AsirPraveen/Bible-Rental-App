@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, List as ListIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
@@ -157,9 +158,7 @@ export default function HistoricalMapsScreen() {
       {/* Map */}
       <View style={styles.mapContainer}>
         {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F6F1F1' }}>
-            <ActivityIndicator size="large" color="#146C94" />
-          </View>
+          <LoadingScreen message="Loading maps..." />
         ) : (
           <WebView
             ref={webViewRef}

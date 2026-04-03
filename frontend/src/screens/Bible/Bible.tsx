@@ -8,7 +8,13 @@ import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
+import _tamilBibleData from '../../assets/offline-bible/tamil_bible.json';
+const tamilBibleData = _tamilBibleData as any[];
+import _bookTranslations from '../../assets/offline-bible/book_translations.json';
+const bookTranslations = _bookTranslations as any;
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? ''; 
@@ -56,6 +62,9 @@ const BibleComponent = () => {
   const [underlinedWordIndices, setUnderlinedWordIndices] = useState<number[]>([]);
   const [verseFontSize, setVerseFontSize] = useState<number>(18);
   
+  // Copied state
+  const [isCopied, setIsCopied] = useState(false);
+  
   // Local saved generated images state
   const [localImageVerses, setLocalImageVerses] = useState<any[]>([]);
 
@@ -76,10 +85,15 @@ const BibleComponent = () => {
         }
 
         // Fetch Languages
-        const langRes = await axios.get(`${API_URL}/api/bible/languages`);
-        if (langRes.data.status === 'Ok') {
-          const langs = langRes.data.data.map((l:any) => ({ label: l, value: l }));
-          setAvailableLanguages(langs);
+        try {
+          const langRes = await axios.get(`${API_URL}/api/bible/languages`);
+          if (langRes.data.status === 'Ok') {
+            const langs = langRes.data.data.map((l:any) => ({ label: l === 'Tamil' ? 'Tamil (Offline)' : l, value: l }));
+            setAvailableLanguages(langs);
+          }
+        } catch (langError) {
+          console.log('Error fetching languages (offline mode active):', langError);
+          setAvailableLanguages([{ label: 'Tamil (Offline)', value: 'Tamil' }]);
         }
 
         // Check AsyncStorage for saved position
@@ -156,14 +170,40 @@ const BibleComponent = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       if (!language || isRestoring) return;
+
+      if (language === 'Tamil') {
+        const booksMap = new Map();
+        tamilBibleData.forEach((chapter: any) => {
+          if (!booksMap.has(chapter.bookNumber)) {
+            const localizedName = bookTranslations['Tamil'] ? bookTranslations['Tamil'][chapter.bookNumber] : chapter.bookName;
+            booksMap.set(chapter.bookNumber, {
+              label: localizedName || chapter.bookName,
+              value: chapter.bookNumber,
+              chapterCount: chapter.chapterNumber
+            });
+          } else {
+            const existing = booksMap.get(chapter.bookNumber);
+            if (chapter.chapterNumber > existing.chapterCount) {
+              existing.chapterCount = chapter.chapterNumber;
+            }
+          }
+        });
+        const booksData = Array.from(booksMap.values()).sort((a: any, b: any) => a.value - b.value);
+        setBooks(booksData);
+        return;
+      }
+
       try {
         const res = await axios.get(`${API_URL}/api/bible/books`, { params: { language } });
         if (res.data.status === 'Ok') {
-          const booksData = res.data.data.map((b: any) => ({
-            label: b.bookName,
-            value: b.bookNumber,
-            chapterCount: b.chapterCount
-          }));
+          const booksData = res.data.data.map((b: any) => {
+            const localizedName = bookTranslations[language] ? bookTranslations[language][b.bookNumber] : b.bookName;
+            return {
+              label: localizedName || b.bookName,
+              value: b.bookNumber,
+              chapterCount: b.chapterCount
+            };
+          });
           setBooks(booksData);
         }
       } catch (error) {
@@ -193,6 +233,24 @@ const BibleComponent = () => {
       if (language && selectedBookNumber !== null && selectedChapter !== null && !isRestoring) {
         // Clear old verses while loading to show fresh state
         setLoading(true);
+
+        if (language === 'Tamil') {
+          const chapter = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === selectedChapter);
+          if (chapter) {
+            setChapterVerses(chapter.verses || []);
+            setSelectedVerse(null);
+          } else {
+            setChapterVerses([]);
+          }
+          setLoading(false);
+          setTimeout(() => {
+            if (scrollViewRef.current && scrollPositionRef.current > 0) {
+              scrollViewRef.current.scrollTo({ y: scrollPositionRef.current, animated: false });
+            }
+          }, 100);
+          return;
+        }
+
         try {
           const res = await axios.get(`${API_URL}/api/bible/chapter`, {
             params: {
@@ -268,6 +326,7 @@ const BibleComponent = () => {
       citation: `${bookName} ${selectedChapter}:${verse.verseNumber}`
     });
     setIsVerseModalVisible(true);
+    setIsCopied(false);
   };
 
   const openSavedImage = (verse: any) => {
@@ -411,6 +470,19 @@ const BibleComponent = () => {
 
   const fetchCompareVerse = async (lang: string) => {
     if (!selectedVerse || selectedBookNumber === null || selectedChapter === null) return;
+    
+    if (lang === 'Tamil') {
+      const chapter = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === selectedChapter);
+      if (chapter) {
+        const vNum = parseInt(selectedVerse.verseNumber as any, 10);
+        const verse = chapter.verses.find((v: any) => v.verseNumber === vNum);
+        setCompareVerseData({ text: verse ? verse.text : 'Translation not available.' });
+      } else {
+        setCompareVerseData({ text: 'Translation not available.' });
+      }
+      return;
+    }
+
     try {
       const res = await axios.get(`${API_URL}/api/bible/verse`, {
         params: { language: lang, bookNumber: selectedBookNumber, chapterNumber: selectedChapter, verseNumber: selectedVerse.verseNumber }
@@ -433,11 +505,12 @@ const BibleComponent = () => {
   const closeVerseModal = () => {
     setIsVerseModalVisible(false);
     setUnderlinedWordIndices([]);
+    setIsCopied(false);
   };
 
   const toggleWordUnderline = (index: number) => {
     setUnderlinedWordIndices(prev => 
-      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+      prev.includes(index) ? [] : [index]
     );
   };
 
@@ -494,17 +567,20 @@ const BibleComponent = () => {
     }
   };
 
+  const handleCopyVerse = async () => {
+    if (selectedVerse) {
+      const copyText = `${selectedVerse.citation}\n${selectedVerse.text}`;
+      await Clipboard.setStringAsync(copyText);
+      setIsCopied(true);
+    }
+  };
+
   const clearSelection = () => {
     setSelectedVerse(null);
   };
 
   if (loading && !chapterVerses.length) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#146C94" />
-        <Text style={styles.loadingText}>Loading Bible...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading Bible..." />;
   }
 
   // Use MODAL mode for dropdowns to prevent ScrollView trapping issues
@@ -721,6 +797,15 @@ const BibleComponent = () => {
                       labelStyle={styles.buttonText}
                     >
                       Compare
+                    </Button>
+                    <Button
+                      mode="contained"
+                      onPress={handleCopyVerse}
+                      style={[styles.actionButton, styles.copyButton, isCopied && styles.disabledButton]}
+                      labelStyle={styles.buttonText}
+                      disabled={isCopied}
+                    >
+                      {isCopied ? 'Copied !' : 'Copy Verse'}
                     </Button>
                   </View>
 
@@ -1019,6 +1104,13 @@ const styles = StyleSheet.create({
   },
   compareButton: {
     backgroundColor: '#146C94',
+  },
+  copyButton: {
+    backgroundColor: '#146C94',
+    marginTop: 5,
+  },
+  disabledButton: {
+    backgroundColor: '#A9A9A9',
   },
   buttonText: {
     fontSize: 14,

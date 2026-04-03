@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Check, Plus, X } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 console.log('API_URL admin screen:', BASE_URL); // Debug the API URL
@@ -177,14 +178,7 @@ const AdminScreen = () => {
   };
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.bg} />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingScreen message="Loading Admin Dashboard..." />;
   }
 
   return (

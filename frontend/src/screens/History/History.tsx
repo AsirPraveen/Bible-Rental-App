@@ -6,6 +6,7 @@ import axios from 'axios';
 import { ArrowLeft } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 
@@ -55,14 +56,7 @@ const History = () => {
   }, []);
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.bg} />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingScreen message="Loading history..." />;
   }
 
   return (

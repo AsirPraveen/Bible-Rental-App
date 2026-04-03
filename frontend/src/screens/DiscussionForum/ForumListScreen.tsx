@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -113,9 +114,7 @@ export default function ForumListScreen() {
 
         <View style={styles.container}>
           {loading ? (
-            <View style={styles.loader}>
-              <ActivityIndicator size="large" color="#ffffff" />
-            </View>
+            <LoadingScreen message="Loading discussions..." />
           ) : (
             <>
               <FlatList

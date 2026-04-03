@@ -13,6 +13,7 @@ import {
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { MaterialIcons } from '@expo/vector-icons';
+import LoadingScreen from '../../../components/LoadingScreen';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -102,9 +103,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
           </View>
 
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#146C94" />
-            </View>
+            <LoadingScreen message="Loading template..." />
           ) : (
             <ScrollView style={styles.form}>
               <Text style={styles.label}>Email Subject</Text>

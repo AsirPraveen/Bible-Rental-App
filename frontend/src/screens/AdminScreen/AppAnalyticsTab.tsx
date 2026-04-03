@@ -5,6 +5,7 @@ import { BookOpen, Users, Target, Calendar, HandHeart, MessageSquare } from 'luc
 import axios from 'axios';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
@@ -59,11 +60,7 @@ export default function AppAnalyticsTab() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#146C94" />
-      </View>
-    );
+    return <LoadingScreen message="Loading app analytics..." />;
   }
 
   if (!data) {

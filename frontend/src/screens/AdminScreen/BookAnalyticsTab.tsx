@@ -27,6 +27,7 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import LoadingScreen from '../../components/LoadingScreen';
 
 type RootStackParamList = {
   Onboarding: undefined;
@@ -201,17 +202,7 @@ const BookAnalyticsTab = () => {
   };
 
   if (isLoading) {
-    return (
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color={Colors.white} />
-          <Text style={styles.loadingText}>Initializing Dashboard...</Text>
-          <View style={styles.loadingBar}>
-            <View style={styles.loadingProgress} />
-          </View>
-        </View>
-      </LinearGradient>
-    );
+    return <LoadingScreen message="Initializing Dashboard..." />;
   }
 
   return (

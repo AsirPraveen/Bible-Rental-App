@@ -5,6 +5,7 @@ import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
@@ -112,11 +113,7 @@ const GameCardLibrary = ({ navigation }: any) => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#DDD6FE" />
-      </View>
-    );
+    return <LoadingScreen message="Loading cards..." />;
   }
 
   return (

@@ -8,6 +8,7 @@ import Constants from 'expo-constants';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import AddPrayerRequestModal from './AddPrayerRequestModal';
+import LoadingScreen from '../../components/LoadingScreen';
 
 export default function PrayerRequestsScreen() {
   const [requests, setRequests] = useState([]);
@@ -109,9 +110,7 @@ export default function PrayerRequestsScreen() {
 
         <View style={styles.container}>
           {loading ? (
-            <View style={styles.loader}>
-              <ActivityIndicator size="large" color="#ffffff" />
-            </View>
+            <LoadingScreen message="Loading prayers..." />
           ) : (
             <>
               <FlatList

@@ -4,6 +4,7 @@ import axios from 'axios';
 import RequestCard from './components/RequestCard';
 import EmailTemplateModal from './components/EmailTemplateModal';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 
@@ -62,12 +63,7 @@ const PendingRequestsTab = () => {
   };
 
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.bg} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading requests..." />;
   }
 
   return (

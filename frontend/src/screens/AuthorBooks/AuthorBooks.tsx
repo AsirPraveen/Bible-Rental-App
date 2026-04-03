@@ -4,6 +4,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ArrowLeft, Heart } from 'lucide-react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
@@ -116,12 +117,7 @@ export default function AuthorBooks() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#146C94" />
-        <Text style={styles.loadingText}>Loading author...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading author..." />;
   }
 
   if (error) {

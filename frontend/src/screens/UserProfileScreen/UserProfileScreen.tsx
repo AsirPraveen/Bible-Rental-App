@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -175,7 +176,7 @@ const uploadImage = async (uri:any) => {
       uri,
       type: mimeType,
       name: `profile_image_${Date.now()}.${fileExtension || 'jpg'}`,
-    });
+    } as any);
     formData.append('upload_preset', uploadPresentProfiles);
 
     console.log('Uploading to:', `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`);
@@ -257,11 +258,7 @@ const uploadImage = async (uri:any) => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading profile..." />;
   }
 
   // Determine which image to display (local or Cloudinary URL)

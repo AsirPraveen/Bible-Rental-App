@@ -16,6 +16,7 @@ import { useNavigation, useRoute, NavigationProp } from "@react-navigation/nativ
 import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X } from 'lucide-react-native';
 import axios from "axios";
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 type RootStackParamList = {
@@ -220,9 +221,7 @@ const AllAuthors = () => {
       </View>
       
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#146C94" />
-        </View>
+        <LoadingScreen message="Loading authors..." />
       ) : (
         <>
           {sortOption !== "none" && (

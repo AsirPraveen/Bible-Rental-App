@@ -5,6 +5,7 @@ import { Trash2, AlertTriangle, MessageSquare, HandHeart } from 'lucide-react-na
 import axios from 'axios';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
@@ -184,9 +185,7 @@ export default function ModerationTab() {
         {/* Content List */}
         <View style={styles.listContainer}>
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#146C94" />
-            </View>
+            <LoadingScreen message="Loading moderation queue..." />
           ) : items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No content found.</Text>

@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import AddFastingModal from './AddFastingModal';
+import LoadingScreen from '../../components/LoadingScreen';
 
 export default function FastingTrackerScreen() {
   const [plans, setPlans] = useState([]);
@@ -135,9 +136,7 @@ export default function FastingTrackerScreen() {
 
         <View style={styles.container}>
           {loading ? (
-            <View style={styles.loader}>
-              <ActivityIndicator size="large" color="#ffffff" />
-            </View>
+            <LoadingScreen message="Loading fasts..." />
           ) : (
             <>
               <FlatList

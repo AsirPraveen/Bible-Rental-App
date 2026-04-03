@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 
@@ -86,14 +87,7 @@ export default function Wishlist() {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.bg} />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingScreen message="Loading wishlist..." />;
   }
 
   return (

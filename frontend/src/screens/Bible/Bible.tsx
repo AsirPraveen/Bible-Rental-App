@@ -585,7 +585,7 @@ const BibleComponent = () => {
 
   // Use MODAL mode for dropdowns to prevent ScrollView trapping issues
   const ModalProps = {
-    animationType: "slide",
+    animationType: "fade",
     transparent: false,
     statusBarTranslucent: false,
   };
@@ -833,7 +833,7 @@ const BibleComponent = () => {
         <Modal
           visible={isCompareModalVisible}
           transparent={true}
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setIsCompareModalVisible(false)}
         >
           <View style={styles.compareModalOverlay}>

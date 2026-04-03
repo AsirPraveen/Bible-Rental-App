@@ -453,7 +453,7 @@ const GameSurvival = ({ navigation }: any) => {
         </Modal>
         
         {/* QTE Modal (Simplified) */}
-        <Modal visible={showQTE} transparent animationType="slide">
+        <Modal visible={showQTE} transparent animationType="fade">
           <View style={styles.modalBg}>
              <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Complete Verse!</Text>

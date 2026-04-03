@@ -77,7 +77,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
   };
 
   return (
-    <Modal visible={isVisible} animationType="slide" transparent={true}>
+    <Modal visible={isVisible} animationType="fade" transparent={true}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.header}>

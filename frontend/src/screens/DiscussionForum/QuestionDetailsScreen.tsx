@@ -85,14 +85,21 @@ export default function QuestionDetailsScreen() {
           renderItem={renderAnswer}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            <View style={[styles.questionCard, isQuestionMine && styles.myQuestionCard]}>
-              <View style={styles.qHeaderRow}>
-                <Text style={[styles.qAuthor, isQuestionMine && styles.myAuthorText]}>
-                  {isQuestionMine ? `${question.user?.name} (You)` : question.user?.name || 'Unknown'}
-                </Text>
-                <Text style={styles.qDate}>{new Date(question.createdAt).toLocaleDateString()}</Text>
+            <View>
+              <View style={[styles.questionCard, isQuestionMine && styles.myQuestionCard]}>
+                <View style={styles.qHeaderRow}>
+                  <Text style={[styles.qAuthor, isQuestionMine && styles.myAuthorText]}>
+                    {isQuestionMine ? `${question.user?.name} (You)` : question.user?.name || 'Unknown'}
+                  </Text>
+                  <Text style={styles.qDate}>{new Date(question.createdAt).toLocaleDateString()}</Text>
+                </View>
+                <Text style={styles.qText}>{question.questionText}</Text>
               </View>
-              <Text style={styles.qText}>{question.questionText}</Text>
+              
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>COMMUNITY REPLIES</Text>
+                <View style={styles.sectionDivider} />
+              </View>
             </View>
           }
           ListEmptyComponent={<Text style={styles.emptyText}>No answers yet. Be the first to reply!</Text>}
@@ -136,13 +143,48 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F6F1F1', borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' },
   list: { padding: 16, paddingBottom: 24 },
   
-  questionCard: { backgroundColor: '#fff', padding: 20, borderRadius: 12, marginBottom: 24, elevation: 2 },
-  myQuestionCard: { backgroundColor: '#F0F8FA', borderColor: '#19A7CE', borderWidth: 1, elevation: 3, shadowColor: '#19A7CE', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  questionCard: { 
+    backgroundColor: '#fff', 
+    padding: 22, 
+    borderRadius: 16, 
+    marginBottom: 8, 
+    elevation: 4,
+    shadowColor: '#146C94',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    borderLeftWidth: 5,
+    borderLeftColor: '#146C94'
+  },
+  myQuestionCard: { 
+    backgroundColor: '#F0F8FA', 
+    borderLeftColor: '#19A7CE', 
+    elevation: 5 
+  },
   qHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   qAuthor: { fontWeight: 'bold', fontSize: 16, color: '#146C94' },
-  myAuthorText: { color: '#0F5272' }, // Slightly darker blue for "You" so it pops out
+  myAuthorText: { color: '#0F5272' }, 
   qDate: { color: '#888', fontSize: 12 },
-  qText: { fontSize: 18, color: '#222', lineHeight: 26 },
+  qText: { fontSize: 19, color: '#222', lineHeight: 28, fontWeight: '500' },
+  
+  sectionHeader: {
+    marginTop: 24,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#888',
+    letterSpacing: 1.2,
+  },
+  sectionDivider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
   
   answerCard: { backgroundColor: '#FAFAFA', padding: 16, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#eee' },
   myAnswerCard: { backgroundColor: '#F0F8FA', borderColor: '#19A7CE' },

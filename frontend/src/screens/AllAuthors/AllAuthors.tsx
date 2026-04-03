@@ -131,7 +131,7 @@ const AllAuthors = () => {
   const renderFilterModal = () => {
     return (
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={filterModalVisible}
         onRequestClose={() => setFilterModalVisible(false)}

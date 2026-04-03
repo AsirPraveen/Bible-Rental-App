@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Platform, StatusBar, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
-import { ArrowLeft, MapPin, List as ListIcon } from 'lucide-react-native';
+import { MapPin, List as ListIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -142,14 +142,10 @@ export default function HistoricalMapsScreen() {
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <ArrowLeft color="#F6F1F1" size={24} />
-          </TouchableOpacity>
           <View style={styles.headerTextWrapper}>
             <Text style={styles.headerText}>Historical Maps</Text>
             <Text style={styles.subtitleText}>Explore the biblical world</Text>
           </View>
-          <View style={{ width: 24 }} />
         </View>
         
         <View style={styles.container}>
@@ -227,7 +223,6 @@ const styles = StyleSheet.create({
   },
   gradient: { flex: 1 },
   headerContainer: { padding: 20, paddingTop: 16, flexDirection: 'row', alignItems: 'center' },
-  backBtn: { padding: 4 },
   headerTextWrapper: { flex: 1, alignItems: 'center' },
   headerText: { fontSize: 24, fontWeight: 'bold', color: '#F6F1F1', textAlign: 'center', marginBottom: 4 },
   subtitleText: { fontSize: 14, color: '#F6F1F1', textAlign: 'center', opacity: 0.9 },

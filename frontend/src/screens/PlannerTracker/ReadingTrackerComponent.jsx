@@ -411,7 +411,7 @@ const ReadingTrackerComponent = () => {
       <Modal
         visible={showTreasuresModal}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowTreasuresModal(false)}
       >
         <View style={styles.modalOverlay}>

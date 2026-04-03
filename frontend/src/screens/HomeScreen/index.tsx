@@ -12,6 +12,7 @@ import { FlatList } from "react-native-gesture-handler";
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated } from 'react-native';
+import { useFocusEffect } from "@react-navigation/native";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
@@ -145,6 +146,24 @@ const HomeView = () => {
   const [topBooks, setTopBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isGameEnabled, setIsGameEnabled] = useState(true);
+
+  const fetchAppSettings = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/app-settings`);
+      if (res.data.status === 'Success') {
+        setIsGameEnabled(res.data.data.isGameEnabled);
+      }
+    } catch (error) {
+      console.error('Error fetching app settings:', error);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAppSettings();
+    }, [])
+  );
 
   async function getUserData() {
     const token = await AsyncStorage.getItem('token');
@@ -269,9 +288,11 @@ const HomeView = () => {
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={styles.logo}>{APP_NAME}</Text>
-            <Pressable onPress={() => navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
-              <Ionicons name="game-controller" size={28} color="#F6F1F1" />
-            </Pressable>
+            {isGameEnabled && (
+              <Pressable onPress={() => navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
+                <Ionicons name="game-controller" size={28} color="#F6F1F1" />
+              </Pressable>
+            )}
           </View>
           <Pressable onPress={handleLogout} style={{ marginLeft: 10 }}>
             <Ionicons name="log-out-outline" size={24} color="#AFD3E2" />

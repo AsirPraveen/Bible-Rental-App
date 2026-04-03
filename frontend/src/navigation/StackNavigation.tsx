@@ -43,6 +43,7 @@ import GameCrafting from '../screens/GameScreen/GameCrafting';
 import GameSurvival from '../screens/GameScreen/GameSurvival';
 import GameScrollRoom from '../screens/GameScreen/GameScrollRoom';
 import GameCardLibrary from '../screens/GameScreen/GameCardLibrary';
+import AppSettingsTab from '../screens/AdminScreen/components/AppSettingsTab';
 
 const Stack = createStackNavigator();
 
@@ -248,6 +249,16 @@ const StackNavigation = () => {
         name="GameCardLibrary"
         component={GameCardLibrary}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AppSettings"
+        component={AppSettingsTab}
+        options={{ 
+          headerShown: true, 
+          title: 'App Configuration',
+          headerStyle: { backgroundColor: '#146C94' },
+          headerTintColor: '#F6F1F1'
+        }}
       />
     </Stack.Navigator>
   );

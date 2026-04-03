@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Plus, Clock, Info } from 'lucide-react-native';
+import { Plus, Clock, Info, PlusCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -130,7 +130,15 @@ export default function FastingTrackerScreen() {
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Fasting Tracker</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.headerText}>Fasting Tracker</Text>
+            <TouchableOpacity 
+              style={styles.headerIconBtn}
+              onPress={() => setModalVisible(true)}
+            >
+              <PlusCircle color="#F6F1F1" size={28} />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.subtitleText}>Dedicate and track your fasting</Text>
         </View>
 
@@ -152,10 +160,6 @@ export default function FastingTrackerScreen() {
                   </View>
                 }
               />
-              <TouchableOpacity style={styles.newPlanButton} onPress={() => setModalVisible(true)}>
-                <Plus color="#F6F1F1" size={24} />
-                <Text style={styles.newPlanButtonText}>New Fast</Text>
-              </TouchableOpacity>
             </>
           )}
         </View>
@@ -183,40 +187,34 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 16,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerIconBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 8,
+    borderRadius: 12,
+  },
   headerText: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#F6F1F1',
-    textAlign: 'center',
-    marginBottom: 8,
   },
   subtitleText: {
     fontSize: 16,
     color: '#F6F1F1',
-    textAlign: 'center',
     opacity: 0.9,
   },
   container: {
     flex: 1,
     paddingHorizontal: 16,
-  },
-  newPlanButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#F6F1F1',
-    borderStyle: 'dashed',
-    marginVertical: 16,
-  },
-  newPlanButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F6F1F1',
-    marginLeft: 8,
+    backgroundColor: '#F6F1F1',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
   emptyState: {
     alignItems: 'center',

@@ -619,7 +619,7 @@ const GameBattle = ({ route, navigation }: any) => {
 
         {/* QTE Modal */}
         {activePlayer && (
-        <Modal visible={showQTE} transparent animationType="slide">
+        <Modal visible={showQTE} transparent animationType="fade">
           <View style={styles.modalBg}>
              <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Critical Hit QTE!</Text>

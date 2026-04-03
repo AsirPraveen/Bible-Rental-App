@@ -38,7 +38,7 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Share a Prayer Request</Text>

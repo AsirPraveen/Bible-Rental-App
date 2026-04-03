@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal, TextInput, Switch, Platform, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MessageCircle, Users } from 'lucide-react-native';
+import { MessageCircle, Users, PlusCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -108,7 +108,15 @@ export default function ForumListScreen() {
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Discussion Forum</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.headerText}>Discussion Forum</Text>
+            <TouchableOpacity 
+              style={styles.headerIconBtn}
+              onPress={() => setModalVisible(true)}
+            >
+              <PlusCircle color="#F6F1F1" size={28} />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.subtitleText}>Ask questions and share knowledge</Text>
         </View>
 
@@ -130,15 +138,11 @@ export default function ForumListScreen() {
                   </View>
                 }
               />
-              <TouchableOpacity style={styles.newPlanButton} onPress={() => setModalVisible(true)}>
-                <MessageCircle color="#F6F1F1" size={24} />
-                <Text style={styles.newPlanButtonText}>Ask Question</Text>
-              </TouchableOpacity>
             </>
           )}
         </View>
 
-        <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
+        <Modal visible={modalVisible} animationType="fade" transparent={true} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Ask the Community</Text>
@@ -195,40 +199,34 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 16,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerIconBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 8,
+    borderRadius: 12,
+  },
   headerText: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#F6F1F1',
-    textAlign: 'center',
-    marginBottom: 8,
   },
   subtitleText: {
     fontSize: 16,
     color: '#F6F1F1',
-    textAlign: 'center',
     opacity: 0.9,
   },
   container: {
     flex: 1,
     paddingHorizontal: 16,
-  },
-  newPlanButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#F6F1F1',
-    borderStyle: 'dashed',
-    marginVertical: 16,
-  },
-  newPlanButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F6F1F1',
-    marginLeft: 8,
+    backgroundColor: '#F6F1F1',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
   emptyState: {
     alignItems: 'center',

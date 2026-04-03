@@ -159,7 +159,7 @@ const deleteImageFromCloudinary = async (imageUrl:any) => {
 };
 
 // Modified uploadImage function
-const uploadImage = async (uri) => {
+const uploadImage = async (uri:any) => {
   setIsUploading(true);
   try {
     // Delete old image first if it exists
@@ -193,7 +193,7 @@ const uploadImage = async (uri) => {
     } else {
       throw new Error('Upload failed');
     }
-  } catch (error) {
+  } catch (error:any) {
     console.error('Error uploading image:', error.response ? error.response.data : error.message);
     Alert.alert('Error', `Failed to upload image. Details: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
     setImage(null);
@@ -273,9 +273,6 @@ const uploadImage = async (uri) => {
         {/* Header with Logout Button */}
         <View style={styles.header}>
           <Text style={styles.headerText}>Your Profile</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
-          </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -397,7 +394,7 @@ const uploadImage = async (uri) => {
                   {userData?.books_rented?.length > 0 ? (
                     userData.books_rented.map((book: any, index: number) => (
                       <View key={index} style={styles.bookItem}>
-                        <Text style={styles.bookText}>Book ID: {book.book_id}</Text>
+                        <Text style={styles.bookText}>Book Name : {book.book_name || `ID: ${book.book_id}`}</Text>
                         <Text style={[styles.bookStatus, { color: book.status === 'approved' ? '#4CAF50' : book.status === 'rejected' ? '#F44336' : '#FF9800' }]}>
                           Status: {book.status}
                         </Text>
@@ -427,7 +424,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,

@@ -16,6 +16,9 @@ const mapRoutes = require('./routes/mapRoutes');
 const adminAnalyticsRoutes = require('./routes/adminAnalyticsRoutes');
 const readingStatRoutes = require('./routes/readingStatRoutes');
 const moderationRoutes = require('./routes/moderationRoutes');
+const gameRoutes = require('./routes/gameRoutes'); // Game routes
+const emailTemplateRoutes = require('./routes/emailTemplateRoutes');
+const bibleRoutes = require('./routes/bibleRoutes'); // Bible routes
 
 const mongoUrl = process.env.MONGO_URL;
 const PORT = process.env.PORT || 5001;
@@ -43,6 +46,9 @@ app.use('/api', mapRoutes); // historical maps
 app.use('/api', adminAnalyticsRoutes); // admin analytics
 app.use('/api', readingStatRoutes); // reading stats sync
 app.use('/api', moderationRoutes); // moderation
+app.use('/api/game', gameRoutes); // card game api
+app.use('/api', emailTemplateRoutes);
+app.use('/api/bible', bibleRoutes); // Bible routes
 
 app.listen(PORT, () => {
   console.log(`Node js server started on port ${PORT}`);

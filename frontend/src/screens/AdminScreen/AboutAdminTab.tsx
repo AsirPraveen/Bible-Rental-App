@@ -270,9 +270,6 @@ const AboutAdminTab = () => {
         {/* Header with Logout Button */}
         <View style={styles.header}>
           <Text style={styles.headerText}>Admin Profile</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
-          </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -407,7 +404,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,

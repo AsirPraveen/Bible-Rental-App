@@ -24,10 +24,10 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
   const [openType, setOpenType] = useState(false);
   const [type, setType] = useState('Others');
   const [typeItems, setTypeItems] = useState([
-    { label: 'Water Fast', value: 'Water Fast' },
+    // { label: 'Water Fast', value: 'Water Fast' },
     { label: 'Daniel Fast', value: 'Daniel Fast' },
-    { label: 'Intermittent', value: 'Intermittent' },
-    { label: 'Absolute Fast', value: 'Absolute Fast' },
+    // { label: 'Intermittent', value: 'Intermittent' },
+    // { label: 'Absolute Fast', value: 'Absolute Fast' },
     { label: 'Others', value: 'Others' }
   ]);
 

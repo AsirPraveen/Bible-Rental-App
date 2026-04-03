@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import HomeTabsNavigation from './TabNavigator';
 import History from '../screens/History/History';
 import Wishlist from '../screens/WishList/WishList';
+import GeneratedImages from '../screens/Bible/GeneratedImages';
 
 const Drawer = createDrawerNavigator();
 
@@ -65,6 +66,13 @@ const DrawerNavigator = () => {
         component={History}
         options={{
           drawerIcon: options => drawerIcon(options, 'history'),
+        }}
+      />
+      <Drawer.Screen
+        name="Generated Images"
+        component={GeneratedImages}
+        options={{
+          drawerIcon: options => drawerIcon(options, 'image-multiple-outline'),
         }}
       />
     </Drawer.Navigator>

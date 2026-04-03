@@ -32,6 +32,17 @@ import QuestionDetailsScreen from '../screens/DiscussionForum/QuestionDetailsScr
 import AppAnalyticsTab from '../screens/AdminScreen/AppAnalyticsTab';
 import ModerationTab from '../screens/AdminScreen/ModerationTab';
 import ManageMapsTab from '../screens/AdminScreen/ManageMapsTab';
+import GameHome from '../screens/GameScreen/GameHome';
+import GameShop from '../screens/GameScreen/GameShop';
+import GameDeck from '../screens/GameScreen/GameDeck';
+import GameBattle from '../screens/GameScreen/GameBattle';
+import GameLevelSelect from '../screens/GameScreen/GameLevelSelect';
+import GameStudyArea from '../screens/GameScreen/GameStudyArea';
+import GameFruitsTree from '../screens/GameScreen/GameFruitsTree';
+import GameCrafting from '../screens/GameScreen/GameCrafting';
+import GameSurvival from '../screens/GameScreen/GameSurvival';
+import GameScrollRoom from '../screens/GameScreen/GameScrollRoom';
+import GameCardLibrary from '../screens/GameScreen/GameCardLibrary';
 
 const Stack = createStackNavigator();
 
@@ -181,6 +192,61 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Manage Maps"
         component={ManageMapsTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameHome"
+        component={GameHome}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameShop"
+        component={GameShop}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameDeck"
+        component={GameDeck}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameBattle"
+        component={GameBattle}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameLevelSelect"
+        component={GameLevelSelect}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameStudyArea"
+        component={GameStudyArea}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameFruitsTree"
+        component={GameFruitsTree}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameCrafting"
+        component={GameCrafting}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameSurvival"
+        component={GameSurvival}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameScrollRoom"
+        component={GameScrollRoom}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GameCardLibrary"
+        component={GameCardLibrary}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

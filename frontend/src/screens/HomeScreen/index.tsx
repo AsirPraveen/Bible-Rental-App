@@ -267,7 +267,12 @@ const HomeView = () => {
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
       <View style={styles.stickyHeader}>
         <View style={styles.header}>
-          <Text style={styles.logo}>{APP_NAME}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.logo}>{APP_NAME}</Text>
+            <Pressable onPress={() => navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
+              <Ionicons name="game-controller" size={28} color="#F6F1F1" />
+            </Pressable>
+          </View>
           <Pressable onPress={handleLogout} style={{ marginLeft: 10 }}>
             <Ionicons name="log-out-outline" size={24} color="#AFD3E2" />
           </Pressable>

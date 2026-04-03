@@ -1,6 +1,9 @@
 const Book = require('../models/Book');
 const User = require('../models/UserDetails');
 const RequestHistory = require('../models/RequestHistory');
+const EmailTemplate = require('../models/EmailTemplate');
+const nodemailer = require('nodemailer');
+const { bookApprovalTemplate, bookRejectionTemplate } = require('../config/emailTemplate');
 
 exports.getAllBooks = async (req, res) => {
   try {
@@ -200,10 +203,13 @@ exports.approveRentRequest = async (req, res) => {
       }
     );
 
-    // Update the specific request status using its _id
+    // Update the specific request status using its _id and award 50 Talents
     await User.updateOne(
       { email: userEmail, 'books_rented._id': request._id },
-      { $set: { 'books_rented.$.status': 'approved' } }
+      { 
+        $set: { 'books_rented.$.status': 'approved' },
+        $inc: { talents: 50 } 
+      }
     );
 
     // Save to request history
@@ -215,6 +221,38 @@ exports.approveRentRequest = async (req, res) => {
       requested_at: request.requested_at,
       status: 'approved',
     });
+
+    // Send Approval Email
+    try {
+      const template = await EmailTemplate.findOne({ templateId: 'book_approval' });
+      if (template) {
+        let subject = template.subject;
+        let body = template.body;
+
+        // Replace placeholders (case-insensitive)
+        body = body.replace(/{{userName}}/gi, user.name || 'User');
+        body = body.replace(/{{bookName}}/gi, book.book_name);
+
+        const transporter = nodemailer.createTransport({
+          service: 'Gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: userEmail,
+          subject: subject,
+          html: bookApprovalTemplate(user.name || 'User', body),
+        });
+        console.log(`Approval email sent to ${userEmail}`);
+      }
+    } catch (emailError) {
+      console.error('Error sending approval email:', emailError);
+      // We don't fail the approval if email fails, but we log it
+    }
 
     res.send({ status: "Ok", data: "Rent request approved" });
   } catch (error) {
@@ -255,6 +293,37 @@ exports.rejectRentRequest = async (req, res) => {
       status: 'rejected',
     });
 
+    // Send Rejection Email
+    try {
+      const template = await EmailTemplate.findOne({ templateId: 'book_rejection' });
+      if (template) {
+        let subject = template.subject;
+        let body = template.body;
+
+        // Replace placeholders (case-insensitive)
+        body = body.replace(/{{userName}}/gi, user.name || 'User');
+        body = body.replace(/{{bookName}}/gi, book.book_name);
+
+        const transporter = nodemailer.createTransport({
+          service: 'Gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: userEmail,
+          subject: subject,
+          html: bookRejectionTemplate(user.name || 'User', body),
+        });
+        console.log(`Rejection email sent to ${userEmail}`);
+      }
+    } catch (emailError) {
+      console.error('Error sending rejection email:', emailError);
+    }
+
     res.send({ status: "Ok", data: "Rent request rejected" });
   } catch (error) {
     res.send({ status: "error", data: error });
@@ -281,6 +350,12 @@ exports.returnBook = async (req, res) => {
     if (book.available) {
       return res.status(400).send({ status: "error", data: "Book is already available" });
     }
+
+    // Award the user who returned the book 100 talents
+    if (book.owned_by) {
+      await User.updateOne({ email: book.owned_by }, { $inc: { talents: 100 } });
+    }
+
     await Book.updateOne(
       { book_id },
       { $set: { available: true, owned_by: null, rent_from: null } }

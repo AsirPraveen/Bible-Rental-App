@@ -131,7 +131,7 @@ export default function BookDetails() {
               });
 
               if (res.data.status === 'Ok') {
-                Alert.alert('Success', 'Rent request submitted. Waiting for admin approval.');
+                Alert.alert('Success', 'Rent request submitted. Waiting for admin approval. Email will be sent to you once approved or rejected.');
                 setHasPendingRequest(true);
               } else {
                 Alert.alert('Error', res.data.data);

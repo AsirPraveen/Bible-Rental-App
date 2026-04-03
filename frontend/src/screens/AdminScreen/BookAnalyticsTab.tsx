@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import axios from 'axios';
@@ -24,6 +25,12 @@ import PieChartComponent from './components/PieChartComponent';
 import LineChartComponent from './components/LineChartComponent';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  Onboarding: undefined;
+};
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,6 +47,7 @@ const Colors = {
 };
 
 const BookAnalyticsTab = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [analytics, setAnalytics] = useState<{ totalBooks: number; totalRented: number; popularBooks: any[] }>({ totalBooks: 0, totalRented: 0, popularBooks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -142,6 +150,31 @@ const BookAnalyticsTab = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove(['token', 'isLoggedIn', 'userType']);
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Onboarding' }],
+              });
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'An error occurred during logout.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderChartItem = ({ item, index }:any) => {
     const ChartComponent = item.component;
     return (
@@ -192,8 +225,16 @@ const BookAnalyticsTab = () => {
         style={styles.header}
       >
         <BlurView intensity={20} style={styles.headerBlur}>
-          <Text style={styles.headerTitle}>Admin Dashboard</Text>
-          <Text style={styles.headerSubtitle}>YOUTH ROOM</Text>
+          <View style={styles.headerContent}>
+            <View style={styles.spacer} />
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle}>Admin Dashboard</Text>
+              <Text style={styles.headerSubtitle}>YOUTH ROOM</Text>
+            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
+            </TouchableOpacity>
+          </View>
         </BlurView>
       </LinearGradient>
       
@@ -398,9 +439,30 @@ const styles = StyleSheet.create({
   },
   headerBlur: {
     flex: 1,
+    position: 'relative',
+  },
+  headerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spacer: {
+    width: 40,
+  },
+  logoutButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
   headerTitle: {
     fontSize: 28,

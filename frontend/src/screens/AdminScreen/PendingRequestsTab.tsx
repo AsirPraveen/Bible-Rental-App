@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView } from 'react-native';
 import axios from 'axios';
 import RequestCard from './components/RequestCard';
+import EmailTemplateModal from './components/EmailTemplateModal';
 import Constants from 'expo-constants';
+import { MaterialIcons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const Colors = {
@@ -15,6 +18,7 @@ const Colors = {
 const PendingRequestsTab = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTemplateModalVisible, setIsTemplateModalVisible] = useState(false);
 
   const fetchPendingRequests = async () => {
     try {
@@ -70,7 +74,16 @@ const PendingRequestsTab = () => {
     <SafeAreaView style={styles.outer_container}>
     <ScrollView style={styles.container}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Pending Rent Requests</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionTitle}>Pending Rent Requests</Text>
+          <TouchableOpacity 
+            style={styles.tuneButton} 
+            onPress={() => setIsTemplateModalVisible(true)}
+          >
+            <MaterialIcons name="email" size={24} color={Colors.bg} />
+            <Text style={styles.tuneButtonText}>Edit Email</Text>
+          </TouchableOpacity>
+        </View>
         {pendingRequests.length > 0 ? (
           pendingRequests.map((request: any) => (
             <RequestCard
@@ -85,6 +98,10 @@ const PendingRequestsTab = () => {
         )}
       </View>
     </ScrollView>
+    <EmailTemplateModal 
+      isVisible={isTemplateModalVisible} 
+      onClose={() => setIsTemplateModalVisible(false)} 
+    />
     </SafeAreaView>
   );
 };
@@ -118,7 +135,33 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: Colors.bg,
-    marginBottom: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  tuneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.bg,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+  },
+  tuneButtonText: {
+    marginLeft: 5,
+    color: Colors.bg,
+    fontWeight: '600',
+    fontSize: 14,
   },
   noDataText: {
     fontSize: 16,

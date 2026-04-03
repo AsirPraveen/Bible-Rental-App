@@ -159,3 +159,25 @@ exports.resetAllCredits = async (req, res) => {
     res.status(500).send({ status: "error", data: error.message });
   }
 };
+
+// New function to search users (admin function)
+exports.searchUsers = async (req, res) => {
+  const { query } = req.query;
+  if (!query || query.length < 2) {
+    return res.send({ status: "Ok", data: [] });
+  }
+
+  try {
+    const users = await User.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { email: { $regex: query, $options: 'i' } }
+      ]
+    }).limit(10).select('name email _id');
+    
+    res.status(200).send({ status: "Ok", data: users });
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).send({ status: "error", data: error.message });
+  }
+};

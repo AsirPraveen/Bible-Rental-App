@@ -50,6 +50,11 @@ const UserDetailSchema = new mongoose.Schema(
     manna: { type: Number, default: 0 }, // Premium currency
     unlockedLore: [{ type: String }], // Names of cards whose lore is unlocked
     claimedLoreRewards: [{ type: String }], // Names of cards whose rewards have been claimed
+    resetPasswordExpires: Date,
+    expoPushToken: {
+      type: String,
+      default: null
+    },
     // Treasures in Heaven (Bible Reading Progress)
     treasuresInHeaven: { type: Number, default: 0 },
     readingProgress: { type: Object, default: {} },

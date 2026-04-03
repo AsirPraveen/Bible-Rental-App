@@ -191,3 +191,23 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
+
+exports.updatePushToken = async (req, res) => {
+  const { token, expoPushToken } = req.body;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    
+    if (!user) {
+      return res.status(404).send({ status: "error", message: "User not found" });
+    }
+
+    user.expoPushToken = expoPushToken;
+    await user.save();
+
+    res.send({ status: "Ok", message: "Push token updated successfully" });
+  } catch (error) {
+    console.error('Error updating push token:', error);
+    res.status(500).send({ status: "error", message: error.message });
+  }
+};

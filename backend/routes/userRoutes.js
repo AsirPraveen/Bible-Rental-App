@@ -11,6 +11,7 @@ router.get('/credits', userController.getUserCredits);
 router.post('/deduct-credit', userController.deductCredit);
 router.post('/add-credits', userController.addCredits); // Admin route
 router.post('/reset-all-credits', userController.resetAllCredits); // Admin route
+router.get('/search', userController.searchUsers); // Admin/Search route
 
 
 module.exports = router;

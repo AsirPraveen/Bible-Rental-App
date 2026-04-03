@@ -7,6 +7,8 @@ import {  Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 
+import { registerForPushNotificationsAsync } from '../utils/notifications';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -16,6 +18,10 @@ Notifications.setNotificationHandler({
 });
 
 export default function App() {
+  React.useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
   return (
     <SafeAreaProvider style={{ flex: 1 }}>
       <StatusBar 

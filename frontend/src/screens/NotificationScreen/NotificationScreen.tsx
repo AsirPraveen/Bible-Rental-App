@@ -29,15 +29,21 @@ const NotificationScreen = () => {
   useEffect(() => {
     const fetchPostsAndUser = async () => {
       try {
+        setLoading(true);
         // Fetch user email from token
         const token = await AsyncStorage.getItem('token');
+        let email = null;
+        
         if (token) {
           const userRes = await axios.post(`${API_URL}/api/auth/userdata`, { token });
-          setUserEmail(userRes.data.data.email);
+          email = userRes.data.data.email;
+          setUserEmail(email);
         }
 
         // Fetch posts
-        const response = await axios.get(`${API_URL}/api/posts`);
+        const response = await axios.get(`${API_URL}/api/posts`, {
+          params: { userEmail: email }
+        });
         console.log('API Response:', response.data);
         if (response.data.status === "Ok") {
           setPosts(response.data.data);
@@ -103,15 +109,17 @@ const NotificationScreen = () => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <View style={styles.cardInner}>
-            <Text style={styles.postTitle}>{item.title}</Text>
-            <View style={styles.dateTimeContainer}>
-              <Text style={styles.postDate}>
-                {item.date} {item.time ? `at ${item.time}` : ''}
-              </Text>
-            </View>
-            <Text style={styles.postDescription}>{item.description}</Text>
-            {item.imageUrl ? (
+            <View style={styles.cardInner}>
+              <Text style={styles.postTitle}>{item.title}</Text>
+              {(item.date || item.time) && (
+                <View style={styles.dateTimeContainer}>
+                  <Text style={styles.postDate}>
+                    {item.date || ''} {item.time ? `at ${item.time}` : ''}
+                  </Text>
+                </View>
+              )}
+              <Text style={styles.postDescription}>{item.description}</Text>
+              {item.imageUrl ? (
               <Image source={{ uri: item.imageUrl }} style={styles.postImage} resizeMode="contain" />
             ) : null}
             <View style={styles.likeContainer}>

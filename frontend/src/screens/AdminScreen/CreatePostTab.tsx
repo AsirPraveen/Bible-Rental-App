@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Alert, ScrollView, Image, TouchableOpacity, Platform, StatusBar, SafeAreaView, ActivityIndicator, Modal } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Button, IconButton, Chip, Switch } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -21,6 +21,94 @@ const CreatePostTab = () => {
   const [showDatePicker, setShowDatePicker] = useState(false); // Control date picker visibility
   const [showTimePicker, setShowTimePicker] = useState(false); // Control time picker visibility
   const [isUploading, setIsUploading] = useState(false); // Track upload status for loader
+  
+  // Targeting fields
+  const [audienceType, setAudienceType] = useState<'all' | 'specific'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [showInNotification, setShowInNotification] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
+  
+  // Post Management state
+  const [isManageModalVisible, setIsManageModalVisible] = useState(false);
+  const [adminPosts, setAdminPosts] = useState<any[]>([]);
+  const [loadingAdminPosts, setLoadingAdminPosts] = useState(false);
+
+  // Function to handle user search
+  const handleUserSearch = async (text: string) => {
+    setSearchQuery(text);
+    if (text.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/users/search?query=${text}`);
+      if (res.data.status === 'Ok') {
+        setSearchResults(res.data.data);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const toggleUserSelection = (user: any) => {
+    if (selectedUsers.some(u => u.email === user.email)) {
+      setSelectedUsers(selectedUsers.filter(u => u.email !== user.email));
+    } else {
+      setSelectedUsers([...selectedUsers, user]);
+    }
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  // Function to fetch all posts for management
+  const fetchAdminPosts = async () => {
+    setLoadingAdminPosts(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/admin/posts`);
+      if (res.data.status === 'Ok') {
+        setAdminPosts(res.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching admin posts:', error);
+      Alert.alert('Error', 'Failed to fetch posts');
+    } finally {
+      setLoadingAdminPosts(false);
+    }
+  };
+
+  // Function to delete a post
+  const handleDeletePost = (postId: string) => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post permanentley?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await axios.delete(`${API_URL}/api/posts/${postId}`);
+              if (res.data.status === 'Ok') {
+                Alert.alert('Success', 'Post deleted successfully');
+                fetchAdminPosts(); // Refresh list
+              }
+            } catch (error) {
+              console.error('Error deleting post:', error);
+              Alert.alert('Error', 'Failed to delete post');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   // Function to pick an image from the device
   const pickImage = async () => {
@@ -101,8 +189,7 @@ const CreatePostTab = () => {
   // Function to format the date and time for submission
   const formatDateTime = () => {
     if (!date) {
-      Alert.alert('Error', 'Please select a date.');
-      return { formattedDate: '', formattedTime: null };
+      return { formattedDate: null, formattedTime: null };
     }
 
     const formattedDate = date.toLocaleDateString('en-US', {
@@ -121,18 +208,10 @@ const CreatePostTab = () => {
   };
 
   // Function to save the post to MongoDB via API
-  const handlePost = async () => {
-    if (!title || !description || !date) {
-      Alert.alert('Error', 'Please fill in all required fields (Title, Description, Date).');
-      return;
-    }
-
+  const submitPost = async () => {
     const { formattedDate, formattedTime } = formatDateTime();
 
-    if (!formattedDate) {
-      return;
-    }
-
+    setIsPosting(true);
     try {
       const newPost = {
         title,
@@ -140,9 +219,14 @@ const CreatePostTab = () => {
         date: formattedDate,
         time: formattedTime,
         imageUrl: imageUrl || null,
+        audienceType,
+        targetUsers: audienceType === 'specific' ? selectedUsers.map(u => u.email) : [],
+        showInNotification,
       };
 
-      await axios.post(`${API_URL}/api/posts`, newPost);
+      console.log('Sending post data:', newPost);
+      const response = await axios.post(`${API_URL}/api/posts`, newPost);
+      console.log('Post response:', response.data);
       Alert.alert('Success', 'Post created successfully!');
 
       setTitle('');
@@ -151,10 +235,39 @@ const CreatePostTab = () => {
       setTime(null);
       setImageUri(null);
       setImageUrl(null);
+      setAudienceType('all');
+      setSelectedUsers([]);
+      setShowInNotification(false);
     } catch (error) {
       console.error('Error saving post:', error);
       Alert.alert('Error', 'Failed to create post. Please try again.');
+    } finally {
+      setIsPosting(false);
     }
+  };
+
+  const handlePost = () => {
+    if (!title || !description) {
+      Alert.alert('Error', 'Please fill in all required fields (Title, Description).');
+      return;
+    }
+
+    Alert.alert(
+      'Confirm Post',
+      'Are you sure you want to create and send this post?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Confirm',
+          onPress: submitPost,
+          style: 'default',
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -162,7 +275,19 @@ const CreatePostTab = () => {
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
-            <Text style={styles.headerText}>Create New Post</Text>
+            <View style={styles.headerRow}>
+              <View style={{ width: 40 }} />
+              <Text style={styles.headerText}>Create New Post</Text>
+              <IconButton 
+                icon="history" 
+                iconColor="#F6F1F1" 
+                size={28} 
+                onPress={() => {
+                  fetchAdminPosts();
+                  setIsManageModalVisible(true);
+                }}
+              />
+            </View>
 
             <View style={styles.formCard}>
               <Text style={styles.label}>Title *</Text>
@@ -185,7 +310,77 @@ const CreatePostTab = () => {
                 numberOfLines={4}
               />
 
-              <Text style={styles.label}>Date *</Text>
+              {/* Targeting Section */}
+              <Text style={styles.label}>Target Audience</Text>
+              <View style={styles.audienceContainer}>
+                <TouchableOpacity 
+                  onPress={() => setAudienceType('all')} 
+                  style={[styles.audienceButton, audienceType === 'all' && styles.audienceButtonActive]}
+                >
+                  <Text style={[styles.audienceButtonText, audienceType === 'all' && styles.audienceButtonTextActive]}>All Users</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => setAudienceType('specific')} 
+                  style={[styles.audienceButton, audienceType === 'specific' && styles.audienceButtonActive]}
+                >
+                  <Text style={[styles.audienceButtonText, audienceType === 'specific' && styles.audienceButtonTextActive]}>Specific Users</Text>
+                </TouchableOpacity>
+              </View>
+
+              {audienceType === 'specific' && (
+                <View style={styles.specificUsersSection}>
+                  <Text style={styles.subLabel}>Search and Add Users</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={searchQuery}
+                    onChangeText={handleUserSearch}
+                    placeholder="Enter name or email..."
+                    placeholderTextColor="#999"
+                  />
+                  {isSearching && <ActivityIndicator size="small" color="#146C94" style={{ marginBottom: 10 }} />}
+                  
+                  {searchResults.length > 0 && (
+                    <View style={styles.searchResultsContainer}>
+                      {searchResults.map((user) => (
+                        <TouchableOpacity 
+                          key={user._id} 
+                          style={styles.searchResultItem}
+                          onPress={() => toggleUserSelection(user)}
+                        >
+                          <Text style={styles.searchResultText}>{user.name} ({user.email})</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  <View style={styles.chipsContainer}>
+                    {selectedUsers.map((user) => (
+                      <Chip 
+                        key={user._id} 
+                        onClose={() => toggleUserSelection(user)}
+                        style={styles.chip}
+                        textStyle={styles.chipText}
+                      >
+                        {user.name}
+                      </Chip>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.notificationToggleContainer}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Keep in notification history</Text>
+                  <Text style={{ fontSize: 12, color: '#666' }}>Always triggers a push notification</Text>
+                </View>
+                <Switch 
+                  value={showInNotification} 
+                  onValueChange={setShowInNotification} 
+                  color="#146C94"
+                />
+              </View>
+
+              <Text style={styles.label}>Date (Optional)</Text>
               <TouchableOpacity onPress={() => { console.log('Opening Date Picker'); setShowDatePicker(true); }} style={styles.dateInput}>
                 <Text style={styles.dateText}>
                   {date ? date.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }) : 'Select Date'}
@@ -270,14 +465,98 @@ const CreatePostTab = () => {
                 onPress={handlePost}
                 style={styles.postButton}
                 labelStyle={styles.buttonText}
-                disabled={isUploading}
+                disabled={isUploading || isPosting}
+                loading={isPosting}
               >
-                Post
+                {isPosting ? 'Posting...' : 'Post'}
               </Button>
             </View>
           </View>
         </ScrollView>
       </LinearGradient>
+
+      {/* Post Management Modal */}
+      <Modal
+        visible={isManageModalVisible}
+        animationType="slide"
+        onRequestClose={() => setIsManageModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalFullContainer}>
+          <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.modalGradient}>
+            <View style={styles.modalHeader}>
+              <IconButton 
+                icon="close" 
+                iconColor="#F6F1F1" 
+                size={28} 
+                onPress={() => setIsManageModalVisible(false)}
+              />
+              <Text style={styles.modalHeaderText}>Manage Posts</Text>
+              <View style={{ width: 48 }} />
+            </View>
+
+            {loadingAdminPosts ? (
+              <ActivityIndicator size="large" color="#F6F1F1" style={{ marginTop: 50 }} />
+            ) : (
+              <ScrollView contentContainerStyle={styles.postsListContainer}>
+                {adminPosts.length === 0 ? (
+                  <Text style={styles.emptyText}>No posts found</Text>
+                ) : (
+                  adminPosts.map((item) => (
+                    <View key={item._id} style={styles.postManageCard}>
+                      <View style={styles.postInfo}>
+                        <Text style={styles.postManageTitle}>{item.title}</Text>
+                        <Text style={styles.postManageDate}>
+                          {item.date || 'No Date'} {item.time ? `at ${item.time}` : ''}
+                        </Text>
+                        
+                        <Text style={styles.postManageDescription} numberOfLines={2}>
+                          {item.description}
+                        </Text>
+
+                        {item.imageUrl && (
+                          <Image source={{ uri: item.imageUrl }} style={styles.postManageThumbnail} />
+                        )}
+
+                        {item.audienceType === 'specific' && item.targetUsers?.length > 0 && (
+                          <View style={styles.targetUsersList}>
+                            <Text style={styles.targetUsersLabel}>Sent to:</Text>
+                            <Text style={styles.targetUsersText}>
+                              {item.targetUsers.join(', ')}
+                            </Text>
+                          </View>
+                        )}
+
+                        <View style={styles.badgeRow}>
+                          <View style={[styles.badge, { backgroundColor: item.audienceType === 'all' ? '#4CAF50' : '#FF9800' }]}>
+                            <Text style={styles.badgeText}>
+                              {item.audienceType === 'all' ? 'All Users' : `Specific (${item.targetUsers?.length || 0})`}
+                            </Text>
+                          </View>
+                          <View style={[styles.badge, { backgroundColor: item.showInNotification ? '#2196F3' : '#9E9E9E' }]}>
+                            <Text style={styles.badgeText}>
+                              {item.showInNotification ? 'In History' : 'Push Only'}
+                            </Text>
+                          </View>
+                          <View style={[styles.badge, { backgroundColor: '#E91E63' }]}>
+                            <Text style={styles.badgeText}>❤️ {item.likes || 0}</Text>
+                          </View>
+                        </View>
+                      </View>
+                      
+                      <IconButton 
+                        icon="delete-outline" 
+                        iconColor="#FF5252" 
+                        size={24} 
+                        onPress={() => handleDeletePost(item._id)}
+                      />
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            )}
+          </LinearGradient>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -298,12 +577,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
   headerText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#F6F1F1',
     textAlign: 'center',
-    marginBottom: 24,
   },
   formCard: {
     backgroundColor: '#FFFFFF',
@@ -405,6 +689,176 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
     marginTop: 20,
+  },
+  audienceContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    backgroundColor: '#F6F1F1',
+    borderRadius: 8,
+    padding: 4,
+  },
+  audienceButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  audienceButtonActive: {
+    backgroundColor: '#146C94',
+  },
+  audienceButtonText: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  audienceButtonTextActive: {
+    color: '#fff',
+  },
+  specificUsersSection: {
+    marginBottom: 16,
+  },
+  subLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  searchResultsContainer: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginBottom: 16,
+    maxHeight: 150,
+  },
+  searchResultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F6F1F1',
+  },
+  searchResultText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  chip: {
+    backgroundColor: '#E6F0FA',
+  },
+  chipText: {
+    color: '#146C94',
+    fontSize: 12,
+  },
+  notificationToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    backgroundColor: '#F6F1F1',
+    padding: 12,
+    borderRadius: 8,
+  },
+  modalFullContainer: {
+    flex: 1,
+    backgroundColor: '#146C94',
+  },
+  modalGradient: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  modalHeaderText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#F6F1F1',
+  },
+  postsListContainer: {
+    padding: 16,
+  },
+  postManageCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  postInfo: {
+    flex: 1,
+  },
+  postManageTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  postManageDate: {
+    fontSize: 12,
+    color: '#146C94',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  postManageDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  postManageThumbnail: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#F6F1F1',
+  },
+  targetUsersList: {
+    backgroundColor: '#F6F1F1',
+    padding: 8,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  targetUsersLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#146C94',
+    marginBottom: 2,
+  },
+  targetUsersText: {
+    fontSize: 11,
+    color: '#666',
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  emptyText: {
+    color: '#F6F1F1',
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 16,
+    opacity: 0.8,
   },
 });
 

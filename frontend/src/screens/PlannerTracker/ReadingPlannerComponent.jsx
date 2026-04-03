@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BookOpen, CheckCircle, Circle, Plus, Trash2, X, Shuffle, List } from 'lucide-react-native';
+import { BookOpen, CheckCircle, Circle, Plus, Trash2, X, Shuffle, List, Gem, Trophy, Cloud, History, PlusCircle, Calendar } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -31,14 +31,16 @@ const BIBLE_STRUCTURE = {
 };
 
 // Generate reading plan with continuous chapters
-const generateContinuousReadingPlan = (days) => {
+const generateContinuousReadingPlan = (days, scope = ['Old Testament', 'New Testament']) => {
   const allChapters = [];
   Object.entries(BIBLE_STRUCTURE).forEach(([testament, books]) => {
-    Object.entries(books).forEach(([book, chapters]) => {
-      for (let i = 1; i <= chapters; i++) {
-        allChapters.push({ book, chapter: i, testament });
-      }
-    });
+    if (scope.includes(testament)) {
+      Object.entries(books).forEach(([book, chapters]) => {
+        for (let i = 1; i <= chapters; i++) {
+          allChapters.push({ book, chapter: i, testament });
+        }
+      });
+    }
   });
 
   const totalChapters = allChapters.length;
@@ -59,22 +61,24 @@ const generateContinuousReadingPlan = (days) => {
 };
 
 // Generate reading plan with mixed chapters from different books
-const generateMixedReadingPlan = (days) => {
+const generateMixedReadingPlan = (days, scope = ['Old Testament', 'New Testament']) => {
   // Create arrays for each book's chapters
   const bookChapters = [];
   Object.entries(BIBLE_STRUCTURE).forEach(([testament, books]) => {
-    Object.entries(books).forEach(([book, chapters]) => {
-      const chaptersArray = [];
-      for (let i = 1; i <= chapters; i++) {
-        chaptersArray.push({ book, chapter: i, testament });
-      }
-      bookChapters.push({
-        book,
-        testament,
-        chapters: chaptersArray,
-        currentIndex: 0
+    if (scope.includes(testament)) {
+      Object.entries(books).forEach(([book, chapters]) => {
+        const chaptersArray = [];
+        for (let i = 1; i <= chapters; i++) {
+          chaptersArray.push({ book, chapter: i, testament });
+        }
+        bookChapters.push({
+          book,
+          testament,
+          chapters: chaptersArray,
+          currentIndex: 0
+        });
       });
-    });
+    }
   });
 
   const totalChapters = bookChapters.reduce((sum, b) => sum + b.chapters.length, 0);
@@ -137,6 +141,9 @@ const ReadingPlannerComponent = () => {
   const [selectedDayReading, setSelectedDayReading] = useState(null);
   const [expandedPlanId, setExpandedPlanId] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(null);
+  const [showScopeModal, setShowScopeModal] = useState(false);
+  const [selectedScope, setSelectedScope] = useState(['Old Testament', 'New Testament']);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   useEffect(() => {
     loadSavedPlans();
@@ -184,7 +191,7 @@ const ReadingPlannerComponent = () => {
         });
         
         if (userRes.data && userRes.data.data && userRes.data.data._id) {
-          await axios.post(`${apiUrl}/api/stats/reading/sync`, {
+          await axios.post(`${apiUrl}/api/reading-tracker/sync`, {
             userId: userRes.data.data._id,
             totalChaptersRead: totalChaptersRead,
             activePlans: plans.length
@@ -197,10 +204,33 @@ const ReadingPlannerComponent = () => {
     }
   };
 
+  const selectScope = (scope) => {
+    setSelectedScope(scope);
+    setShowScopeModal(false);
+    setShowNewPlanModal(true);
+  };
+
   const selectDuration = (duration) => {
     setSelectedDuration(duration);
     setShowNewPlanModal(false);
     setShowPlanTypeModal(true);
+  };
+
+  const getApproxChaptersPerDay = (duration) => {
+    const daysMap = { '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365 };
+    const days = daysMap[duration];
+    
+    let totalChapters = 0;
+    Object.entries(BIBLE_STRUCTURE).forEach(([testament, books]) => {
+      if (selectedScope.includes(testament)) {
+        Object.values(books).forEach(ch => {
+          totalChapters += ch;
+        });
+      }
+    });
+
+    const perDay = Math.ceil(totalChapters / days);
+    return `~${perDay} chapters/day`;
   };
 
   const createNewPlan = (planType) => {
@@ -208,15 +238,22 @@ const ReadingPlannerComponent = () => {
     const days = daysMap[selectedDuration];
     
     const plan = planType === 'mixed' 
-      ? generateMixedReadingPlan(days)
-      : generateContinuousReadingPlan(days);
+      ? generateMixedReadingPlan(days, selectedScope)
+      : generateContinuousReadingPlan(days, selectedScope);
     
+    // Create Scope Name (Whole Bible, OT only, NT only)
+    let scopeName = "Whole Bible";
+    if (selectedScope.length === 1) {
+      scopeName = selectedScope[0];
+    }
+
     const planTypeName = planType === 'mixed' ? 'Mixed' : 'Continuous';
     
     const newPlan = {
       id: Date.now().toString(),
-      name: `${selectedDuration} Plan (${planTypeName})`,
+      name: `${scopeName}: ${selectedDuration} (${planTypeName})`,
       duration: selectedDuration,
+      scope: selectedScope,
       planType,
       days,
       startDate: new Date().toISOString(),
@@ -224,10 +261,10 @@ const ReadingPlannerComponent = () => {
       currentDay: 1
     };
 
-    savePlans([...activePlans, newPlan]);
+    savePlans([newPlan, ...activePlans]);
     setShowPlanTypeModal(false);
     setSelectedDuration(null);
-    Alert.alert('Success', `${selectedDuration} ${planTypeName.toLowerCase()} reading plan created!`);
+    Alert.alert('Success', `${scopeName}: ${selectedDuration} ${planTypeName.toLowerCase()} plan created!`);
   };
 
   const toggleDayComplete = (planId, day, event) => {
@@ -293,22 +330,44 @@ const ReadingPlannerComponent = () => {
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Reading Plans</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.headerText}>Reading Plans</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity 
+                style={styles.headerIconBtn} 
+                onPress={() => setShowScopeModal(true)}
+              >
+                <Plus color="#F6F1F1" size={26} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.headerIconBtn} 
+                onPress={() => setShowHistoryModal(true)}
+              >
+                <History color="#F6F1F1" size={26} />
+              </TouchableOpacity>
+            </View>
+          </View>
           <Text style={styles.subtitleText}>Complete the Bible with structured daily readings</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
-            {activePlans.length === 0 ? (
+            {activePlans.filter(p => {
+              const completedDays = p.plan.filter(d => d.completed).length;
+              return Math.round((completedDays / p.days) * 100) < 100;
+            }).length === 0 ? (
               <View style={styles.emptyState}>
                 <BookOpen color="#F6F1F1" size={80} />
                 <Text style={styles.emptyStateText}>No Active Plans</Text>
                 <Text style={styles.emptyStateSubtext}>
-                  Start your Bible reading journey today!
+                  {activePlans.length > 0 ? "You've finished all your plans! Check history." : "Start your Bible reading journey today!"}
                 </Text>
               </View>
             ) : (
-              activePlans.map(plan => {
+              activePlans.filter(p => {
+                const completedDays = p.plan.filter(d => d.completed).length;
+                return Math.round((completedDays / p.days) * 100) < 100;
+              }).map(plan => {
                 const completedDays = plan.plan.filter(d => d.completed).length;
                 const progress = Math.round((completedDays / plan.days) * 100);
                 const isExpanded = expandedPlanId === plan.id;
@@ -396,14 +455,6 @@ const ReadingPlannerComponent = () => {
                 );
               })
             )}
-
-            <TouchableOpacity
-              style={styles.newPlanButton}
-              onPress={() => setShowNewPlanModal(true)}
-            >
-              <Plus color="#F6F1F1" size={24} />
-              <Text style={styles.newPlanButtonText}>Start New Plan</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -411,7 +462,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showReadingModal}
           transparent={true}
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setShowReadingModal(false)}
         >
           <View style={styles.modalOverlay}>
@@ -459,31 +510,111 @@ const ReadingPlannerComponent = () => {
               </ScrollView>
 
               <View style={styles.readingModalFooter}>
-                <TouchableOpacity
-                  style={[
-                    styles.markCompleteButton,
-                    selectedDayReading?.completed && styles.markCompleteButtonActive
-                  ]}
-                  onPress={() => {
-                    if (selectedDayReading) {
-                      toggleDayComplete(selectedDayReading.planId, selectedDayReading.day);
-                      setSelectedDayReading({
-                        ...selectedDayReading,
-                        completed: !selectedDayReading.completed
-                      });
-                    }
-                  }}
-                >
-                  {selectedDayReading?.completed ? (
-                    <CheckCircle color="#FFFFFF" size={20} />
-                  ) : (
-                    <Circle color="#FFFFFF" size={20} />
-                  )}
-                  <Text style={styles.markCompleteButtonText}>
-                    {selectedDayReading?.completed ? 'Completed' : 'Mark as Complete'}
-                  </Text>
-                </TouchableOpacity>
+                {(() => {
+                  const plan = activePlans.find(p => p.id === selectedDayReading?.planId);
+                  const completedDays = plan?.plan.filter(d => d.completed).length || 0;
+                  const isFinished = Math.round((completedDays / (plan?.days || 1)) * 100) === 100;
+                  
+                  if (isFinished) return null;
+
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.markCompleteButton,
+                        selectedDayReading?.completed && styles.markCompleteButtonActive
+                      ]}
+                      onPress={() => {
+                        if (selectedDayReading) {
+                          toggleDayComplete(selectedDayReading.planId, selectedDayReading.day);
+                          setSelectedDayReading({
+                            ...selectedDayReading,
+                            completed: !selectedDayReading.completed
+                          });
+                        }
+                      }}
+                    >
+                      {selectedDayReading?.completed ? (
+                        <CheckCircle color="#FFFFFF" size={20} />
+                      ) : (
+                        <Circle color="#FFFFFF" size={20} />
+                      )}
+                      <Text style={styles.markCompleteButtonText}>
+                        {selectedDayReading?.completed ? 'Completed' : 'Mark as Complete'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })()}
               </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Testament Scope Selection Modal */}
+        <Modal
+          visible={showScopeModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowScopeModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>What would you like to read?</Text>
+              <Text style={styles.modalSubtitle}>Choose the scope of your reading journey</Text>
+              
+              <TouchableOpacity
+                style={[
+                  styles.scopeButton,
+                  selectedScope.length === 2 && styles.scopeButtonActive
+                ]}
+                onPress={() => selectScope(['Old Testament', 'New Testament'])}
+              >
+                <View style={styles.scopeIconContainer}>
+                  <BookOpen color="#FFFFFF" size={28} />
+                </View>
+                <View style={styles.scopeTextContainer}>
+                  <Text style={styles.scopeTitle}>Whole Bible</Text>
+                  <Text style={styles.scopeDescription}>All 66 books from Genesis to Revelation</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.scopeButton,
+                  selectedScope.length === 1 && selectedScope[0] === 'Old Testament' && styles.scopeButtonActive
+                ]}
+                onPress={() => selectScope(['Old Testament'])}
+              >
+                <View style={styles.scopeIconContainer}>
+                  <Trophy color="#FFFFFF" size={28} />
+                </View>
+                <View style={styles.scopeTextContainer}>
+                  <Text style={styles.scopeTitle}>Old Testament Only</Text>
+                  <Text style={styles.scopeDescription}>Genesis to Malachi (39 books)</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.scopeButton,
+                  selectedScope.length === 1 && selectedScope[0] === 'New Testament' && styles.scopeButtonActive
+                ]}
+                onPress={() => selectScope(['New Testament'])}
+              >
+                <View style={styles.scopeIconContainer}>
+                  <Gem color="#FFFFFF" size={28} />
+                </View>
+                <View style={styles.scopeTextContainer}>
+                  <Text style={styles.scopeTitle}>New Testament Only</Text>
+                  <Text style={styles.scopeDescription}>Matthew to Revelation (27 books)</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowScopeModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -492,7 +623,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showNewPlanModal}
           transparent={true}
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setShowNewPlanModal(false)}
         >
           <View style={styles.modalOverlay}>
@@ -508,10 +639,7 @@ const ReadingPlannerComponent = () => {
                 >
                   <Text style={styles.durationButtonText}>{duration}</Text>
                   <Text style={styles.durationSubtext}>
-                    {duration === '1 Month' && '~40 chapters/day'}
-                    {duration === '3 Months' && '~13 chapters/day'}
-                    {duration === '6 Months' && '~7 chapters/day'}
-                    {duration === '1 Year' && '~3 chapters/day'}
+                    {getApproxChaptersPerDay(duration)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -530,7 +658,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showPlanTypeModal}
           transparent={true}
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => {
             setShowPlanTypeModal(false);
             setSelectedDuration(null);
@@ -585,6 +713,100 @@ const ReadingPlannerComponent = () => {
             </View>
           </View>
         </Modal>
+
+        {/* History / Completed Plans Modal */}
+        <Modal
+          visible={showHistoryModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowHistoryModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.historyModalContainer}>
+              <View style={styles.historyHeader}>
+                <View style={styles.historyTitleRow}>
+                  <History color="#146C94" size={24} />
+                  <Text style={styles.historyTitle}>Finished Journeys</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setShowHistoryModal(false)}
+                  style={styles.historyCloseBtn}
+                >
+                  <X color="#146C94" size={20} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.historyScroll} showsVerticalScrollIndicator={false}>
+                {activePlans.filter(p => {
+                  const completedDays = p.plan.filter(d => d.completed).length;
+                  return Math.round((completedDays / p.days) * 100) === 100;
+                }).length === 0 ? (
+                  <View style={styles.emptyHistory}>
+                    <Trophy color="#AFD3E2" size={80} />
+                    <Text style={styles.emptyHistoryText}>Your First Trophy Awaits!</Text>
+                    <Text style={styles.emptyHistorySub}>Finish any reading plan to see it archived here as a heavenly treasure.</Text>
+                  </View>
+                ) : (
+                  activePlans.filter(p => {
+                    const completedDays = p.plan.filter(d => d.completed).length;
+                    return Math.round((completedDays / p.days) * 100) === 100;
+                  }).map(plan => (
+                    <View key={plan.id} style={styles.historyPlanCard}>
+                      <View style={styles.historyCardTop}>
+                        <View style={styles.historyIconWrapper}>
+                          <CheckCircle color="#FFFFFF" size={24} />
+                        </View>
+                        <View style={styles.historyInfo}>
+                          <Text style={styles.historyPlanName}>{plan.name}</Text>
+                          <View style={styles.historyDateRow}>
+                            <Calendar color="#888" size={12} />
+                            <Text style={styles.historyPlanDetail}>Completed Today</Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity 
+                          style={styles.historyDeleteAction}
+                          onPress={() => deletePlan(plan.id)}
+                        >
+                          <Trash2 color="#E74C3C" size={18} />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.historyCardDivider} />
+
+                      <View style={styles.historyCardBottom}>
+                        <TouchableOpacity 
+                          style={styles.historyViewBtn}
+                          onPress={() => setExpandedPlanId(plan.id === expandedPlanId ? null : plan.id)}
+                        >
+                          <Text style={styles.historyViewText}>
+                            {expandedPlanId === plan.id ? "Hide Journey" : "View Journey Details"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {expandedPlanId === plan.id && (
+                        <View style={styles.historyExpandedSection}>
+                           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.historyDaysRow}>
+                             {plan.plan.map(dayPlan => (
+                               <TouchableOpacity 
+                                 key={dayPlan.day} 
+                                 style={styles.historyDayBadge}
+                                 onPress={() => openReadingModal(dayPlan, plan.id)}
+                                >
+                                 <CheckCircle color="#4CAF50" size={12} />
+                                 <Text style={styles.historyDayBadgeText}>Day {dayPlan.day}</Text>
+                               </TouchableOpacity>
+                             ))}
+                           </ScrollView>
+                        </View>
+                      )}
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -602,6 +824,21 @@ const styles = StyleSheet.create({
   headerContainer: {
     padding: 20,
     paddingTop: 16,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  headerIconBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 8,
+    borderRadius: 12,
   },
   headerText: {
     fontSize: 32,
@@ -807,6 +1044,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#AFD3E2',
   },
+  scopeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+  },
+  scopeButtonActive: {
+    borderColor: '#146C94',
+    backgroundColor: '#E3F2FD',
+  },
+  scopeIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#146C94',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  scopeTextContainer: {
+    flex: 1,
+  },
+  scopeTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#146C94',
+    marginBottom: 2,
+  },
+  scopeDescription: {
+    fontSize: 12,
+    color: '#666',
+  },
   planTypeButton: {
     backgroundColor: '#146C94',
     borderRadius: 12,
@@ -849,6 +1122,156 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
     textAlign: 'center',
+  },
+  historyModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 25,
+    width: '98%',
+    maxHeight: '90%',
+    padding: 20,
+    elevation: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  historyTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  historyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#146C94',
+  },
+  historyCloseBtn: {
+    backgroundColor: '#F0F9FF',
+    padding: 6,
+    borderRadius: 15,
+  },
+  historyScroll: {
+    flexGrow: 0,
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyHistoryText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#146C94',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  emptyHistorySub: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 10,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  historyPlanCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  historyCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  historyIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  historyInfo: {
+    flex: 1,
+  },
+  historyPlanName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#146C94',
+  },
+  historyDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  historyPlanDetail: {
+    fontSize: 11,
+    color: '#888',
+  },
+  historyDeleteAction: {
+    padding: 8,
+  },
+  historyCardDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 12,
+  },
+  historyCardBottom: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  historyViewBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  historyViewText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#146C94',
+    textDecorationLine: 'underline',
+  },
+  historyExpandedSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F8F9FA',
+  },
+  historyDaysRow: {
+    flexDirection: 'row',
+  },
+  historyDayBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F9FF',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E3F2FD',
+  },
+  historyDayBadgeText: {
+    fontSize: 11,
+    color: '#146C94',
+    fontWeight: '600',
   },
   readingModalContainer: {
     backgroundColor: '#FFFFFF',

@@ -17,11 +17,12 @@ const styles = StyleSheet.create({
   logoContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 20,
   },
   logo: {
     height: 260,
     width: 260,
-    marginTop: 30,
+    marginTop: 50,
     borderRadius: 30,
   },
   text_footer: {

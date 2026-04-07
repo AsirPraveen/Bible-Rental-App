@@ -62,7 +62,7 @@ const CreateBookTab = () => {
   };
 
   // Function to upload image to Cloudinary
-  const uploadImage = async (uri, imageType) => {
+  const uploadImage = async (uri:any, imageType:any) => {
     setUploadingImage(imageType);
     try {
       const fileExtension = uri.split('.').pop()?.toLowerCase();
@@ -73,7 +73,7 @@ const CreateBookTab = () => {
         uri,
         type: mimeType,
         name: `book_${imageType}_${Date.now()}.${fileExtension || 'jpg'}`,
-      });
+      } as any);
       formData.append('upload_preset', uploadPresentBibleBooks);
 
       const response = await axios.post(
@@ -121,7 +121,7 @@ const CreateBookTab = () => {
   };
 
   // Function to pick an image
-  const pickImage = async (imageType) => {
+  const pickImage = async (imageType:any) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'We need permission to access your photos to select an image.');
@@ -209,7 +209,7 @@ const CreateBookTab = () => {
     }
   };
 
-  const renderImagePicker = (imageType, uri, label) => (
+  const renderImagePicker = (imageType:any, uri:any, label:any) => (
     <View style={styles.imageSection}>
       <Text style={styles.label}>{label}</Text>
       <Button

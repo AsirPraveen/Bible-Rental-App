@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { syncPushTokenWithBackend } from '../../utils/notifications';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 console.log('API_URL:', API_URL);
@@ -62,9 +63,18 @@ function LoginPage() {
       .then(res => {
         if (res.data.status === 'ok') {
           Alert.alert('Success', 'Logged in successfully!');
-          AsyncStorage.setItem('token', res.data.data);
+          const token = res.data.data;
+          AsyncStorage.setItem('token', token);
           AsyncStorage.setItem('isLoggedIn', JSON.stringify(true));
           AsyncStorage.setItem('userType', res.data.userType);
+          
+          // Sync push token
+          AsyncStorage.getItem('expoPushToken').then(pushToken => {
+            if (pushToken) {
+              syncPushTokenWithBackend(pushToken);
+            }
+          });
+
           if (res.data.userType === 'Admin') {
             navigation.replace('AdminScreen');
           } else {

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "start": "node app"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "author": "",
   "license": "ISC",
@@ -11,6 +12,7 @@
   "dependencies": {
     "@cloudinary/url-gen": "^1.22.0",
     "@lottiefiles/dotlottie-react": "^0.14.1",
+    "axios": "^1.14.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
@@ -19,6 +21,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.0",
+    "node-cron": "^3.0.3",
     "nodemailer": "^7.0.3",
     "nodemon": "^3.1.9"
   }

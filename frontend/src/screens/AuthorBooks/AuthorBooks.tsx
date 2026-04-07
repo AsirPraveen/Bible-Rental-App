@@ -4,6 +4,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ArrowLeft, Heart } from 'lucide-react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
@@ -54,7 +55,7 @@ export default function AuthorBooks() {
           setAuthor({
             author_id: authorId,
             name: firstBook.author_name,
-            photo: 'https://via.placeholder.com/120',
+            photo: 'https://plus.unsplash.com/premium_photo-1770559520599-881a099cc6e9?q=80&w=1976&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             bio: 'No bio available',
             books: booksRes.data.data.length,
             followers: 'Unknown',
@@ -116,12 +117,7 @@ export default function AuthorBooks() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#146C94" />
-        <Text style={styles.loadingText}>Loading author...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading author..." />;
   }
 
   if (error) {
@@ -145,7 +141,7 @@ export default function AuthorBooks() {
       </View>
 
       <View style={styles.profileContainer}>
-        <Image source={{ uri: author?.photo || 'https://via.placeholder.com/120' }} style={styles.profilePhoto} />
+        <Image source={{ uri: author?.photo || 'https://plus.unsplash.com/premium_photo-1770559520599-881a099cc6e9?q=80&w=1976&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.profilePhoto} />
         <Text style={styles.name}>{author?.name ?? ''}</Text>
         <Text style={styles.bio}>{author?.bio || 'No bio available'}</Text>
 
@@ -172,9 +168,15 @@ export default function AuthorBooks() {
                 style={styles.bookCard}
                 onPress={() => navigateToBookDetails(book)}
               >
-                <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.bookCover} />
+                <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.bookCover} />
                 <View style={styles.bookInfo}>
-                  <Text style={styles.bookTitle}>{book.book_name}</Text>
+                  <Text 
+                    numberOfLines={2} 
+                    ellipsizeMode="tail" 
+                    style={styles.bookTitle}
+                  >
+                    {book.book_name}
+                  </Text>
                   <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
                     <Text style={styles.bookYear}>{book.year_of_publication || 'N/A'}</Text>
                     <View style={styles.likesContainer}>
@@ -289,6 +291,7 @@ const styles = StyleSheet.create({
   },
   booksContainer: {
     padding: 24,
+    width: '100%',
   },
   sectionTitle: {
     fontSize: 20,
@@ -321,6 +324,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#146C94',
     marginBottom: 4,
+    height: 40,
   },
   bookYear: {
     fontSize: 16,

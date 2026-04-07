@@ -12,7 +12,7 @@ export default function BookPdfComponent() {
           <Text style={styles.comingSoonTitle}>Book PDFs</Text>
           <Text style={styles.comingSoonText}>Coming Soon</Text>
           <Text style={styles.comingSoonDescription}>
-            Christian books and resources will be available for download
+            Christian books and resources will be available for reading and download
           </Text>
         </View>
       </View>

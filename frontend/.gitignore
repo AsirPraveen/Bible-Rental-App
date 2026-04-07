@@ -42,3 +42,7 @@ app-example
 .env.local
 .env.development
 .env.production
+
+# Firebase secrets
+*firebase-adminsdk*.json
+google-services.json

@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -159,7 +160,7 @@ const deleteImageFromCloudinary = async (imageUrl:any) => {
 };
 
 // Modified uploadImage function
-const uploadImage = async (uri) => {
+const uploadImage = async (uri:any) => {
   setIsUploading(true);
   try {
     // Delete old image first if it exists
@@ -175,7 +176,7 @@ const uploadImage = async (uri) => {
       uri,
       type: mimeType,
       name: `profile_image_${Date.now()}.${fileExtension || 'jpg'}`,
-    });
+    } as any);
     formData.append('upload_preset', uploadPresentProfiles);
 
     console.log('Uploading to:', `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`);
@@ -193,7 +194,7 @@ const uploadImage = async (uri) => {
     } else {
       throw new Error('Upload failed');
     }
-  } catch (error) {
+  } catch (error:any) {
     console.error('Error uploading image:', error.response ? error.response.data : error.message);
     Alert.alert('Error', `Failed to upload image. Details: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
     setImage(null);
@@ -257,11 +258,7 @@ const uploadImage = async (uri) => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading profile..." />;
   }
 
   // Determine which image to display (local or Cloudinary URL)
@@ -273,9 +270,6 @@ const uploadImage = async (uri) => {
         {/* Header with Logout Button */}
         <View style={styles.header}>
           <Text style={styles.headerText}>Your Profile</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
-          </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -397,7 +391,7 @@ const uploadImage = async (uri) => {
                   {userData?.books_rented?.length > 0 ? (
                     userData.books_rented.map((book: any, index: number) => (
                       <View key={index} style={styles.bookItem}>
-                        <Text style={styles.bookText}>Book ID: {book.book_id}</Text>
+                        <Text style={styles.bookText}>Book Name : {book.book_name || `ID: ${book.book_id}`}</Text>
                         <Text style={[styles.bookStatus, { color: book.status === 'approved' ? '#4CAF50' : book.status === 'rejected' ? '#F44336' : '#FF9800' }]}>
                           Status: {book.status}
                         </Text>
@@ -427,7 +421,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,

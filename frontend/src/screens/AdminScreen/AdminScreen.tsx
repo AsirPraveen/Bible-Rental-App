@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, ActivityIndicator, Platform, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import { Check, LogOut, Plus, X } from 'lucide-react-native';
+import { Check, Plus, X } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 console.log('API_URL admin screen:', BASE_URL); // Debug the API URL
@@ -176,23 +178,13 @@ const AdminScreen = () => {
   };
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.bg} />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingScreen message="Loading Admin Dashboard..." />;
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Admin Dashboard</Text>
-        <Pressable onPress={handleLogout}>
-          <LogOut size={24} color={Colors.inactive} />
-        </Pressable>
       </View>
 
       <ScrollView style={styles.scrollView}>

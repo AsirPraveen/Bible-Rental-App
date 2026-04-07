@@ -5,9 +5,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -21,7 +22,7 @@ type RootStackParamList = {
 };
 
 const AboutAdminTab = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const [userData, setUserData] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -254,11 +255,7 @@ const AboutAdminTab = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen message="Loading profile..." />;
   }
 
   // Determine which image to display (local or Cloudinary URL)
@@ -270,9 +267,6 @@ const AboutAdminTab = () => {
         {/* Header with Logout Button */}
         <View style={styles.header}>
           <Text style={styles.headerText}>Admin Profile</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
-          </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -388,6 +382,25 @@ const AboutAdminTab = () => {
                     <Text style={styles.buttonText}>{isEditing ? 'Save Profile' : 'Edit Profile'}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
+
+                {!isEditing && (
+                  <TouchableOpacity
+                    style={[styles.editButton, { marginTop: 12 }]}
+                    onPress={() => navigation.navigate('AppSettings')}
+                  >
+                    <LinearGradient
+                      colors={['#146C94', '#19A7CE']}
+                      style={styles.buttonGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <View style={styles.btnRow}>
+                        <MaterialCommunityIcons name="cog" size={20} color="#fff" />
+                        <Text style={styles.buttonText}>App Configuration</Text>
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
               </View>
 
             </View>
@@ -407,7 +420,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -551,6 +564,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#F6F1F1',
+  },
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   loadingContainer: {
     flex: 1,

@@ -13,7 +13,7 @@ const postSchema = new mongoose.Schema({
   },
   date: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
   },
   time: {
@@ -25,13 +25,25 @@ const postSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  audienceType: {
+    type: String,
+    enum: ['all', 'specific'],
+    default: 'all',
+  },
+  targetUsers: [{
+    type: String, // Store user emails
+  }],
+  showInNotification: {
+    type: Boolean,
+    default: false,
+  },
   likes: {
     type: Number,
-    default: 0, // Default likes to 0
+    default: 0,
   },
   likedBy: [{
-    type: String, // Store user email or ID
-    ref: 'UserInfo', // Reference to UserInfo model
+    type: String,
+    ref: 'UserInfo',
   }],
   createdAt: {
     type: Date,

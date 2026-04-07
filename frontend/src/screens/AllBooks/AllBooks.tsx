@@ -16,6 +16,7 @@ import { useNavigation, useRoute, NavigationProp } from "@react-navigation/nativ
 import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X, Heart } from 'lucide-react-native';
 import axios from "axios";
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 type RootStackParamList = {
@@ -164,7 +165,7 @@ const AllBooks = () => {
   const renderFilterModal = () => {
     return (
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={filterModalVisible}
         onRequestClose={() => setFilterModalVisible(false)}
@@ -338,7 +339,7 @@ const AllBooks = () => {
         onPress={() => navigateToBookDetails(item)}
       >
         <Image
-          source={{ uri: item.cover_image || 'https://images.unsplash.com/photo-1599179416084-91afc57e96f2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
+          source={{ uri: item.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
           style={styles.bookCover}
         />
         <View style={styles.bookInfo}>
@@ -387,9 +388,7 @@ const AllBooks = () => {
       </View>
       
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#146C94" />
-        </View>
+        <LoadingScreen message="Loading books..." />
       ) : (
         <>
           {/* Active Filters */}

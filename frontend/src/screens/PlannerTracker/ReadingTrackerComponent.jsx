@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Calendar, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react-native';
+import { Calendar, ChevronDown, ChevronUp, RotateCcw, Gem, Trophy, Plus, Minus, X, Cloud } from 'lucide-react-native';
+import { Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import Constants from 'expo-constants';
+
+const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
 // Bible books structure with chapters
 const BIBLE_STRUCTURE = {
@@ -30,6 +35,13 @@ const ReadingTrackerComponent = () => {
   const [completedChapters, setCompletedChapters] = useState({});
   const [expandedBook, setExpandedBook] = useState(null);
   const [expandedTestament, setExpandedTestament] = useState('Old Testament');
+  
+  // Treasures in Heaven states
+  const [treasuresInHeaven, setTreasuresInHeaven] = useState(0);
+  const [showTreasuresModal, setShowTreasuresModal] = useState(false);
+  const [showInitialSetup, setShowInitialSetup] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     loadCompletedChapters();
@@ -37,20 +49,118 @@ const ReadingTrackerComponent = () => {
 
   const loadCompletedChapters = async () => {
     try {
+      // 1. Try to load from Local Storage first for immediate UI
       const savedCompleted = await AsyncStorage.getItem('completedChapters');
       if (savedCompleted) setCompletedChapters(JSON.parse(savedCompleted));
+
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        // 2. Fetch fresh data from MongoDB
+        const response = await axios.post(`${apiUrl}/api/auth/userdata`, { token });
+        if (response.data.status === 'Ok') {
+          const userData = response.data.data;
+          setUserId(userData._id);
+          
+          if (userData.readingProgress) {
+            setCompletedChapters(userData.readingProgress);
+            await AsyncStorage.setItem('completedChapters', JSON.stringify(userData.readingProgress));
+          }
+
+          if (userData.treasuresInHeaven !== undefined && userData.treasuresInHeaven !== null) {
+            setTreasuresInHeaven(userData.treasuresInHeaven);
+            // If it's the very first time (null/undefined in DB), show initial setup
+            if (userData.treasuresInHeaven === 0 && !await AsyncStorage.getItem('hasAnsweredInitialSetup')) {
+               setShowInitialSetup(true);
+            }
+          } else {
+            // Field doesn't exist yet for this user
+            setShowInitialSetup(true);
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error loading completed chapters:', error);
+      console.error('Error loading tracker data:', error);
     }
   };
 
   const saveCompletedChapters = async (chapters) => {
     try {
-      await AsyncStorage.setItem('completedChapters', JSON.stringify(chapters));
       setCompletedChapters(chapters);
+      await AsyncStorage.setItem('completedChapters', JSON.stringify(chapters));
+
+      const progress = getTotalProgressInternal(chapters);
+      
+      // Perform background sync to MongoDB
+      syncProgressToCloud(chapters, treasuresInHeaven, progress.completed);
+
+      // Check for Bible Completion (1189 chapters)
+      if (progress.completed === 1189) {
+        handleBibleCompletion();
+      }
     } catch (error) {
       console.error('Error saving completed chapters:', error);
     }
+  };
+
+  const syncProgressToCloud = async (chapters, treasures, totalRead) => {
+    try {
+      if (!userId) return;
+      setIsSyncing(true);
+      await axios.post(`${apiUrl}/api/reading-tracker/sync`, {
+        userId,
+        readingProgress: chapters,
+        treasuresInHeaven: treasures,
+        totalChaptersRead: totalRead
+      });
+      setIsSyncing(false);
+    } catch (error) {
+      console.log('Progress sync failed:', error.message);
+      setIsSyncing(false);
+    }
+  };
+
+  const handleBibleCompletion = () => {
+    const newCount = treasuresInHeaven + 1;
+    setTreasuresInHeaven(newCount);
+    syncProgressToCloud(completedChapters, newCount, 1189);
+    
+    Alert.alert(
+      '🌟 Treasure Stored in Heaven! 🌟',
+      'Congratulations! You have completed the entire Bible. A new treasure has been stored for you in the heavenly realms.',
+      [
+        { 
+          text: 'Glory to God!', 
+          onPress: () => {
+            // Optional: Show celebration effect or ask to reset
+            askForResetAfterCompletion();
+          }
+        }
+      ]
+    );
+  };
+
+  const askForResetAfterCompletion = () => {
+    Alert.alert(
+      'Begin New Journey?',
+      'You have finished all chapters. Would you like to reset your progress to start reading from Genesis again? (Your Treasures will remain safe!)',
+      [
+        { text: 'Not Now', style: 'cancel' },
+        { 
+          text: 'Reset & Start Again', 
+          onPress: () => {
+            saveCompletedChapters({});
+          }
+        }
+      ]
+    );
+  };
+
+  const submitInitialTreasures = async (count) => {
+    const finalCount = parseInt(count) || 0;
+    setTreasuresInHeaven(finalCount);
+    setShowInitialSetup(false);
+    await AsyncStorage.setItem('hasAnsweredInitialSetup', 'true');
+    syncProgressToCloud(completedChapters, finalCount, getTotalProgressInternal(completedChapters).completed);
   };
 
   const toggleChapterComplete = (book, chapter) => {
@@ -89,12 +199,14 @@ const ReadingTrackerComponent = () => {
     );
   };
 
-  const getTotalProgress = () => {
-    const total = Object.values(BIBLE_STRUCTURE).reduce((sum, books) => 
-      sum + Object.values(books).reduce((s, ch) => s + ch, 0), 0
-    );
-    const completed = Object.values(completedChapters).filter(v => v).length;
+  const getTotalProgressInternal = (chapters) => {
+    const total = 1189; // Fixed total chapters in Protestant Bible
+    const completed = Object.values(chapters).filter(v => v).length;
     return { completed, total, percentage: Math.round((completed / total) * 100) };
+  };
+
+  const getTotalProgress = () => {
+    return getTotalProgressInternal(completedChapters);
   };
 
   const getTestamentProgress = (testament) => {
@@ -123,6 +235,17 @@ const ReadingTrackerComponent = () => {
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         <View style={styles.headerContainer}>
+          <TouchableOpacity 
+            style={styles.treasureHeaderIcon}
+            onPress={() => setShowTreasuresModal(true)}
+          >
+            <Trophy color="#F1C40F" size={28} />
+            {treasuresInHeaven > 0 && (
+              <View style={styles.treasureBadge}>
+                <Text style={styles.treasureBadgeText}>{treasuresInHeaven}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <Text style={styles.headerText}>Chapter Tracker</Text>
           <Text style={styles.subtitleText}>Track every chapter of the Bible</Text>
         </View>
@@ -283,6 +406,113 @@ const ReadingTrackerComponent = () => {
           </View>
         </ScrollView>
       </LinearGradient>
+
+      {/* Treasures in Heaven Modal */}
+      <Modal
+        visible={showTreasuresModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTreasuresModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <LinearGradient colors={['#E3F2FD', '#FFFFFF']} style={styles.heavenlyModalContent}>
+            <TouchableOpacity 
+              style={styles.closeModalButton}
+              onPress={() => setShowTreasuresModal(false)}
+            >
+              <X color="#146C94" size={24} />
+            </TouchableOpacity>
+
+            <Cloud color="rgba(255,255,255,0.8)" size={100} style={styles.bgCloud1} />
+            <Cloud color="rgba(255,255,255,0.5)" size={150} style={styles.bgCloud2} />
+
+            <View style={styles.heavenlyContent}>
+              <Trophy color="#F1C40F" size={80} style={styles.mainTreasureIcon} />
+              <Text style={styles.heavenlyTitle}>Treasures in Heaven</Text>
+              <Text style={styles.heavenlySubtitle}>"Do not store up for yourselves treasures on earth... but store up for yourselves treasures in heaven."</Text>
+              
+              <View style={styles.treasureDisplay}>
+                <Text style={styles.treasureCountText}>{treasuresInHeaven}</Text>
+                <Text style={styles.treasureLabel}>Bible Completions</Text>
+              </View>
+
+              <View style={styles.starsContainer}>
+                {Array.from({ length: Math.min(treasuresInHeaven, 50) }).map((_, i) => (
+                  <Gem key={i} color="#F1C40F" size={20} fill="#F1C40F" style={styles.miniStar} />
+                ))}
+              </View>
+
+              <View style={styles.manualControls}>
+                <TouchableOpacity 
+                  style={styles.controlBtn}
+                  onPress={() => {
+                    const next = Math.max(0, treasuresInHeaven - 1);
+                    setTreasuresInHeaven(next);
+                    syncProgressToCloud(completedChapters, next, getTotalProgress().completed);
+                  }}
+                >
+                  <Minus color="#146C94" size={24} />
+                </TouchableOpacity>
+                <View style={styles.controlLabelContainer}>
+                  <Text style={styles.controlValue}>{treasuresInHeaven}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.controlBtn}
+                  onPress={() => {
+                    const next = treasuresInHeaven + 1;
+                    setTreasuresInHeaven(next);
+                    syncProgressToCloud(completedChapters, next, getTotalProgress().completed);
+                  }}
+                >
+                  <Plus color="#146C94" size={24} />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.footerNote}>Each full Bible completion adds a treasure.</Text>
+            </View>
+          </LinearGradient>
+        </View>
+      </Modal>
+
+      {/* Initial Setup Modal */}
+      <Modal
+        visible={showInitialSetup}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.setupOverlay}>
+          <View style={styles.setupCard}>
+            <Trophy color="#F1C40F" size={60} style={{ alignSelf: 'center', marginBottom: 15 }} />
+            <Text style={styles.setupTitle}>Welcome to your Heavenly Record</Text>
+            <Text style={styles.setupText}>How many times have you already completed the whole Bible in your life?</Text>
+            
+            <View style={styles.manualControls}>
+              <TouchableOpacity 
+                style={styles.controlBtn}
+                onPress={() => setTreasuresInHeaven(prev => Math.max(0, prev - 1))}
+              >
+                <Minus color="#146C94" size={24} />
+              </TouchableOpacity>
+              <View style={styles.controlLabelContainer}>
+                <Text style={styles.controlValue}>{treasuresInHeaven}</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.controlBtn}
+                onPress={() => setTreasuresInHeaven(prev => prev + 1)}
+              >
+                <Plus color="#146C94" size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.submitBtn}
+              onPress={() => submitInitialTreasures(treasuresInHeaven)}
+            >
+              <Text style={styles.submitBtnText}>Confirm Record</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -541,6 +771,194 @@ const styles = StyleSheet.create({
   },
   chapterNumberCompleted: {
     color: '#F6F1F1',
+  },
+  // Heavenly Modal Styles
+  treasureHeaderIcon: {
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 8,
+    borderRadius: 20,
+  },
+  treasureBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#E74C3C',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#F6F1F1',
+  },
+  treasureBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heavenlyModalContent: {
+    width: '90%',
+    height: '70%',
+    borderRadius: 30,
+    padding: 24,
+    overflow: 'hidden',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  closeModalButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 20,
+    backgroundColor: 'rgba(20, 108, 148, 0.1)',
+    padding: 8,
+    borderRadius: 20,
+  },
+  heavenlyContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
+  mainTreasureIcon: {
+    marginBottom: 16,
+  },
+  heavenlyTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#146C94',
+    textAlign: 'center',
+  },
+  heavenlySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: 12,
+    paddingHorizontal: 20,
+  },
+  treasureDisplay: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  treasureCountText: {
+    fontSize: 64,
+    fontWeight: '900',
+    color: '#F1C40F',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  treasureLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#146C94',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginVertical: 20,
+    maxHeight: 120,
+  },
+  miniStar: {
+    margin: 2,
+  },
+  manualControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    marginTop: 20,
+  },
+  controlBtn: {
+    backgroundColor: '#AFD3E2',
+    padding: 12,
+    borderRadius: 20,
+    elevation: 2,
+  },
+  controlLabelContainer: {
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  controlValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#146C94',
+  },
+  footerNote: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 30,
+  },
+  bgCloud1: {
+    position: 'absolute',
+    top: 40,
+    left: -20,
+    opacity: 0.8,
+  },
+  bgCloud2: {
+    position: 'absolute',
+    bottom: -30,
+    right: -40,
+    opacity: 0.6,
+  },
+  // Setup Overlay
+  setupOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 108, 148, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  setupCard: {
+    backgroundColor: '#FFF',
+    width: '100%',
+    borderRadius: 20,
+    padding: 24,
+    elevation: 10,
+  },
+  setupTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#146C94',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  setupText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  submitBtn: {
+    backgroundColor: '#146C94',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  submitBtnText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

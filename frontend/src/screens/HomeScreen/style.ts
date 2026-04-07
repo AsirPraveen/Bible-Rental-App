@@ -218,6 +218,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#146C94',
     textAlign: 'center',
+    height: 40,
   },
   noAuthorsText: {
     fontSize: 16,

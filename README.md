@@ -59,6 +59,44 @@ Admins have a full-featured dashboard for managing books, posts, maps, songs, us
 
 ---
 
+## 📋 Development Roadmap
+
+### 🔴 Not Picked
+
+#### Feature Development
+- [ ] Enhance Admin UI and all possible CRUD operations for admin
+- [ ] Game — all logics testing, upload images, etc.
+- [ ] Notepad
+- [ ] Instant Bible Answers
+- [ ] Meeting Messages / Notes available
+- [ ] BookPdf for reading and downloading
+
+#### Pre-Production
+- [ ] Complete end-to-end testing — before production build
+- [ ] Clean the basic data in DB — before production build
+
+---
+
+### 🟡 In Progress
+- [/] Upload all known/required songs
+- [/] All books and authors — images and content check
+
+---
+
+### 🟢 Finished
+- [x] Add bilingual Bible alongside if possible
+- [x] Give updates about meeting date and time
+- [x] Wednesday / Thursday meeting or special meeting reminder
+- [x] Daily Bible reading progress noter
+- [x] Bible historical map locations
+- [x] Share prayer request
+- [x] Fasting tracker or fasting plan
+- [x] Discussion forum for asking and discussing questions
+- [x] Bible Tamil and English terms meaning
+- [x] Push notify all possible
+
+---
+
 ## 🏗️ Architecture
 
 ```

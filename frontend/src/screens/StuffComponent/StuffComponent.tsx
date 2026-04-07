@@ -19,7 +19,7 @@ export default function StuffComponent() {
       icon: <Music color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
       isNew: false,
-      isComingSoon: true,
+      isComingSoon: false,
     },
     {
       title: 'HistoricalMaps',

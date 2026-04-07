@@ -58,6 +58,22 @@ const UserDetailSchema = new mongoose.Schema(
     // Treasures in Heaven (Bible Reading Progress)
     treasuresInHeaven: { type: Number, default: 0 },
     readingProgress: { type: Object, default: {} },
+    notificationSettings: {
+      type: {
+        readingReminders: { type: Boolean, default: true },
+        readingReminderTime: { type: String, default: '18:00' },
+        forumActivity: { type: Boolean, default: true },
+        prayerActivity: { type: Boolean, default: true },
+        rentalUpdates: { type: Boolean, default: true }
+      },
+      default: {
+        readingReminders: true,
+        readingReminderTime: '18:00',
+        forumActivity: true,
+        prayerActivity: true,
+        rentalUpdates: true
+      }
+    }
   },
   {
     collection: "UserInfo",

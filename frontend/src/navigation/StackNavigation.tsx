@@ -10,6 +10,7 @@ import BookDetails from '../screens/BookDetails/BookDetails';
 import AuthorBooks from '../screens/AuthorBooks/AuthorBooks';
 import Bible from '../screens/Bible/Bible';
 import SongComponent from '../screens/Songs/Songs';
+import SongDetailsScreen from '../screens/Songs/SongDetails';
 import BookPdfComponent from '../screens/BookPdf/BookPdf';
 import BibleComponent from '../screens/Bible/Bible';
 import MessageNotesComponent from '../screens/MessageNotes/MessageNotes';
@@ -44,6 +45,7 @@ import GameSurvival from '../screens/GameScreen/GameSurvival';
 import GameScrollRoom from '../screens/GameScreen/GameScrollRoom';
 import GameCardLibrary from '../screens/GameScreen/GameCardLibrary';
 import AppSettingsTab from '../screens/AdminScreen/components/AppSettingsTab';
+import ManageSongsTab from '../screens/AdminScreen/ManageSongsTab';
 
 const Stack = createStackNavigator();
 
@@ -103,6 +105,11 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Songs"
         component={SongComponent}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SongDetails"
+        component={SongDetailsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -248,6 +255,11 @@ const StackNavigation = () => {
       <Stack.Screen
         name="GameCardLibrary"
         component={GameCardLibrary}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Manage Songs"
+        component={ManageSongsTab}
         options={{ headerShown: false }}
       />
       <Stack.Screen

@@ -3,7 +3,7 @@ const ReadingStat = require('../models/ReadingStat');
 
 exports.syncReadingProgress = async (req, res) => {
   try {
-    const { userId, readingProgress, treasuresInHeaven, totalChaptersRead } = req.body;
+    const { userId, readingProgress, treasuresInHeaven, totalChaptersRead, planProgress } = req.body;
 
     if (!userId) {
       return res.status(400).json({ status: 'Error', message: 'User ID is required' });
@@ -32,6 +32,7 @@ exports.syncReadingProgress = async (req, res) => {
         { 
           $set: { 
             totalChaptersRead: totalChaptersRead,
+            planProgress: planProgress || [],
             lastSynced: Date.now()
           } 
         },

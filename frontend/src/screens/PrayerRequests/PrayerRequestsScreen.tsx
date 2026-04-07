@@ -118,7 +118,7 @@ export default function PrayerRequestsScreen() {
 
         <View style={styles.container}>
           {loading ? (
-            <LoadingScreen message="Loading prayers..." />
+            <LoadingScreen variant="transparent" message="Loading prayers..." />
           ) : (
             <>
               <FlatList

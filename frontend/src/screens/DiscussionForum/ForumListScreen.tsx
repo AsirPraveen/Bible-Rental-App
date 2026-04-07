@@ -122,7 +122,7 @@ export default function ForumListScreen() {
 
         <View style={styles.container}>
           {loading ? (
-            <LoadingScreen message="Loading discussions..." />
+            <LoadingScreen variant="transparent" message="Loading discussions..." />
           ) : (
             <>
               <FlatList

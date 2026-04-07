@@ -1,4 +1,5 @@
 const ForumQuestion = require('../models/ForumQuestion');
+const { notifyUserById } = require('../utils/notificationService');
 
 // Create a new question
 exports.createQuestion = async (req, res) => {
@@ -64,6 +65,17 @@ exports.addAnswer = async (req, res) => {
 
     question.answers.push({ user, answerText });
     await question.save();
+    
+    // Notify the question owner
+    if (question.user && question.user.toString() !== user) {
+        await notifyUserById(
+            question.user, 
+            'forumActivity', 
+            'New Answer in Forum ✍️', 
+            `Someone has answered your question: "${question.questionText.substring(0, 50)}..."`,
+            { questionId: question._id, type: 'forum' }
+        );
+    }
     
     // To return the populated answer
     const populatedQuestion = await ForumQuestion.findById(questionId)

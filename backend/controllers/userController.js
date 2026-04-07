@@ -181,3 +181,39 @@ exports.searchUsers = async (req, res) => {
     res.status(500).send({ status: "error", data: error.message });
   }
 };
+
+exports.getNotificationSettings = async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).send({ status: "error", data: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email }).select('notificationSettings');
+    
+    if (!user) return res.status(404).send({ status: "error", data: "User not found" });
+
+    res.send({ status: "Ok", data: user.notificationSettings });
+  } catch (error) {
+    res.status(500).send({ status: "error", data: error.message });
+  }
+};
+
+exports.updateNotificationSettings = async (req, res) => {
+  const { settings } = req.body;
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).send({ status: "error", data: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ email: decoded.email });
+    
+    if (!user) return res.status(404).send({ status: "error", data: "User not found" });
+
+    user.notificationSettings = { ...user.notificationSettings, ...settings };
+    await user.save();
+
+    res.send({ status: "Ok", data: "Settings updated successfully" });
+  } catch (error) {
+    res.status(500).send({ status: "error", data: error.message });
+  }
+};

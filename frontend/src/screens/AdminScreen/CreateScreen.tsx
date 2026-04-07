@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Image, Platform, StatusBar, SafeAreaView, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SquarePen, BookPlus, BarChart3, ShieldAlert, Map } from 'lucide-react-native';
+import { SquarePen, BookPlus, BarChart3, ShieldAlert, Map, Music } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function CreateScreen() {
@@ -19,6 +19,16 @@ export default function CreateScreen() {
       bgColor: '#AFD3E2',
     },
     {
+      title: 'Manage Maps',
+      icon: <Map color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+    },
+    {
+      title: 'Manage Songs',
+      icon: <Music color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+    },
+    {
       title: 'App Analytics',
       icon: <BarChart3 color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
@@ -26,11 +36,6 @@ export default function CreateScreen() {
     {
       title: 'Moderation',
       icon: <ShieldAlert color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
-    },
-    {
-      title: 'Manage Maps',
-      icon: <Map color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
     }
   ];

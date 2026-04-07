@@ -15,6 +15,12 @@ const readingStatSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  planProgress: [{
+    planId: { type: String, required: true },
+    currentDay: { type: Number, default: 1 },
+    completedToday: { type: Boolean, default: false },
+    lastStatusUpdate: { type: String } // Format: YYYY-MM-DD
+  }],
   lastSynced: {
     type: Date,
     default: Date.now

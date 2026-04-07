@@ -1,4 +1,5 @@
 const PrayerRequest = require('../models/PrayerRequest');
+const { notifyUserById } = require('../utils/notificationService');
 
 // Create a new prayer request
 exports.createPrayerRequest = async (req, res) => {
@@ -71,6 +72,17 @@ exports.incrementPrayedCount = async (req, res) => {
     }
 
     await request.save();
+    
+    // Notify the requester if someone else is praying
+    if (!hasPrayed && request.user && request.user.toString() !== userId) {
+        await notifyUserById(
+            request.user, 
+            'prayerActivity', 
+            'Someone is Praying for You! 🙏', 
+            `A brother/sister has joined in prayer for your request: "${request.requestText.substring(0, 50)}..."`,
+            { prayerId: request._id, type: 'prayer' }
+        );
+    }
 
     return res.status(200).json({ status: "Success", data: request });
   } catch (error) {

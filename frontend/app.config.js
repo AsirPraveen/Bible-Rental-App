@@ -15,6 +15,7 @@ export default {
     },
     android: {
       package: "com.asirpraveen.youthroom",
+      googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./src/assets/jesus-holding-bible.jpg",
         backgroundColor: "#ffffff",

@@ -4,6 +4,7 @@ const RequestHistory = require('../models/RequestHistory');
 const EmailTemplate = require('../models/EmailTemplate');
 const nodemailer = require('nodemailer');
 const { bookApprovalTemplate, bookRejectionTemplate } = require('../config/emailTemplate');
+const { notifyAdmins, notifyUserById } = require('../utils/notificationService');
 
 exports.getAllBooks = async (req, res) => {
   try {
@@ -125,6 +126,13 @@ exports.submitRentRequest = async (req, res) => {
     await User.updateOne(
       { email: userEmail },
       { $push: { books_rented: { book_id, status: 'pending', requested_at: new Date() } } }
+    );
+
+    // Notify Admins of new request
+    await notifyAdmins(
+        'New Book Rental Request 📚',
+        `User ${user.name || userEmail} has requested to rent "${book.book_name}".`,
+        { bookId: book_id, type: 'rental_request' }
     );
 
     res.send({ status: "Ok", data: "Rent request submitted" });
@@ -254,6 +262,15 @@ exports.approveRentRequest = async (req, res) => {
       // We don't fail the approval if email fails, but we log it
     }
 
+    // Notify User of approval
+    await notifyUserById(
+        user._id,
+        'rentalUpdates',
+        'Book Request Approved! 🎉',
+        `Your request for "${book.book_name}" has been approved. You've earned 50 Talents!`,
+        { bookId: book_id, type: 'rental_update' }
+    );
+
     res.send({ status: "Ok", data: "Rent request approved" });
   } catch (error) {
     res.send({ status: "error", data: error });
@@ -324,6 +341,15 @@ exports.rejectRentRequest = async (req, res) => {
       console.error('Error sending rejection email:', emailError);
     }
 
+    // Notify User of rejection
+    await notifyUserById(
+        user._id,
+        'rentalUpdates',
+        'Book Request Update 📖',
+        `Sorry, your request for "${book.book_name}" could not be approved at this time.`,
+        { bookId: book_id, type: 'rental_update' }
+    );
+
     res.send({ status: "Ok", data: "Rent request rejected" });
   } catch (error) {
     res.send({ status: "error", data: error });
@@ -360,6 +386,14 @@ exports.returnBook = async (req, res) => {
       { book_id },
       { $set: { available: true, owned_by: null, rent_from: null } }
     );
+
+    // Notify Admins of return
+    await notifyAdmins(
+        'Book Returned 📚',
+        `The book "${book.book_name}" has been returned and is now available for others.`,
+        { bookId: book_id, type: 'rental_return' }
+    );
+
     res.send({ status: "Ok", data: "Book returned successfully" });
   } catch (error) {
     res.send({ status: "error", data: error });

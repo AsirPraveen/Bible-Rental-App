@@ -144,7 +144,7 @@ export default function FastingTrackerScreen() {
 
         <View style={styles.container}>
           {loading ? (
-            <LoadingScreen message="Loading fasts..." />
+            <LoadingScreen variant="transparent" message="Loading fasts..." />
           ) : (
             <>
               <FlatList

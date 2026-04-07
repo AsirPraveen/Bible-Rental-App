@@ -21,6 +21,11 @@ const emailTemplateRoutes = require('./routes/emailTemplateRoutes');
 const bibleRoutes = require('./routes/bibleRoutes'); // Bible routes
 const readingTrackerRoutes = require('./routes/readingTrackerRoutes');
 const appSettingsRoutes = require('./routes/appSettingsRoutes');
+const songRoutes = require('./routes/songRoutes');
+
+const cron = require('node-cron');
+const { notifyUserById } = require('./utils/notificationService');
+const ReadingStat = require('./models/ReadingStat');
 
 const mongoUrl = process.env.MONGO_URL;
 const PORT = process.env.PORT || 5001;
@@ -53,6 +58,53 @@ app.use('/api', emailTemplateRoutes);
 app.use('/api/bible', bibleRoutes); // Bible routes
 app.use('/api/reading-tracker', readingTrackerRoutes);
 app.use('/api', appSettingsRoutes);
+app.use('/api', songRoutes);
+
+/**
+ * DYNAMIC DAILY BIBLE READING REMINDER
+ * Runs every hour on the minute 0.
+ * Checks for users who have a reading reminder set for THIS hour.
+ */
+cron.schedule('0 * * * *', async () => {
+  const currentHourNum = new Date().getHours();
+  const currentHourStr = currentHourNum.toString().padStart(2, '0') + ':00';
+  
+  console.log(`[Cron] Checking reading reminders for ${currentHourStr}...`);
+  
+  try {
+    // 1. Find all reading stats where at least one plan is NOT completed today
+    const stats = await ReadingStat.find({ 
+      'planProgress.completedToday': false 
+    }).populate('user');
+
+    for (const stat of stats) {
+      if (stat.user && stat.user.expoPushToken) {
+        const user = stat.user;
+        const userSettings = user.notificationSettings || {};
+        
+        // 2. Check if user has reading reminders enabled
+        if (userSettings.readingReminders !== false) {
+           // 3. Check if the current hour matches the user's preferred reminder time
+           // Note: We match the hour part (e.g., '18:00' matches 6:00 PM)
+           const preferredHour = userSettings.readingReminderTime?.split(':')[0];
+           
+           if (preferredHour === currentHourNum.toString().padStart(2, '0')) {
+              await notifyUserById(
+                user._id, 
+                'readingReminders', 
+                'Bible Study Time 📖', 
+                'Don\'t forget to finish your daily reading portion to grow in the Word today!',
+                { type: 'reading_planner' }
+              );
+              console.log(`[Cron] Notification sent to user ${user.email}`);
+           }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Cron] Error in reading reminder job:', err);
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Node js server started on port ${PORT}`);

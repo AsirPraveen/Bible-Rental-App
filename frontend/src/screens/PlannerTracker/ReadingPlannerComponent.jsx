@@ -191,10 +191,24 @@ const ReadingPlannerComponent = () => {
         });
         
         if (userRes.data && userRes.data.data && userRes.data.data._id) {
+          const planProgress = plans.map(p => {
+            const completedDays = p.plan.filter(d => d.completed).length;
+            const currentDay = Math.min(completedDays + 1, p.days);
+            const isCompletedToday = p.plan.find(d => d.day === currentDay)?.completed || false;
+            
+            return {
+              planId: p.id,
+              currentDay: currentDay,
+              completedToday: isCompletedToday,
+              lastStatusUpdate: new Date().toISOString().split('T')[0]
+            };
+          });
+
           await axios.post(`${apiUrl}/api/reading-tracker/sync`, {
             userId: userRes.data.data._id,
             totalChaptersRead: totalChaptersRead,
-            activePlans: plans.length
+            activePlans: plans.length,
+            planProgress: planProgress
           });
         }
       }

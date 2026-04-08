@@ -23,7 +23,7 @@ import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const SECRET_TEXT = Constants.expoConfig.extra.secretText;
-console.log('secretText:', SECRET_TEXT);
+// console.log('secretText:', SECRET_TEXT); // Removed for production security
 
 function RegisterPage() {
   const navigation = useNavigation();

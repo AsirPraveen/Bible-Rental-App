@@ -34,9 +34,9 @@ export async function registerForPushNotificationsAsync() {
     // Get the token
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.expoConfig?.updates?.url?.split('project/')[1]?.split('/')[0];
     token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    console.log('Expo Push Token:', token);
+    // console.log('Expo Push Token:', token);
   } else {
-    console.log('Must use physical device for Push Notifications');
+    // console.log('Must use physical device for Push Notifications');
   }
 
   if (token) {
@@ -55,9 +55,9 @@ export async function syncPushTokenWithBackend(token: string) {
         token: userToken,
         expoPushToken: token,
       });
-      console.log('Push token synced with backend');
+      // console.log('Push token synced with backend');
     }
   } catch (error) {
-    console.error('Error syncing push token:', error);
+    // console.error('Error syncing push token:', error);
   }
 }

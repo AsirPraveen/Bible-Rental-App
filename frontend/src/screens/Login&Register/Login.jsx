@@ -57,7 +57,7 @@ function LoginPage() {
 
     setLoading(true);
     const userData = { emailOrPhone, password };
-    console.log('LoginPage - userData:', userData, 'API_URL:', API_URL);
+    console.log('LoginPage - logging in...', API_URL);
     axios
       .post(`${API_URL}/api/auth/login-user`, userData)
       .then(res => {

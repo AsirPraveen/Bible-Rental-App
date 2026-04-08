@@ -146,7 +146,7 @@ const HomeView = () => {
   const [topBooks, setTopBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [isGameEnabled, setIsGameEnabled] = useState(true);
+  const [isGameEnabled, setIsGameEnabled] = useState(false);
 
   const fetchAppSettings = async () => {
     try {
@@ -289,7 +289,7 @@ const HomeView = () => {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={styles.logo}>{APP_NAME}</Text>
             {isGameEnabled && (
-              <Pressable onPress={() => navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
+              <Pressable onPress={() => isGameEnabled && navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
                 <Ionicons name="game-controller" size={28} color="#F6F1F1" />
               </Pressable>
             )}

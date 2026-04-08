@@ -5,11 +5,13 @@ import { ArrowLeft, Star, X, Heart } from 'lucide-react-native'; // Changed Star
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
-import { AdvancedImage } from 'cloudinary-react-native';
-import { Cloudinary } from '@cloudinary/url-gen';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
+
+const getCloudinaryUrl = (publicId: string) => {
+  return `https://res.cloudinary.com/${cloudinaryCloudName}/image/upload/${publicId}`;
+};
 
 const Colors = {
   bg: '#146C94',
@@ -17,13 +19,6 @@ const Colors = {
   inactive: '#F6F1F1',
   transparent: 'transparent',
 };
-
-// Initialize Cloudinary instance
-const cld = new Cloudinary({
-  cloud: {
-    cloudName: cloudinaryCloudName,
-  },
-});
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH * 0.6; // 60% of screen width for carousel items
@@ -267,7 +262,7 @@ export default function BookDetails() {
               decelerationRate="fast"
             >
               {images.map((item, index) => {
-                const cldImg = cld.image(item.publicId);
+                // const cldImg = cld.image(item.publicId);
                 return (
                   <Pressable
                     key={index}
@@ -277,10 +272,9 @@ export default function BookDetails() {
                       setModalVisible(true);
                     }}
                   >
-                    <AdvancedImage
-                      cldImg={cldImg}
+                    <Image
+                      source={{ uri: getCloudinaryUrl(item.publicId) }}
                       style={styles.carouselImage}
-                      onError={(error) => console.log(`Image ${index} error:`, error)}
                     />
                   </Pressable>
                 );
@@ -343,10 +337,9 @@ export default function BookDetails() {
           </TouchableOpacity>
           {selectedImage && (
             <View style={styles.fullScreenImageContainer}>
-              <AdvancedImage
-                cldImg={cld.image(selectedImage.publicId)}
+              <Image
+                source={{ uri: getCloudinaryUrl(selectedImage.publicId) }}
                 style={styles.fullScreenImage}
-                onError={(error) => console.log('Full screen image error:', error)}
               />
             </View>
           )}

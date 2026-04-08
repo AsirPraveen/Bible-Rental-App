@@ -295,7 +295,7 @@ Stack Screens
 
 | Prefix | Routes | Description |
 |---|---|---|
-| `/api/auth` | Login, Register, OTP, Reset Password, User Data | Authentication |
+| `/api/auth` | Login-user, Register, OTP, Reset Password, User Data | Authentication |
 | `/api/users` | Search, Profile, Push Token, Notification Settings | User management |
 | `/api/books` | CRUD, Rent/Return, Favorites, Approve/Reject | Book rental |
 | `/api/posts` | CRUD, Likes, Admin Management | Notifications |
@@ -334,6 +334,20 @@ The app uses **Expo Push Notifications** with:
 - **User Preferences**: Per-category toggles (reading reminders, forum activity, prayer activity, rental updates)
 - **Cron-Based Reminders**: Hourly checks for Bible reading reminders at user-preferred times
 - **Targeted Delivery**: Admin can send to all users or specific selected users
+
+## 🔐 Security & Production Readiness
+
+### ✅ Pre-Build Checklist
+- [x] **Remove Sensitive Console Logs**: Plain-text passwords and administrator secrets have been removed from logs in `Login.jsx` and `Register.jsx`.
+- [x] **Credential Management**: All API keys (Cloudinary, Stability AI) are managed via environment variables (`.env`) and are not hardcoded in the source code.
+- [x] **SSL/HTTPS**: Production API use secure transport.
+- [ ] **Automated Log Stripping**: (Recommended) Install `babel-plugin-transform-remove-console` and configure `babel.config.js` once disk space is available to ensure *all* debugging logs are stripped from the final APK.
+
+### 🛠️ Recommended Build Command (EAS)
+To build a production APK for Android using Expo Application Services (EAS):
+```bash
+eas build --platform android --profile production
+```
 
 ---
 

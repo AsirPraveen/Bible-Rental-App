@@ -4,6 +4,7 @@ export default {
   expo: {
     name: process.env.APP_NAME || "Youth Room",
     slug: "youth-room",
+    owner: "asir_praveen",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./src/assets/jesus-holding-bible.jpg",
@@ -27,7 +28,7 @@ export default {
       favicon: "./src/assets/jesus-holding-bible.jpg",
     },
     extra: {
-      apiUrl: process.env.API_URL,
+      apiUrl: process.env.API_URL ? process.env.API_URL.replace(/\/$/, "") : "",
       appName: process.env.APP_NAME,
       secretText: process.env.SECRET_TEXT,
       eas: {
@@ -45,6 +46,8 @@ export default {
       "expo-font",
       "expo-router",
       "expo-notifications",
+      "@react-native-community/datetimepicker",
+      "expo-asset",
       [
         "expo-splash-screen",
         {

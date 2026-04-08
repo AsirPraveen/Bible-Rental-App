@@ -163,7 +163,8 @@ The server will start on `http://localhost:5001` (or the port specified in `.env
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/register` | Create a new user account |
-| `POST` | `/login` | Authenticate and receive JWT token |
+| `POST` | `/login-user` | Authenticate and receive JWT token |
+| `POST` | `/update-push-token` | Sync Expo push notification token |
 | `POST` | `/userdata` | Decode token and return user data |
 | `POST` | `/send-otp` | Send OTP to email for password reset |
 | `POST` | `/reset-password` | Verify OTP and update password |

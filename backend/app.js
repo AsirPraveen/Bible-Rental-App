@@ -58,7 +58,7 @@ app.use('/api', emailTemplateRoutes);
 app.use('/api/bible', bibleRoutes); // Bible routes
 app.use('/api/reading-tracker', readingTrackerRoutes);
 app.use('/api', appSettingsRoutes);
-app.use('/api', songRoutes);
+app.use('/api', songRoutes); // Songs
 
 /**
  * DYNAMIC DAILY BIBLE READING REMINDER

@@ -17,22 +17,28 @@ Notifications.setNotificationHandler({
   }),
 });
 
+import { AuthProvider } from '../context/AuthContext';
+
 export default function App() {
   React.useEffect(() => {
     registerForPushNotificationsAsync();
   }, []);
 
   return (
-    <SafeAreaProvider style={{ flex: 1 }}>
-      <StatusBar 
-        style="dark"
-        translucent={true}
-        backgroundColor="transparent"
-      />
-      <NavigationContainer>
-        <StackNavigation/>
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <SafeAreaProvider style={{ flex: 1 }}>
+          <StatusBar 
+            style="dark"
+            translucent={true}
+            backgroundColor="transparent"
+          />
+          <NavigationContainer>
+            <StackNavigation/>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert, Platform, StatusBar } from 'react-native';
+
 import { useFocusEffect } from '@react-navigation/native';
 import { Plus, Clock, Info, PlusCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,8 +11,10 @@ import Constants from 'expo-constants';
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import AddFastingModal from './AddFastingModal';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FastingTrackerScreen() {
+  const { isGuest } = useAuth();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -134,7 +137,15 @@ export default function FastingTrackerScreen() {
             <Text style={styles.headerText}>Fasting Tracker</Text>
             <TouchableOpacity 
               style={styles.headerIconBtn}
-              onPress={() => setModalVisible(true)}
+              onPress={() => {
+                if (isGuest) {
+                  Alert.alert('Login Required', 'Please login to track your fasting.', [
+                    { text: 'Cancel', style: 'cancel' }
+                  ]);
+                  return;
+                }
+                setModalVisible(true);
+              }}
             >
               <PlusCircle color="#F6F1F1" size={28} />
             </TouchableOpacity>

@@ -7,10 +7,13 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useAuth } from '../../context/AuthContext';
+import { Alert } from 'react-native';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function ForumListScreen() {
+  const { isGuest } = useAuth();
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,7 +115,13 @@ export default function ForumListScreen() {
             <Text style={styles.headerText}>Discussion Forum</Text>
             <TouchableOpacity 
               style={styles.headerIconBtn}
-              onPress={() => setModalVisible(true)}
+              onPress={() => {
+                if (isGuest) {
+                  Alert.alert('Login Required', 'Please login to post a question.', [{ text: 'OK' }]);
+                  return;
+                }
+                setModalVisible(true);
+              }}
             >
               <PlusCircle color="#F6F1F1" size={28} />
             </TouchableOpacity>

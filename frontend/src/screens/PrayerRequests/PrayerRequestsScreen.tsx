@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, HandHeart, PlusCircle } from 'lucide-react-native';
 import axios from 'axios';
@@ -9,8 +9,10 @@ import Constants from 'expo-constants';
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import AddPrayerRequestModal from './AddPrayerRequestModal';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PrayerRequestsScreen() {
+  const { isGuest } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -88,7 +90,13 @@ export default function PrayerRequestsScreen() {
         <View style={styles.footer}>
           <TouchableOpacity 
             style={[styles.prayButton, hasPrayed ? styles.prayButtonActive : styles.prayButtonInactive]} 
-            onPress={() => handlePray(item._id)}
+            onPress={() => {
+              if (isGuest) {
+                Alert.alert('Login Required', 'Please login to pray for requests.');
+                return;
+              }
+              handlePray(item._id);
+            }}
           >
             <Heart color={hasPrayed ? "#fff" : "#146C94"} size={16} fill={hasPrayed ? "#fff" : "transparent"} />
             <Text style={[styles.prayText, hasPrayed ? styles.prayTextActive : styles.prayTextInactive]}>
@@ -108,7 +116,13 @@ export default function PrayerRequestsScreen() {
             <Text style={styles.headerText}>Prayer Requests</Text>
             <TouchableOpacity 
               style={styles.headerIconBtn}
-              onPress={() => setModalVisible(true)}
+              onPress={() => {
+                if (isGuest) {
+                  Alert.alert('Login Required', 'Please login to post a prayer request.');
+                  return;
+                }
+                setModalVisible(true);
+              }}
             >
               <PlusCircle color="#F6F1F1" size={28} />
             </TouchableOpacity>

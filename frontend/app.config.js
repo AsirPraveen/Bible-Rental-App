@@ -28,7 +28,7 @@ export default {
       favicon: "./src/assets/jesus-holding-bible.jpg",
     },
     extra: {
-      apiUrl: process.env.API_URL ? process.env.API_URL.replace(/\/$/, "") : "",
+      apiUrl: process.env.API_URL ? process.env.API_URL.replace(/\s/g, "").replace(/\/$/, "") : "",
       appName: process.env.APP_NAME,
       secretText: process.env.SECRET_TEXT,
       eas: {
@@ -41,6 +41,9 @@ export default {
 
       stabilityApiKey: process.env.STABILITY_API_KEY,
       stabilityApiUrl: process.env.STABILITY_API_URL,
+
+      // Google Sign-In: Add your Web Client ID from Google Cloud Console
+      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID ?? '',
     },
     plugins: [
       "expo-font",
@@ -48,6 +51,7 @@ export default {
       "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-asset",
+      // expo-auth-session plugin re-add after: rmdir /s /q node_modules\expo-auth-session && npm install expo-auth-session expo-crypto
       [
         "expo-splash-screen",
         {

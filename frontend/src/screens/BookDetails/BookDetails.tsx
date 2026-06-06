@@ -5,6 +5,7 @@ import { ArrowLeft, Star, X, Heart } from 'lucide-react-native'; // Changed Star
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useAuth } from '../../context/AuthContext';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -46,6 +47,7 @@ export default function BookDetails() {
   const navigation = useNavigation();
   const route = useRoute();
   const { book: initialBook } = route.params as { book: Book };
+  const { isGuest } = useAuth();
   const [book, setBook] = useState(initialBook);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
@@ -106,6 +108,18 @@ export default function BookDetails() {
   }
 
   const handleRentRequest = async () => {
+    // Block guests
+    if (isGuest) {
+      Alert.alert(
+        '🔒 Login Required',
+        'Guests cannot rent books. Please login to unlock full features.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => (navigation as any).navigate('Login') },
+        ]
+      );
+      return;
+    }
     Alert.alert(
       'Confirm Rent Request',
       'Are you sure you want to request this book?',
@@ -142,6 +156,7 @@ export default function BookDetails() {
   };
 
   const handleReturnBook = async () => {
+    if (isGuest) return; // guests cannot return books they don't own
     Alert.alert(
       'Confirm Return',
       'Are you sure you want to return this book?',
@@ -170,6 +185,17 @@ export default function BookDetails() {
   };
 
   const toggleFavourite = async () => {
+    if (isGuest) {
+      Alert.alert(
+        '🔒 Login Required',
+        'Please login to save books to your wishlist.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => (navigation as any).navigate('Login') },
+        ]
+      );
+      return;
+    }
     try {
       const token = await AsyncStorage.getItem('token');
       const res = await axios.post(`${BASE_URL}/api/toggle-favourite`, {

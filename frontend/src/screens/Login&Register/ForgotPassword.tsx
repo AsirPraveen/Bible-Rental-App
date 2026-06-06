@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,20 @@ import {
   ActivityIndicator,
   Image,
   StyleSheet,
-  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const ForgotPassword = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']); // Array for 6 OTP digits
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,292 +33,327 @@ const ForgotPassword = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const validateEmail = (value:any) => /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(value);
-  const validatePassword = (value:any) => value.length >= 6;
+  // Resend OTP cooldown
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Animated value for stepper
-  const progress = new Animated.Value(0);
+  const otpInputRefs = useRef<Array<TextInput | null>>([]);
 
-  React.useEffect(() => {
-    Animated.timing(progress, {
-      toValue: step,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [step]);
-
-  const handleSendOtp = () => {
-    setEmailError('');
-    if (!email) {
-      setEmailError('Email is required');
-      return;
-    }
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
-    axios
-      .post(`${API_URL}/api/auth/forgot-password`, { email })
-      .then(res => {
-        console.log('Send OTP response:', res.data);
-        if (res.data.status === 'ok') {
-          Alert.alert('Success', res.data.message || 'OTP sent to your email!');
-          setStep(2);
-        } else {
-          Alert.alert('Error', res.data.error || 'Failed to send OTP');
+  const startCooldown = () => {
+    setResendCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
         }
-      })
-      .catch(error => {
-        console.error('OTP error:', error.response?.data || error.message);
-        Alert.alert('Error', 'An error occurred while sending OTP');
-      })
-      .finally(() => setLoading(false));
+        return prev - 1;
+      });
+    }, 1000);
   };
 
-  const handleVerifyOtp = () => {
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const validateEmail = (value: string) => /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(value);
+  const validatePassword = (value: string) => value.length >= 6;
+
+  const sendOtp = async () => {
+    setEmailError('');
+    if (!email) { setEmailError('Email is required'); return; }
+    if (!validateEmail(email)) { setEmailError('Please enter a valid email address'); return; }
+
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
+      console.log('Send OTP response:', res.data);
+      if (res.data.status === 'ok') {
+        Alert.alert('✅ OTP Sent', res.data.message || 'OTP sent to your email!');
+        setStep(2);
+        startCooldown();
+      } else {
+        const errMsg = res.data.error || 'Failed to send OTP. Please try again.';
+        setEmailError(errMsg);
+        Alert.alert('Error', errMsg);
+      }
+    } catch (error: any) {
+      const serverErr = error.response?.data?.error || error.message || 'Network error. Check your connection.';
+      console.error('OTP error:', serverErr);
+      setEmailError(serverErr);
+      Alert.alert('Error', serverErr);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setOtpError('');
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
+      if (res.data.status === 'ok') {
+        Alert.alert('✅ OTP Resent', 'A new OTP has been sent to your email.');
+        setOtp(['', '', '', '', '', '']);
+        otpInputRefs.current[0]?.focus();
+        startCooldown();
+      } else {
+        Alert.alert('Error', res.data.error || 'Failed to resend OTP.');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.error || 'Failed to resend OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
     setOtpError('');
     const otpValue = otp.join('');
-    if (!otpValue || otpValue.length !== 6) {
-      setOtpError('Please enter a 6-digit OTP');
-      return;
-    }
-    setOtpError(''); // Clear error if all digits are present
+    if (otpValue.length !== 6) { setOtpError('Please enter all 6 digits'); return; }
+
     setLoading(true);
-    axios
-      .post(`${API_URL}/api/auth/verify-otp`, { email, otp: otpValue })
-      .then(res => {
-        console.log('Verify OTP response:', res.data);
-        if (res.data.status === 'ok') {
-          Alert.alert('Success', res.data.message || 'OTP verified!');
-          setStep(3);
-        } else {
-          setOtpError(res.data.error || 'Invalid OTP');
-          Alert.alert('Error', res.data.error || 'Invalid OTP');
-        }
-      })
-      .catch(error => {
-        console.error('Verify OTP error:', error.response?.data || error.message);
-        setOtpError('An error occurred while verifying OTP');
-        Alert.alert('Error', 'An error occurred while verifying OTP');
-      })
-      .finally(() => setLoading(false));
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/verify-otp`, { email, otp: otpValue });
+      console.log('Verify OTP response:', res.data);
+      if (res.data.status === 'ok') {
+        Alert.alert('✅ Verified', 'OTP verified successfully!');
+        setStep(3);
+      } else {
+        const errMsg = res.data.error || 'Invalid OTP. Please try again.';
+        setOtpError(errMsg);
+        Alert.alert('Error', errMsg);
+      }
+    } catch (error: any) {
+      const serverErr = error.response?.data?.error || 'Network error. Please try again.';
+      setOtpError(serverErr);
+      Alert.alert('Error', serverErr);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     setPasswordError('');
     setConfirmError('');
-    if (!newPassword) {
-      setPasswordError('New password is required');
-      return;
-    }
-    if (!validatePassword(newPassword)) {
-      setPasswordError('Password must be at least 6 characters');
-      return;
-    }
-    if (!confirmPassword) {
-      setConfirmError('Confirm password is required');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setConfirmError('Passwords entered should match');
-      return;
-    }
+    if (!newPassword) { setPasswordError('New password is required'); return; }
+    if (!validatePassword(newPassword)) { setPasswordError('Password must be at least 6 characters'); return; }
+    if (!confirmPassword) { setConfirmError('Please confirm your password'); return; }
+    if (newPassword !== confirmPassword) { setConfirmError('Passwords do not match'); return; }
 
     setLoading(true);
-    axios
-      .post(`${API_URL}/api/auth/reset-password`, { email, newPassword })
-      .then(res => {
-        console.log('Reset Password response:', res.data);
-        if (res.data.status === 'ok') {
-          Alert.alert('Success', res.data.message || 'Password reset successfully!');
-          navigation.navigate("Login");
-        } else {
-          Alert.alert('Error', res.data.error || 'Failed to reset password');
-        }
-      })
-      .catch(error => {
-        console.error('Reset password error:', error.response?.data || error.message);
-        Alert.alert('Error', 'An error occurred while resetting password');
-      })
-      .finally(() => setLoading(false));
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/reset-password`, { email, newPassword });
+      console.log('Reset Password response:', res.data);
+      if (res.data.status === 'ok') {
+        Alert.alert('✅ Success', 'Password reset successfully! Please login with your new password.', [
+          { text: 'Login', onPress: () => navigation.navigate('Login') }
+        ]);
+      } else {
+        Alert.alert('Error', res.data.error || 'Failed to reset password.');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.error || 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Handle OTP input and auto-focus/next
-  const handleOtpChange = (text:any, index:any) => {
+  const handleOtpChange = (text: string, index: number) => {
+    // Handle paste of full OTP
+    if (text.length > 1) {
+      const digits = text.replace(/\D/g, '').slice(0, 6).split('');
+      const newOtp = [...otp];
+      digits.forEach((d, i) => { if (i < 6) newOtp[i] = d; });
+      setOtp(newOtp);
+      const nextIndex = Math.min(digits.length, 5);
+      otpInputRefs.current[nextIndex]?.focus();
+      return;
+    }
+
     const newOtp = [...otp];
-    newOtp[index] = text[0] || ''; // Only take the first character
+    newOtp[index] = text.replace(/\D/g, '');
     setOtp(newOtp);
 
-    // Auto-focus to next box if filled, or previous if cleared
     if (text && index < 5) {
-      otpInputs[index + 1].focus();
-    } else if (!text && index > 0) {
-      otpInputs[index - 1].focus();
+      otpInputRefs.current[index + 1]?.focus();
     }
-
-    // Do not auto-submit; rely on button press
   };
 
-  // Handle paste for autofill
-  const handleOtpPaste = (text:any, index:any) => {
-    const pastedOtp = text.slice(0, 6).split('');
-    const newOtp = [...otp];
-    for (let i = 0; i < 6 && i < pastedOtp.length; i++) {
-      newOtp[i] = pastedOtp[i];
+  const handleOtpKeyPress = (key: string, index: number) => {
+    if (key === 'Backspace' && !otp[index] && index > 0) {
+      const newOtp = [...otp];
+      newOtp[index - 1] = '';
+      setOtp(newOtp);
+      otpInputRefs.current[index - 1]?.focus();
     }
-    setOtp(newOtp);
-    // Do not auto-submit; rely on button press
   };
 
-  let otpInputs:any[] = [];
+  const stepLabels = ['Email', 'OTP', 'Reset'];
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps={'always'}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="always">
       <View style={localStyles.mainContainer}>
         <View style={localStyles.logoContainer}>
           <Image style={localStyles.logo} source={require('../../assets/giver.jpg')} />
         </View>
+
         <View style={localStyles.loginContainer}>
           <Text style={localStyles.text_header}>Forgot Password</Text>
-          <View style={localStyles.stepperContainer}>
-            {[1, 2, 3].map((s, index) => (
-              <Animated.View
-                key={s}
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: 15,
-                  backgroundColor: progress.interpolate({
-                    inputRange: [1, 2, 3],
-                    outputRange: [
-                      s <= step ? '#146C94' : '#ccc',
-                      s <= step ? '#146C94' : '#ccc',
-                      s <= step ? '#146C94' : '#ccc',
-                    ],
-                  }),
-                  marginHorizontal: 5,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={localStyles.stepText}>{s}</Text>
-              </Animated.View>
-            ))}
+
+          {/* Step Indicator */}
+          <View style={localStyles.stepperRow}>
+            {stepLabels.map((label, idx) => {
+              const s = idx + 1;
+              const isDone = step > s;
+              const isActive = step === s;
+              return (
+                <React.Fragment key={s}>
+                  <View style={localStyles.stepItem}>
+                    <View style={[
+                      localStyles.stepCircle,
+                      isActive && localStyles.stepCircleActive,
+                      isDone && localStyles.stepCircleDone,
+                    ]}>
+                      {isDone
+                        ? <FontAwesome name="check" size={13} color="#fff" />
+                        : <Text style={localStyles.stepText}>{s}</Text>
+                      }
+                    </View>
+                    <Text style={[localStyles.stepLabel, (isActive || isDone) && { color: '#146C94', fontWeight: '700' }]}>
+                      {label}
+                    </Text>
+                  </View>
+                  {idx < 2 && (
+                    <View style={[localStyles.stepLine, step > s && localStyles.stepLineDone]} />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </View>
+
+          {/* Step 1: Email */}
           {step === 1 && (
             <>
+              <Text style={localStyles.subText}>Enter your registered email to receive an OTP.</Text>
               <View style={localStyles.action}>
                 <FontAwesome name="envelope-o" color="#146C94" style={localStyles.smallIcon} />
                 <TextInput
-                  placeholder="Email"
+                  placeholder="Email address"
                   style={localStyles.textInput}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={v => { setEmail(v); setEmailError(''); }}
                   autoCapitalize="none"
                   keyboardType="email-address"
+                  autoCorrect={false}
                 />
               </View>
-              {emailError ? <Text style={localStyles.errorText}>{emailError}</Text> : null}
+              {emailError ? <Text style={localStyles.errorText}>⚠ {emailError}</Text> : null}
               <View style={localStyles.button}>
-                <TouchableOpacity
-                  style={localStyles.inBut}
-                  onPress={handleSendOtp}
-                  disabled={loading}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#F6F1F1" />
-                  ) : (
-                    <Text style={localStyles.textSign}>Send OTP</Text>
-                  )}
+                <TouchableOpacity style={localStyles.inBut} onPress={sendOtp} disabled={loading}>
+                  {loading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Text style={localStyles.textSign}>Send OTP</Text>
+                  }
                 </TouchableOpacity>
               </View>
             </>
           )}
+
+          {/* Step 2: OTP */}
           {step === 2 && (
             <>
+              <Text style={localStyles.subText}>Enter the 6-digit OTP sent to <Text style={{ fontWeight: '700', color: '#146C94' }}>{email}</Text></Text>
               <View style={localStyles.otpContainer}>
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
-                    ref={ref => (otpInputs[index] = ref)}
-                    style={localStyles.otpBox}
+                    ref={ref => { otpInputRefs.current[index] = ref; }}
+                    style={[localStyles.otpBox, digit ? localStyles.otpBoxFilled : null]}
                     value={digit}
                     onChangeText={text => handleOtpChange(text, index)}
-                    onPaste={(e: any) => handleOtpPaste(e.nativeEvent.clipboardData?.getData('text'), index)}
-                    maxLength={1}
+                    onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
+                    maxLength={6}
                     keyboardType="numeric"
                     autoFocus={index === 0}
+                    selectTextOnFocus
                   />
                 ))}
               </View>
-              {otpError ? <Text style={localStyles.errorText}>{otpError}</Text> : null}
+              {otpError ? <Text style={localStyles.errorText}>⚠ {otpError}</Text> : null}
+
+              {/* Resend OTP */}
+              <TouchableOpacity
+                onPress={handleResendOtp}
+                disabled={resendCooldown > 0 || loading}
+                style={localStyles.resendRow}
+              >
+                <Text style={[localStyles.resendText, resendCooldown > 0 && { color: '#aaa' }]}>
+                  {resendCooldown > 0
+                    ? `Resend OTP in ${resendCooldown}s`
+                    : "Didn't receive OTP? Resend"
+                  }
+                </Text>
+              </TouchableOpacity>
+
               <View style={localStyles.button}>
-                <TouchableOpacity
-                  style={localStyles.inBut}
-                  onPress={handleVerifyOtp}
-                  disabled={loading}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#F6F1F1" />
-                  ) : (
-                    <Text style={localStyles.textSign}>Verify OTP</Text>
-                  )}
+                <TouchableOpacity style={localStyles.inBut} onPress={handleVerifyOtp} disabled={loading}>
+                  {loading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Text style={localStyles.textSign}>Verify OTP</Text>
+                  }
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setStep(1)} style={{ marginTop: 12 }}>
+                  <Text style={{ color: '#146C94', textAlign: 'center', fontWeight: '600' }}>← Change Email</Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
+
+          {/* Step 3: New Password */}
           {step === 3 && (
             <>
+              <Text style={localStyles.subText}>Create a new password for your account.</Text>
               <View style={localStyles.action}>
                 <FontAwesome name="lock" color="#146C94" style={localStyles.smallIcon} />
                 <TextInput
-                  placeholder="New Password"
+                  placeholder="New Password (min 6 characters)"
                   style={localStyles.textInput}
                   value={newPassword}
-                  onChangeText={setNewPassword}
+                  onChangeText={v => { setNewPassword(v); setPasswordError(''); }}
                   secureTextEntry={!showNewPassword}
                 />
-                <TouchableOpacity
-                  style={localStyles.iconButton}
-                  onPress={() => setShowNewPassword(!showNewPassword)}>
-                  <Feather
-                    name={showNewPassword ? 'eye' : 'eye-off'}
-                    size={20}
-                    color="#146C94"
-                  />
+                <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                  <Feather name={showNewPassword ? 'eye' : 'eye-off'} size={20} color="#146C94" />
                 </TouchableOpacity>
               </View>
-              {passwordError ? <Text style={localStyles.errorText}>{passwordError}</Text> : null}
+              {passwordError ? <Text style={localStyles.errorText}>⚠ {passwordError}</Text> : null}
+
               <View style={localStyles.action}>
                 <FontAwesome name="lock" color="#146C94" style={localStyles.smallIcon} />
                 <TextInput
-                  placeholder="Confirm Password"
+                  placeholder="Confirm New Password"
                   style={localStyles.textInput}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={v => { setConfirmPassword(v); setConfirmError(''); }}
                   secureTextEntry={!showConfirmPassword}
                 />
-                <TouchableOpacity
-                  style={localStyles.iconButton}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  <Feather
-                    name={showConfirmPassword ? 'eye' : 'eye-off'}
-                    size={20}
-                    color="#146C94"
-                  />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Feather name={showConfirmPassword ? 'eye' : 'eye-off'} size={20} color="#146C94" />
                 </TouchableOpacity>
               </View>
-              {confirmError ? <Text style={localStyles.errorText}>{confirmError}</Text> : null}
+              {confirmError ? <Text style={localStyles.errorText}>⚠ {confirmError}</Text> : null}
+
               <View style={localStyles.button}>
-                <TouchableOpacity
-                  style={localStyles.inBut}
-                  onPress={handleResetPassword}
-                  disabled={loading}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#F6F1F1" />
-                  ) : (
-                    <Text style={localStyles.textSign}>Confirm</Text>
-                  )}
+                <TouchableOpacity style={localStyles.inBut} onPress={handleResetPassword} disabled={loading}>
+                  {loading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Text style={localStyles.textSign}>Reset Password</Text>
+                  }
                 </TouchableOpacity>
               </View>
             </>
@@ -331,12 +364,11 @@ const ForgotPassword = () => {
   );
 };
 
-// Local styles to avoid affecting Login.jsx and Register.jsx
 const localStyles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: 'white',
-    paddingBottom: 20,
+    paddingBottom: 30,
   },
   logoContainer: {
     justifyContent: 'center',
@@ -344,56 +376,97 @@ const localStyles = StyleSheet.create({
     marginTop: 30,
   },
   logo: {
-    height: 260,
-    width: 260,
-    borderRadius: 30,
+    height: 200,
+    width: 200,
+    borderRadius: 20,
   },
   loginContainer: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 30,
     marginTop: 20,
   },
   text_header: {
     color: '#146C94',
     fontWeight: 'bold',
-    fontSize: 30,
+    fontSize: 28,
     textAlign: 'center',
-    marginBottom: 10,
-  },
-  stepperContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     marginBottom: 20,
   },
+  subText: {
+    color: '#64748b',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+
+  // Stepper
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 28,
+  },
+  stepItem: {
+    alignItems: 'center',
+  },
+  stepCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#e2e8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  stepCircleActive: {
+    backgroundColor: '#146C94',
+  },
+  stepCircleDone: {
+    backgroundColor: '#22c55e',
+  },
   stepText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
   },
+  stepLabel: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#e2e8f0',
+    marginHorizontal: 6,
+    marginBottom: 16,
+  },
+  stepLineDone: {
+    backgroundColor: '#22c55e',
+  },
+
   action: {
     flexDirection: 'row',
-    paddingTop: 10,
-    paddingBottom: 10,
-    marginBottom: 10, // Reduced to minimize gap
+    paddingVertical: 12,
     paddingHorizontal: 15,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#146C94',
     borderRadius: 50,
     alignItems: 'center',
+    marginBottom: 6,
   },
   textInput: {
     flex: 1,
-    marginTop: -5,
     color: '#05375a',
-    paddingVertical: 5,
+    fontSize: 15,
+    paddingVertical: 2,
   },
   button: {
     alignItems: 'center',
     marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   inBut: {
     width: '70%',
@@ -401,40 +474,63 @@ const localStyles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     borderRadius: 50,
-    marginTop: 10,
   },
   textSign: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     color: 'white',
   },
   smallIcon: {
     marginRight: 10,
-    fontSize: 24,
+    fontSize: 20,
   },
   errorText: {
-    color: 'red',
+    color: '#ef4444',
     fontSize: 12,
-    marginLeft: 20,
-    marginTop: 2, // Reduced to minimize gap with field
+    marginLeft: 8,
+    marginTop: 2,
+    marginBottom: 6,
+    lineHeight: 16,
   },
+
+  // OTP
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10, // Reduced to minimize gap
+    marginBottom: 12,
+    gap: 8,
   },
   otpBox: {
-    width: 40,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#146C94',
-    borderRadius: 10,
+    flex: 1,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: '#c7d2fe',
+    borderRadius: 12,
     textAlign: 'center',
-    fontSize: 18,
-    color: '#05375a',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#146C94',
+    backgroundColor: '#f8fafc',
   },
+  otpBoxFilled: {
+    borderColor: '#146C94',
+    backgroundColor: '#e0f2fe',
+  },
+
+  resendRow: {
+    alignItems: 'center',
+    marginBottom: 6,
+    paddingVertical: 4,
+  },
+  resendText: {
+    color: '#146C94',
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+
   iconButton: {
-    padding: 5,
+    padding: 4,
   },
 });
 

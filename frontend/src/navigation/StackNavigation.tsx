@@ -13,12 +13,15 @@ import SongComponent from '../screens/Songs/Songs';
 import SongDetailsScreen from '../screens/Songs/SongDetails';
 import BookPdfComponent from '../screens/BookPdf/BookPdf';
 import BibleComponent from '../screens/Bible/Bible';
-import MessageNotesComponent from '../screens/MessageNotes/MessageNotes';
+import MessageNotesScreen from '../screens/MessageNotes/MessageNotesScreen';
+import NoteDetailScreen from '../screens/MessageNotes/NoteDetailScreen';
+import NoteFormScreen from '../screens/MessageNotes/NoteFormScreen';
 import AllBooks from '../screens/AllBooks/AllBooks';
 import AdminTabsNavigation from './AdminTabsNavigation';
 import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
 import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
 import ForgotPassword from '../screens/Login&Register/ForgotPassword';
+import GoogleSetPassword from '../screens/Login&Register/GoogleSetPassword';
 import AllAuthors from '../screens/AllAuthors/AllAuthors';
 import CreatePostTab from '../screens/AdminScreen/CreatePostTab';
 import CreateBookTab from '../screens/AdminScreen/CreateBookTab';
@@ -119,7 +122,17 @@ const StackNavigation = () => {
       />
       <Stack.Screen
         name="MessageNotes"
-        component={MessageNotesComponent}
+        component={MessageNotesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="NoteDetail"
+        component={NoteDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="NoteForm"
+        component={NoteFormScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -155,6 +168,11 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Forgot Password"
         component={ForgotPassword}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GoogleSetPassword"
+        component={GoogleSetPassword}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -265,8 +283,8 @@ const StackNavigation = () => {
       <Stack.Screen
         name="AppSettings"
         component={AppSettingsTab}
-        options={{ 
-          headerShown: true, 
+        options={{
+          headerShown: true,
           title: 'App Configuration',
           headerStyle: { backgroundColor: '#146C94' },
           headerTintColor: '#F6F1F1'

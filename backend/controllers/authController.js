@@ -1,13 +1,13 @@
-require('dotenv').config(); // Load environment variables
+require('dotenv').config();
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/UserDetails');
 const Book = require('../models/Book');
-const nodemailer = require('nodemailer'); // For sending emails
+const nodemailer = require('nodemailer');
 const { resetPasswordTemplate } = require('../config/emailTemplate');
 
-const JWT_SECRET = process.env.JWT_SECRET; // Ensure this is set in your .env file
+const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
   const { name, email, mobile, password, userType, secretText } = req.body;
@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
     console.log("Password match?", passwordMatch);
 
     if (passwordMatch) {
-      const token = jwt.sign({ email: oldUser.email }, JWT_SECRET);
+      const token = jwt.sign({ email: oldUser.email }, JWT_SECRET, { expiresIn: '30d' });
       console.log("Token generated:", token);
       return res.status(201).send({
         status: "ok",
@@ -75,6 +75,10 @@ exports.login = async (req, res) => {
 exports.getUserData = async (req, res) => {
   const { token } = req.body;
   
+  if (!token) {
+    return res.send({ status: "error", data: "Token missing" });
+  }
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     // Use .lean() to get a plain JS object that we can modify
@@ -98,7 +102,10 @@ exports.getUserData = async (req, res) => {
 
     res.send({ status: "Ok", data: user });
   } catch (error) {
-    console.error('Error in getUserData:', error);
+    console.error('Error in getUserData:', error.message);
+    if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+      return res.send({ status: "error", data: "token expired" });
+    }
     res.status(500).send({ error: error.message });
   }
 };
@@ -106,57 +113,66 @@ exports.getUserData = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
-    console.log("inside forgot password", req.body);
+    console.log('forgot-password request:', email);
     const user = await User.findOne({ email });
-    if (!user) return res.json({ error: "User doesn't exist!!" });
+    if (!user) return res.json({ error: 'No account found with this email address.' });
 
+    // Generate & save OTP before attempting email (so we know it's ready)
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
-    user.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
     await user.save();
-    console.log("OTP generated:", otp);
+    console.log('OTP generated:', otp);
 
     const emailUser = process.env.EMAIL_USER;
     const emailPass = process.env.EMAIL_PASS;
-    console.log('Loaded Email User:', emailUser, 'Loaded Email Pass:', emailPass ? 'Set' : 'Not Set'); // Debug credentials
 
     if (!emailUser || !emailPass) {
-      throw new Error('Email credentials are missing or not loaded from .env file');
+      console.error('EMAIL_USER or EMAIL_PASS missing from backend .env');
+      return res.status(500).json({ error: 'Email service is not configured on the server.' });
     }
 
     const transporter = nodemailer.createTransport({
-      service: 'Gmail',
-      auth: {
-        user: emailUser,
-        pass: emailPass,
-      },
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: { user: emailUser, pass: emailPass },
+      tls: { rejectUnauthorized: false },
     });
 
-    // Verify transporter configuration
-    await new Promise((resolve, reject) => {
-      transporter.verify((error, success) => {
-        if (error) {
-          console.error('Transporter verification error:', error);
-          reject(error);
-        } else {
-          console.log('Server is ready to send emails');
-          resolve(success);
-        }
+    // ── Verify SMTP connection BEFORE trying to send ──────────────────────────
+    try {
+      await transporter.verify();
+      console.log('SMTP connection verified OK');
+    } catch (verifyErr) {
+      console.error('SMTP verify failed:', verifyErr.code, verifyErr.message);
+      if (verifyErr.code === 'EAUTH') {
+        return res.status(500).json({
+          error:
+            'Gmail App Password is invalid or expired. ' +
+            'Go to myaccount.google.com → Security → App Passwords, ' +
+            'generate a new password and update EMAIL_PASS in backend/.env',
+        });
+      }
+      return res.status(500).json({
+        error: `Cannot reach email server (${verifyErr.code || verifyErr.message}). Check server internet connection.`,
       });
-    });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     await transporter.sendMail({
-      from: emailUser,
+      from: `"Bible Rental App" <${emailUser}>`,
       to: email,
       subject: 'Password Reset OTP - Bible Rental App',
-      // text: `Hello ${user?.name},\n\n\t\tWe have received a request to reset the password for your account associated with the email: ${email}.\n\nYour One-Time Password (OTP) is: ${otp}\nThis OTP is valid for 10 minutes. Please use it to reset your password before it expires.\n\nIf you did not request this password reset, please ignore this email or contact our support team immediately.\n\nBest regards,\nThe Bible Rental App Team\n`,
-      html: resetPasswordTemplate(user?.name, otp, email)
+      html: resetPasswordTemplate(user?.name, otp, email),
     });
 
-    res.json({ status: 'ok', message: 'OTP sent' });
+    console.log(`OTP email sent to ${email}`);
+    res.json({ status: 'ok', message: `OTP sent to ${email}. Check your inbox (and spam folder).` });
+
   } catch (error) {
     console.error('Forgot Password error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    res.status(500).json({ error: error.message || 'Failed to send OTP. Please try again.' });
   }
 };
 
@@ -211,3 +227,74 @@ exports.updatePushToken = async (req, res) => {
     res.status(500).send({ status: "error", message: error.message });
   }
 };
+
+// Google Sign-In: find or create user from Google OAuth
+exports.googleLogin = async (req, res) => {
+  const { googleId, email, name, photoUrl } = req.body;
+  try {
+    if (!email || !googleId) {
+      return res.status(400).json({ error: 'Missing required Google credentials' });
+    }
+
+    // Try to find existing user by email
+    let user = await User.findOne({ email });
+
+    let isNewUser = false;
+    if (!user) {
+      // Create a new user from Google data (password set later via google-set-password)
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        mobile: '',
+        password: await require('bcryptjs').hash(googleId + JWT_SECRET, 10), // placeholder
+        userType: 'User',
+        image: photoUrl || '',
+        secretText: '',
+        googleId,
+      });
+      isNewUser = true;
+      console.log('New Google user created:', email);
+    } else {
+      console.log('Existing Google user logged in:', email);
+    }
+
+    const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+    return res.status(201).json({
+      status: 'ok',
+      data: token,
+      userType: user.userType,
+      isNewUser,
+      userData: { name: user.name, email: user.email, image: user.image }
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ error: error.message || 'Google login failed' });
+  }
+};
+
+// Set a real password for a new Google-registered user
+exports.googleSetPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+  try {
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({
+      status: 'ok',
+      message: 'Password set successfully',
+      data: token,
+      userType: user.userType,
+      userData: { name: user.name, email: user.email, image: user.image }
+    });
+  } catch (error) {
+    console.error('Google set password error:', error);
+    res.status(500).json({ error: error.message || 'Failed to set password' });
+  }
+};

@@ -167,9 +167,13 @@ const HomeView = () => {
 
   async function getUserData() {
     const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      // Guest mode or not logged in — skip user data fetch
+      setIsLoadingUserData(false);
+      return;
+    }
     try {
       setIsLoadingUserData(true);
-      console.log("Fetching user data with token:", API_URL);
       const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
       setUserData(res.data.data);
     } catch (error) {
@@ -178,6 +182,7 @@ const HomeView = () => {
       setIsLoadingUserData(false);
     }
   }
+
 
   // Inside HomeView component
   const scrollX = React.useRef(new Animated.Value(0)).current;
@@ -227,9 +232,10 @@ const HomeView = () => {
     try {
       setIsLoadingBooks(true);
       const res = await axios.get(`${API_URL}/api/books`);
-      setBooks(res.data.data);
+      const data = Array.isArray(res.data.data) ? res.data.data : [];
+      setBooks(data);
 
-      const sortedBooks = [...res.data.data].sort((a, b) => 
+      const sortedBooks = [...data].sort((a, b) => 
         (b.rent_count || 0) - (a.rent_count || 0)
       );
       setTopBooks(sortedBooks);
@@ -263,7 +269,7 @@ const HomeView = () => {
     fetchAuthors();
   }, []);
   
-  const filteredBooks = books.filter(book => book.book_name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredBooks = Array.isArray(books) ? books.filter(book => book.book_name.toLowerCase().includes(searchQuery.toLowerCase())) : [];
 
   const navigateToBookDetails = (book: any) => {
     navigation.navigate('BookDetails', { book });

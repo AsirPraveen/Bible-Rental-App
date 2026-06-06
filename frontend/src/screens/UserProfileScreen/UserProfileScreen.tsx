@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useAuth } from '../../context/AuthContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -18,10 +19,88 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 type RootStackParamList = {
   Onboarding: undefined;
-  // Add other routes here if needed
+  Login: undefined;
+  Register: undefined;
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  Guest Profile — static, read-only, shows "Sign In" prompt
+// ═══════════════════════════════════════════════════════════════════
+const GuestProfileScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>Your Profile</Text>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.container}>
+            <View style={styles.profileCard}>
+              {/* Guest Avatar */}
+              <LinearGradient
+                colors={['#19A7CE', '#146C94']}
+                style={styles.profileImageBorder}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <View style={styles.profileImageContainer}>
+                  <Ionicons name="person-circle-outline" size={120} color="#F6F1F1" />
+                </View>
+              </LinearGradient>
+
+              <View style={styles.infoContainer}>
+                {/* Guest Info */}
+                <View style={styles.guestMessageBox}>
+                  <Ionicons name="eye-outline" size={22} color="#0369a1" />
+                  <Text style={styles.guestTitle}>You're browsing as a Guest</Text>
+                  <Text style={styles.guestSubtitle}>
+                    Sign in to access your full profile, rent books, track your reading, and more.
+                  </Text>
+                </View>
+
+                {/* Read-only fields */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Name</Text>
+                  <Text style={styles.value}>Guest User</Text>
+                </View>
+
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Status</Text>
+                  <Text style={[styles.value, { color: '#f59e0b', fontWeight: '600' }]}>Read-Only Mode</Text>
+                </View>
+
+                {/* Sign In Button */}
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })}
+                >
+                  <LinearGradient
+                    colors={['#146C94', '#19A7CE']}
+                    style={styles.buttonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="log-in-outline" size={20} color="#F6F1F1" style={{ marginRight: 8 }} />
+                    <Text style={styles.buttonText}>Sign In / Create Account</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </LinearGradient>
+    </SafeAreaView>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  Main UserProfileScreen — routes to Guest or Authenticated profile
+// ═══════════════════════════════════════════════════════════════════
 const UserProfileScreen = () => {
+  const { isGuest } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [userData, setUserData] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -37,11 +116,14 @@ const UserProfileScreen = () => {
 
   // Fetch user data using token from AsyncStorage
   useEffect(() => {
+    if (isGuest) {
+      setLoading(false);
+      return;
+    }
     const fetchUserData = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
         if (!token) {
-          Alert.alert('Error', 'No user token found. Please log in again.');
           return;
         }
 
@@ -54,7 +136,7 @@ const UserProfileScreen = () => {
           setMobile(data.mobile || '');
           setGender(data.gender || '');
           setProfession(data.profession || '');
-          setImageUrl(data.image || null); // Set the Cloudinary URL from database
+          setImageUrl(data.image || null);
         } else {
           Alert.alert('Error', 'Failed to fetch user data.');
         }
@@ -67,7 +149,12 @@ const UserProfileScreen = () => {
     };
 
     fetchUserData();
-  }, []);
+  }, [isGuest]);
+
+  // If guest, render the static Guest Profile
+  if (isGuest) {
+    return <GuestProfileScreen />;
+  }
 
   // Function to handle logout
   const handleLogout = () => {
@@ -559,6 +646,9 @@ const styles = StyleSheet.create({
   buttonGradient: {
     paddingVertical: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    borderRadius: 8,
   },
   buttonText: {
     fontSize: 16,
@@ -574,6 +664,29 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#146C94',
+  },
+  // Guest-specific styles
+  guestMessageBox: {
+    backgroundColor: '#e0f2fe',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+  },
+  guestTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0369a1',
+    marginTop: 8,
+  },
+  guestSubtitle: {
+    fontSize: 13,
+    color: '#0284c7',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
   },
 });
 

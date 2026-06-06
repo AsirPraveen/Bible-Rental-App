@@ -49,6 +49,7 @@ import GameScrollRoom from '../screens/GameScreen/GameScrollRoom';
 import GameCardLibrary from '../screens/GameScreen/GameCardLibrary';
 import AppSettingsTab from '../screens/AdminScreen/components/AppSettingsTab';
 import ManageSongsTab from '../screens/AdminScreen/ManageSongsTab';
+import GuestSettingsTab from '../screens/AdminScreen/GuestSettingsTab';
 
 const Stack = createStackNavigator();
 
@@ -286,6 +287,16 @@ const StackNavigation = () => {
         options={{
           headerShown: true,
           title: 'App Configuration',
+          headerStyle: { backgroundColor: '#146C94' },
+          headerTintColor: '#F6F1F1'
+        }}
+      />
+      <Stack.Screen
+        name="Guest Settings"
+        component={GuestSettingsTab}
+        options={{
+          headerShown: true,
+          title: 'Guest Access Settings',
           headerStyle: { backgroundColor: '#146C94' },
           headerTintColor: '#F6F1F1'
         }}

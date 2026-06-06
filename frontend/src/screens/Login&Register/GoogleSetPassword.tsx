@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  StyleSheet,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
@@ -17,16 +16,20 @@ import Feather from 'react-native-vector-icons/Feather';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { syncPushTokenWithBackend } from '../../utils/notifications';
+import { useAuth } from '../../context/AuthContext';
+import styles from './style'; // ← Use the same shared styles as Login
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const GoogleSetPassword = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { login } = useAuth();
 
   // Params passed from Login when isNewUser === true
-  const { name, email, image } = route.params || {};
+  const { name, email, image, googleId } = route.params || {};
 
+  const [displayName, setDisplayName] = useState(name || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -54,12 +57,16 @@ const GoogleSetPassword = () => {
       const res = await axios.post(`${API_URL}/api/auth/google-set-password`, {
         email,
         newPassword: password,
+        name: displayName.trim() || email?.split('@')[0],
+        googleId: googleId || '',
+        image: image || '',
       });
 
       if (res.data.status === 'ok') {
         const token = res.data.data;
-        await AsyncStorage.setItem('token', token);
-        await AsyncStorage.setItem('isLoggedIn', JSON.stringify(true));
+
+        // Update AuthContext state (sets user, token, clears isGuest)
+        await login({ email, name: displayName.trim() || name, image }, token);
         await AsyncStorage.setItem('userType', res.data.userType);
 
         // Sync push token
@@ -68,11 +75,11 @@ const GoogleSetPassword = () => {
 
         Alert.alert(
           '🎉 Welcome!',
-          `Account created! Welcome, ${name || 'friend'}!`,
-          [{ text: 'Let\'s Go!', onPress: () => navigation.replace('Home') }]
+          `Account created! Welcome, ${displayName.trim() || 'friend'}!`,
+          [{ text: 'Let\'s Go!', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }) }]
         );
       } else {
-        Alert.alert('Error', res.data.error || 'Failed to set password');
+        Alert.alert('Error', res.data.error || 'Failed to create account');
       }
     } catch (error: any) {
       console.error('Set password error:', error);
@@ -85,230 +92,113 @@ const GoogleSetPassword = () => {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="always">
       <View style={styles.mainContainer}>
-        {/* Logo */}
+        {/* Same logo as Login */}
         <View style={styles.logoContainer}>
           <Image style={styles.logo} source={require('../../assets/giver.jpg')} />
         </View>
 
-        <View style={styles.card}>
-          {/* Google avatar or icon */}
-          <View style={styles.avatarRow}>
+        {/* Form area — uses loginContainer like Login screen */}
+        <View style={styles.loginContainer}>
+          <Text style={styles.text_header}>Set Password</Text>
+
+          {/* Google profile info */}
+          <View style={{ alignItems: 'center', marginBottom: 16 }}>
             {image ? (
-              <Image source={{ uri: image }} style={styles.avatar} />
+              <Image
+                source={{ uri: image }}
+                style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#146C94', marginBottom: 8 }}
+              />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <FontAwesome name="google" size={30} color="#fff" />
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#146C94', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+                <FontAwesome name="google" size={26} color="#fff" />
               </View>
             )}
+            <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center' }}>
+              Signing in as{' '}
+              <Text style={{ color: '#146C94', fontWeight: '700' }}>{email}</Text>
+            </Text>
+            <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 4 }}>
+              Set a password so you can also log in with your email.
+            </Text>
           </View>
 
-          <Text style={styles.title}>Almost There!</Text>
-          <Text style={styles.subtitle}>
-            You're signing in with Google as{'\n'}
-            <Text style={styles.emailHighlight}>{email}</Text>
-          </Text>
-          <Text style={styles.infoText}>
-            Please set an app password so you can also log in with your email later.
-          </Text>
-
-          {/* Name (read-only display) */}
-          <View style={styles.infoRow}>
-            <FontAwesome name="user-o" color="#146C94" size={18} style={styles.rowIcon} />
-            <Text style={styles.infoValue}>{name || 'Google User'}</Text>
+          {/* Name (editable — prefilled from Google) */}
+          <View style={styles.action}>
+            <FontAwesome name="user-o" color="#146C94" style={styles.smallIcon} />
+            <TextInput
+              placeholder="Your Name"
+              style={styles.textInput}
+              value={displayName}
+              onChangeText={setDisplayName}
+              autoCapitalize="words"
+            />
           </View>
 
           {/* Password */}
-          <View style={[styles.action, passwordError ? styles.actionError : null]}>
-            <FontAwesome name="lock" color="#146C94" size={20} style={styles.smallIcon} />
+          <View style={styles.action}>
+            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
             <TextInput
               placeholder="Set a Password (min 6 chars)"
-              placeholderTextColor="#94a3b8"
               style={styles.textInput}
               value={password}
               onChangeText={v => { setPassword(v); setPasswordError(''); }}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color="#146C94" />
+              <Feather
+                name={showPassword ? 'eye' : 'eye-off'}
+                style={{ marginRight: -10 }}
+                color={passwordError ? 'red' : '#146C94'}
+                size={23}
+              />
             </TouchableOpacity>
           </View>
-          {passwordError ? <Text style={styles.errorText}>⚠ {passwordError}</Text> : null}
+          {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
           {/* Confirm Password */}
-          <View style={[styles.action, confirmError ? styles.actionError : null]}>
-            <FontAwesome name="lock" color="#146C94" size={20} style={styles.smallIcon} />
+          <View style={styles.action}>
+            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
             <TextInput
               placeholder="Confirm Password"
-              placeholderTextColor="#94a3b8"
               style={styles.textInput}
               value={confirmPassword}
               onChangeText={v => { setConfirmPassword(v); setConfirmError(''); }}
               secureTextEntry={!showConfirm}
             />
             <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
-              <Feather name={showConfirm ? 'eye' : 'eye-off'} size={20} color="#146C94" />
+              <Feather
+                name={showConfirm ? 'eye' : 'eye-off'}
+                style={{ marginRight: -10 }}
+                color={confirmError ? 'red' : '#146C94'}
+                size={23}
+              />
             </TouchableOpacity>
           </View>
-          {confirmError ? <Text style={styles.errorText}>⚠ {confirmError}</Text> : null}
+          {confirmError ? <Text style={styles.errorText}>{confirmError}</Text> : null}
+        </View>
 
-          {/* Submit Button */}
-          <TouchableOpacity style={styles.button} onPress={handleSetPassword} disabled={loading}>
+        {/* Submit button — same layout as Login */}
+        <View style={styles.button}>
+          <TouchableOpacity style={styles.inBut} onPress={handleSetPassword} disabled={loading}>
             {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color="#F6F1F1" />
             ) : (
-              <Text style={styles.buttonText}>Create My Account</Text>
+              <Text style={styles.textSign}>Create My Account</Text>
             )}
           </TouchableOpacity>
 
           {/* Back link */}
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
-            <Text style={styles.backText}>← Use a different account</Text>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ alignItems: 'center', marginTop: 16 }}>
+            <Text style={{ color: '#146C94', fontSize: 14, fontWeight: '600' }}>
+              ← Use a different account
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingBottom: 40,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    paddingTop: 24,
-  },
-  logo: {
-    height: 160,
-    width: 160,
-    borderRadius: 20,
-  },
-  card: {
-    marginTop: 24,
-    marginHorizontal: 20,
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: '#146C94',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#e0f2fe',
-  },
-  avatarRow: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 2,
-    borderColor: '#146C94',
-  },
-  avatarPlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#146C94',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#146C94',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 6,
-  },
-  emailHighlight: {
-    color: '#146C94',
-    fontWeight: '700',
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f9ff',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 14,
-  },
-  rowIcon: {
-    marginRight: 10,
-  },
-  infoValue: {
-    fontSize: 15,
-    color: '#0f172a',
-    fontWeight: '600',
-  },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#146C94',
-    borderRadius: 50,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    marginBottom: 6,
-  },
-  actionError: {
-    borderColor: '#ef4444',
-  },
-  smallIcon: {
-    marginRight: 10,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#0f172a',
-    paddingVertical: 2,
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    marginLeft: 8,
-    marginBottom: 8,
-  },
-  button: {
-    backgroundColor: '#146C94',
-    borderRadius: 50,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 18,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  backRow: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  backText: {
-    color: '#146C94',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-});
 
 export default GoogleSetPassword;

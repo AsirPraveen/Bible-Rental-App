@@ -61,15 +61,15 @@ const NotificationSettings = () => {
 
   const toggleSetting = async (key: keyof NotificationSettingsState) => {
     if (key === 'readingReminderTime') return;
-    
+
     const newSettings = { ...settings, [key]: !settings[key] as any };
     const oldSettings = { ...settings };
     setSettings(newSettings);
-    
+
     try {
       setSaving(true);
       const token = await AsyncStorage.getItem('token');
-      await axios.put(`${BASE_URL}/api/users/notification-settings`, 
+      await axios.put(`${BASE_URL}/api/users/notification-settings`,
         { settings: newSettings },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -89,7 +89,7 @@ const NotificationSettings = () => {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const timeString = `${hours}:${minutes}`;
-    
+
     const newSettings = { ...settings, readingReminderTime: timeString };
     const oldSettings = { ...settings };
     setSettings(newSettings);
@@ -98,7 +98,7 @@ const NotificationSettings = () => {
     try {
       setSaving(true);
       const token = await AsyncStorage.getItem('token');
-      await axios.put(`${BASE_URL}/api/users/notification-settings`, 
+      await axios.put(`${BASE_URL}/api/users/notification-settings`,
         { settings: newSettings },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -136,7 +136,7 @@ const NotificationSettings = () => {
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          
+
           <View style={styles.settingCard}>
             <View style={styles.settingInfo}>
               <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>

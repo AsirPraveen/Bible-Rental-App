@@ -228,7 +228,8 @@ exports.updatePushToken = async (req, res) => {
   }
 };
 
-// Google Sign-In: find or create user from Google OAuth
+// Google Sign-In: check if user exists — do NOT create new users here
+// (deferred to googleSetPassword to prevent orphan accounts)
 exports.googleLogin = async (req, res) => {
   const { googleId, email, name, photoUrl } = req.body;
   try {
@@ -239,31 +240,24 @@ exports.googleLogin = async (req, res) => {
     // Try to find existing user by email
     let user = await User.findOne({ email });
 
-    let isNewUser = false;
     if (!user) {
-      // Create a new user from Google data (password set later via google-set-password)
-      user = await User.create({
-        name: name || email.split('@')[0],
-        email,
-        mobile: '',
-        password: await require('bcryptjs').hash(googleId + JWT_SECRET, 10), // placeholder
-        userType: 'User',
-        image: photoUrl || '',
-        secretText: '',
-        googleId,
+      // New user — DON'T create yet. Let them set a password first.
+      console.log('New Google user detected (not created yet):', email);
+      return res.status(200).json({
+        status: 'ok',
+        isNewUser: true,
+        // No token — they need to set a password first
       });
-      isNewUser = true;
-      console.log('New Google user created:', email);
-    } else {
-      console.log('Existing Google user logged in:', email);
     }
 
+    // Existing user — log them in
+    console.log('Existing Google user logged in:', email);
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '30d' });
-    return res.status(201).json({
+    return res.status(200).json({
       status: 'ok',
       data: token,
       userType: user.userType,
-      isNewUser,
+      isNewUser: false,
       userData: { name: user.name, email: user.email, image: user.image }
     });
   } catch (error) {
@@ -272,29 +266,47 @@ exports.googleLogin = async (req, res) => {
   }
 };
 
-// Set a real password for a new Google-registered user
+// Create account + set password for a new Google user (or update existing)
 exports.googleSetPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { email, newPassword, name, googleId, image } = req.body;
   try {
     if (!email || !newPassword) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
 
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save();
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create the user now (deferred from googleLogin)
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        mobile: '',
+        password: await bcrypt.hash(newPassword, 10),
+        userType: 'User',
+        image: image || '',
+        secretText: '',
+        googleId: googleId || '',
+      });
+      console.log('Google user created with password:', email);
+    } else {
+      // User already exists (edge case: they came back) — just update password
+      user.password = await bcrypt.hash(newPassword, 10);
+      await user.save();
+      console.log('Google user password updated:', email);
+    }
 
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '30d' });
     res.json({
       status: 'ok',
-      message: 'Password set successfully',
+      message: 'Account created successfully',
       data: token,
       userType: user.userType,
       userData: { name: user.name, email: user.email, image: user.image }
     });
   } catch (error) {
     console.error('Google set password error:', error);
-    res.status(500).json({ error: error.message || 'Failed to set password' });
+    res.status(500).json({ error: error.message || 'Failed to create account' });
   }
-};
+};
+

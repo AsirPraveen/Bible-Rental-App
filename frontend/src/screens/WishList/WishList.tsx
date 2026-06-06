@@ -40,7 +40,6 @@ export default function Wishlist() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        console.error('No token found');
         setLoading(false);
         return;
       }

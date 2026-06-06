@@ -41,7 +41,6 @@ const AboutAdminTab = () => {
       try {
         const token = await AsyncStorage.getItem('token');
         if (!token) {
-          Alert.alert('Error', 'No user token found. Please log in again.');
           return;
         }
 

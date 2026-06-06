@@ -1,11 +1,48 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Platform, StatusBar, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Platform, StatusBar, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Book, Music, FileText, MessageSquare, Target, Calendar, HandHeart, Map as MapIcon, Users } from 'lucide-react-native';
+import { Book, Music, FileText, MessageSquare, Target, Calendar, HandHeart, Map as MapIcon, Users, Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
+import Constants from 'expo-constants';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+
+// Map card titles → guestAccess keys
+const GUEST_KEY_MAP: Record<string, string> = {
+  'Bible': 'Bible',
+  'Songs': 'Songs',
+  'HistoricalMaps': 'HistoricalMaps',
+  'ReadingTracker': 'ReadingTracker',
+  'ReadingPlanner': 'ReadingPlanner',
+  'DiscussionForum': 'DiscussionForum',
+  'FastingTracker': 'FastingTracker',
+  'PrayerRequests': 'PrayerRequests',
+  'BookPdf': 'BookPdf',
+  'MessageNotes': 'MessageNotes',
+};
 
 export default function StuffComponent() {
   const navigation = useNavigation<any>();
+  const { isGuest } = useAuth();
+  const [guestAccess, setGuestAccess] = useState<Record<string, boolean>>({});
+
+  // Fetch guest settings once on mount (only matters for guests)
+  useEffect(() => {
+    if (!isGuest) return;
+    const fetchGuestSettings = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/app-settings`);
+        if (res.data.status === 'Success' && res.data.data.guestAccess) {
+          setGuestAccess(res.data.data.guestAccess);
+        }
+      } catch (err) {
+        console.log('Error fetching guest settings:', err);
+      }
+    };
+    fetchGuestSettings();
+  }, [isGuest]);
 
   const cards = [
     {
@@ -58,47 +95,80 @@ export default function StuffComponent() {
       isNew: true,
     },
     {
+      title: 'MessageNotes',
+      icon: <MessageSquare color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+      isNew: true,
+    },
+    {
       title: 'BookPdf',
       icon: <FileText color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
       isNew: false,
       isComingSoon: true,
     },
-    {
-      title: 'MessageNotes',
-      icon: <MessageSquare color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
-      isNew: false,
-      isComingSoon: true,
-    },
   ];
+
+  const handleCardPress = (card: any) => {
+    const guestKey = GUEST_KEY_MAP[card.title];
+    // If guest and this feature is disabled, show login prompt
+    if (isGuest && guestKey && guestAccess[guestKey] === false) {
+      Alert.alert(
+        '🔒 Sign In Required',
+        `"${card.title}" requires an account. Sign in to access this feature.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => navigation.navigate('Login') },
+        ]
+      );
+      return;
+    }
+    navigation.navigate(card.title);
+  };
+
+  // Check if a card is locked for guests
+  const isLocked = (title: string): boolean => {
+    if (!isGuest) return false;
+    const guestKey = GUEST_KEY_MAP[title];
+    if (!guestKey) return false;
+    return guestAccess[guestKey] === false;
+  };
 
   return (
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
-            {cards.map((card, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[styles.card, { backgroundColor: card.bgColor }]}
-                onPress={() => navigation.navigate(card.title)}>
-                {card.isNew && (
-                  <View style={styles.newBadge}>
-                    <Text style={styles.newBadgeText}>NEW</Text>
+            {cards.map((card, index) => {
+              const locked = isLocked(card.title);
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.card, { backgroundColor: card.bgColor }, locked && styles.lockedCard]}
+                  onPress={() => handleCardPress(card)}>
+                  {card.isNew && !locked && (
+                    <View style={styles.newBadge}>
+                      <Text style={styles.newBadgeText}>NEW</Text>
+                    </View>
+                  )}
+                  {card.isComingSoon && !locked && (
+                    <View style={styles.comingSoonBadge}>
+                      <Text style={styles.comingSoonBadgeText}>COMING SOON</Text>
+                    </View>
+                  )}
+                  {locked && (
+                    <View style={styles.lockBadge}>
+                      <Lock color="#fff" size={10} />
+                      <Text style={styles.lockBadgeText}>SIGN IN</Text>
+                    </View>
+                  )}
+                  <View style={[styles.cardContent, locked && { opacity: 0.4 }]}>
+                    {card.icon}
+                    <Text style={styles.cardTitle}>{card.title}</Text>
                   </View>
-                )}
-                {card.isComingSoon && (
-                  <View style={styles.comingSoonBadge}>
-                    <Text style={styles.comingSoonBadgeText}>COMING SOON</Text>
-                  </View>
-                )}
-                <View style={styles.cardContent}>
-                  {card.icon}
-                  <Text style={styles.cardTitle}>{card.title}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </ScrollView>
       </LinearGradient>
@@ -139,6 +209,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     overflow: 'hidden',
+  },
+  lockedCard: {
+    // subtle visual difference for locked cards
   },
   cardContent: {
     flex: 1,
@@ -181,6 +254,26 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   comingSoonBadgeText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  lockBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 12,
+    zIndex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  lockBadgeText: {
     color: '#fff',
     fontSize: 8,
     fontWeight: 'bold',

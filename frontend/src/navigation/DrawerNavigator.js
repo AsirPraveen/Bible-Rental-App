@@ -7,6 +7,7 @@ import History from '../screens/History/History';
 import Wishlist from '../screens/WishList/WishList';
 import GeneratedImages from '../screens/Bible/GeneratedImages';
 import NotificationSettings from '../screens/Settings/NotificationSettings';
+import { useAuth } from '../context/AuthContext';
 
 const Drawer = createDrawerNavigator();
 
@@ -19,6 +20,8 @@ const Colors = {
 };
 
 const DrawerNavigator = () => {
+  const { isGuest } = useAuth();
+
   const drawerIcon = ({ focused, size }, name) => {
     return (
       <Icon
@@ -55,34 +58,39 @@ const DrawerNavigator = () => {
           drawerIcon: options => drawerIcon(options, 'home-outline'),
         }}
       />
-      <Drawer.Screen
-        name="Wishlist"
-        component={Wishlist}
-        options={{
-          drawerIcon: options => drawerIcon(options, 'heart-outline'),
-        }}
-      />
-      <Drawer.Screen
-        name="History"
-        component={History}
-        options={{
-          drawerIcon: options => drawerIcon(options, 'history'),
-        }}
-      />
-      <Drawer.Screen
-        name="Generated Images"
-        component={GeneratedImages}
-        options={{
-          drawerIcon: options => drawerIcon(options, 'image-multiple-outline'),
-        }}
-      />
-      <Drawer.Screen
-        name="Notifications"
-        component={NotificationSettings}
-        options={{
-          drawerIcon: options => drawerIcon(options, 'bell-outline'),
-        }}
-      />
+      {/* These drawer items require a user account — hidden for guests */}
+      {!isGuest && (
+        <>
+          <Drawer.Screen
+            name="Wishlist"
+            component={Wishlist}
+            options={{
+              drawerIcon: options => drawerIcon(options, 'heart-outline'),
+            }}
+          />
+          <Drawer.Screen
+            name="History"
+            component={History}
+            options={{
+              drawerIcon: options => drawerIcon(options, 'history'),
+            }}
+          />
+          <Drawer.Screen
+            name="Generated Images"
+            component={GeneratedImages}
+            options={{
+              drawerIcon: options => drawerIcon(options, 'image-multiple-outline'),
+            }}
+          />
+          <Drawer.Screen
+            name="Notifications"
+            component={NotificationSettings}
+            options={{
+              drawerIcon: options => drawerIcon(options, 'bell-outline'),
+            }}
+          />
+        </>
+      )}
     </Drawer.Navigator>
   );
 };

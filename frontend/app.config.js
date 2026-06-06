@@ -51,7 +51,7 @@ export default {
       "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-asset",
-      // expo-auth-session plugin re-add after: rmdir /s /q node_modules\expo-auth-session && npm install expo-auth-session expo-crypto
+      "@react-native-google-signin/google-signin",
       [
         "expo-splash-screen",
         {

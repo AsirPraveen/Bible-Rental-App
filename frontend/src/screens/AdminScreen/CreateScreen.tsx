@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Image, Platform, StatusBar, SafeAreaView, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SquarePen, BookPlus, BarChart3, ShieldAlert, Map, Music } from 'lucide-react-native';
+import { SquarePen, BookPlus, BarChart3, ShieldAlert, Map, Music, Eye } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function CreateScreen() {
@@ -36,6 +36,11 @@ export default function CreateScreen() {
     {
       title: 'Moderation',
       icon: <ShieldAlert color="#146C94" size={32} />,
+      bgColor: '#AFD3E2',
+    },
+    {
+      title: 'Guest Settings',
+      icon: <Eye color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
     }
   ];

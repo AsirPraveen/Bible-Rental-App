@@ -46,11 +46,15 @@ const NotificationScreen = () => {
         let email = null;
 
         if (token) {
-          const userRes = await axios.post(`${API_URL}/api/auth/userdata`, {
-            token,
-          });
-          email = userRes.data.data.email;
-          setUserEmail(email);
+          try {
+            const userRes = await axios.post(`${API_URL}/api/auth/userdata`, {
+              token,
+            });
+            email = userRes.data?.data?.email || null;
+            setUserEmail(email);
+          } catch (userErr) {
+            console.log('Guest mode or invalid token — skipping user data');
+          }
         }
 
         const response = await axios.get(`${API_URL}/api/posts`, {

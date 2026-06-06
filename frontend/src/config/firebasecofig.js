@@ -3,7 +3,7 @@
 // All other app data stays in our own MongoDB backend.
 
 import { initializeApp, getApps } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getAuth, getReactNativePersistence } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // EXPO_PUBLIC_ prefix makes these vars available directly via process.env
@@ -22,9 +22,17 @@ const app = getApps().length === 0
   ? initializeApp(firebaseConfig)
   : getApps()[0];
 
-// Use AsyncStorage for auth persistence so the session survives app restarts
-export const firebaseAuth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+// Use AsyncStorage for auth persistence so the session survives app restarts.
+// Guard against "auth/already-initialized" on hot-reload / fast-refresh.
+let firebaseAuth;
+try {
+  firebaseAuth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch (e) {
+  // If initializeAuth was already called for this app, fall back to getAuth
+  firebaseAuth = getAuth(app);
+}
 
+export { firebaseAuth };
 export default app;

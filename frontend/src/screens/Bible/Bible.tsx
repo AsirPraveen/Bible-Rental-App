@@ -100,7 +100,8 @@ const BibleComponent = () => {
           setUserToken(token);
           fetchUserData(token);
         } else {
-          Alert.alert('Error', 'No user token found. Please log in again.');
+          // Guest mode — Bible works without a token, just no image credits
+          console.log('[Bible] Guest mode — skipping user data fetch');
         }
 
         // Fetch Languages

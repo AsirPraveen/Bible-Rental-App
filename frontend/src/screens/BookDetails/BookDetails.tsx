@@ -68,19 +68,23 @@ export default function BookDetails() {
   };
 
   const fetchCurrentUser = async () => {
+    if (isGuest) return; // Guests have no token — skip user-specific data
     try {
       const token = await AsyncStorage.getItem('token');
+      if (!token) return;
       const user = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
-      setCurrentUserEmail(user.data.data.email);
+      setCurrentUserEmail(user.data?.data?.email || '');
 
-      const userData = user.data.data;
-      const pendingRequest = userData.books_rented.find(
-        (request: any) => request.book_id === initialBook.book_id && request.status === 'pending'
-      );
-      setHasPendingRequest(!!pendingRequest);
+      const userData = user.data?.data;
+      if (userData) {
+        const pendingRequest = userData.books_rented?.find(
+          (request: any) => request.book_id === initialBook.book_id && request.status === 'pending'
+        );
+        setHasPendingRequest(!!pendingRequest);
 
-      // Check if book is in favouriteBooks
-      setIsFavourite(userData.favouriteBooks.includes(parseInt(initialBook.book_id)));
+        // Check if book is in favouriteBooks
+        setIsFavourite(userData.favouriteBooks?.includes(parseInt(initialBook.book_id)) || false);
+      }
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
@@ -94,10 +98,10 @@ export default function BookDetails() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchBookDetails();
-      fetchCurrentUser();
+      if (!isGuest) fetchCurrentUser();
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isGuest]);
 
   if (!book) {
     return (

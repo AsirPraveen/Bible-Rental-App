@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
-import { Settings, Gamepad2, Save } from 'lucide-react-native';
+import { Settings, Gamepad2, Save, Image as LucideImage } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const AppSettingsTab = () => {
   const [isGameEnabled, setIsGameEnabled] = useState(true);
+  const [isImageGenEnabled, setIsImageGenEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -22,6 +23,7 @@ const AppSettingsTab = () => {
       const res = await axios.get(`${API_URL}/api/app-settings`);
       if (res.data.status === 'Success') {
         setIsGameEnabled(res.data.data.isGameEnabled);
+        setIsImageGenEnabled(res.data.data.isImageGenEnabled !== false);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -34,7 +36,7 @@ const AppSettingsTab = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const res = await axios.put(`${API_URL}/api/app-settings`, { isGameEnabled });
+      const res = await axios.put(`${API_URL}/api/app-settings`, { isGameEnabled, isImageGenEnabled });
       if (res.data.status === 'Success') {
         Alert.alert('Success', 'App settings updated successfully!');
       }
@@ -77,6 +79,24 @@ const AppSettingsTab = () => {
             onValueChange={setIsGameEnabled}
             trackColor={{ false: '#D1D1D1', true: '#19A7CE' }}
             thumbColor={isGameEnabled ? '#146C94' : '#f4f3f4'}
+          />
+        </View>
+
+        <View style={[styles.settingItem, { marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#EEEEEE' }]}>
+          <View style={styles.settingTextContainer}>
+            <View style={styles.row}>
+              <LucideImage color="#146C94" size={20} />
+              <Text style={styles.settingLabel}>AI Image Generation</Text>
+            </View>
+            <Text style={styles.settingDescription}>
+              Enable or disable AI image generation for Bible verses and the generated images tab.
+            </Text>
+          </View>
+          <Switch
+            value={isImageGenEnabled}
+            onValueChange={setIsImageGenEnabled}
+            trackColor={{ false: '#D1D1D1', true: '#19A7CE' }}
+            thumbColor={isImageGenEnabled ? '#146C94' : '#f4f3f4'}
           />
         </View>
       </View>

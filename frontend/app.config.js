@@ -17,6 +17,12 @@ export default {
     android: {
       package: "com.asirpraveen.youthroom",
       googleServicesFile: "./google-services.json",
+      versionCode: 1,
+      permissions: [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       adaptiveIcon: {
         foregroundImage: "./src/assets/jesus-holding-bible.jpg",
         backgroundColor: "#ffffff",
@@ -53,6 +59,19 @@ export default {
       "expo-asset",
       "@react-native-google-signin/google-signin",
       [
+        "expo-camera",
+        {
+          cameraPermission: "Allow Youth Room to access your camera"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Allow Youth Room to access your photos",
+          savePhotosPermission: "Allow Youth Room to save photos to your library"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           image: "./src/assets/jesus-holding-bible.jpg",
@@ -65,9 +84,5 @@ export default {
     experiments: {
       typedRoutes: true,
     },
-    permissions: [
-      "camera",
-      "mediaLibrary",
-    ],
   },
 };

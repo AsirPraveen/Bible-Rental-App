@@ -199,13 +199,15 @@ exports.approveRentRequest = async (req, res) => {
     }
 
     // Update the book availability and ownership
+    const newAvailableCount = Math.max((book.available_count || 1) - 1, 0);
     await Book.updateOne(
       { book_id },
       { 
         $set: { 
-          available: false, 
+          available: newAvailableCount > 0, 
           owned_by: userEmail, 
-          rent_from: new Date() 
+          rent_from: new Date(),
+          available_count: newAvailableCount
         }, 
         $inc: { rent_count: 1 } 
       }
@@ -298,7 +300,7 @@ exports.rejectRentRequest = async (req, res) => {
     }
 
     await User.updateOne(
-      { email: userEmail, 'books_rented.book_id': book_id },
+      { email: userEmail, 'books_rented._id': request._id },
       { $set: { 'books_rented.$.status': 'rejected' } }
     );
 
@@ -367,36 +369,67 @@ exports.getRequestHistory = async (req, res) => {
 };
 
 exports.returnBook = async (req, res) => {
-  const { book_id } = req.body;
+  const { book_id, userEmail } = req.body;
+  
+  // Use userEmail if provided (e.g. by admin), otherwise fall back to authenticated user's email
+  const targetEmail = userEmail || (req.user ? req.user.email : null);
+  
+  if (!targetEmail) {
+    return res.status(400).send({ status: "error", data: "User email is required" });
+  }
+
   try {
+    const user = await User.findOne({ email: targetEmail });
+    if (!user) {
+      return res.status(404).send({ status: "error", data: "User not found" });
+    }
+
+    // Find an active approved rental request for this book
+    const request = user.books_rented.find(
+      (r) => r.book_id === Number(book_id) && r.status === 'approved'
+    );
+    if (!request) {
+      return res.status(400).send({ status: "error", data: "No active approved rental found for this book" });
+    }
+
     const book = await Book.findOne({ book_id });
     if (!book) {
       return res.status(404).send({ status: "error", data: "Book not found" });
     }
-    if (book.available) {
-      return res.status(400).send({ status: "error", data: "Book is already available" });
-    }
 
-    // Award the user who returned the book 100 talents
-    if (book.owned_by) {
-      await User.updateOne({ email: book.owned_by }, { $inc: { talents: 100 } });
-    }
-
+    // Update book availability and increment available_count
+    const newAvailableCount = (book.available_count || 0) + 1;
     await Book.updateOne(
       { book_id },
-      { $set: { available: true, owned_by: null, rent_from: null } }
+      { 
+        $set: { 
+          available: true, 
+          available_count: newAvailableCount,
+          owned_by: null, // Clear single owner field for backwards compatibility
+          rent_from: null
+        } 
+      }
+    );
+
+    // Update the specific request status to 'returned' and award 100 Talents
+    await User.updateOne(
+      { email: targetEmail, 'books_rented._id': request._id },
+      { 
+        $set: { 'books_rented.$.status': 'returned' },
+        $inc: { talents: 100 } 
+      }
     );
 
     // Notify Admins of return
     await notifyAdmins(
         'Book Returned 📚',
-        `The book "${book.book_name}" has been returned and is now available for others.`,
+        `The book "${book.book_name}" has been returned by ${user.name || targetEmail} and is now available for others.`,
         { bookId: book_id, type: 'rental_return' }
     );
 
     res.send({ status: "Ok", data: "Book returned successfully" });
   } catch (error) {
-    res.send({ status: "error", data: error });
+    res.status(500).send({ status: "error", data: error.message || error });
   }
 };
 

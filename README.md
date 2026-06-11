@@ -70,6 +70,7 @@ Admins have a full-featured dashboard for managing books, posts, maps, songs, us
 - [ ] Instant Bible Answers
 - [ ] Meeting Messages / Notes available
 - [ ] BookPdf for reading and downloading
+- [ ] Dictionary kindof meaning for words in bible
 
 #### Pre-Production
 - [ ] Complete end-to-end testing — before production build

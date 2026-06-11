@@ -14,7 +14,11 @@ const Colors = {
   accent: '#667eea',
 };
 
-const PieChartComponent = ({ data }) => {
+interface PieChartComponentProps {
+  data: Array<{ book_name: string; rent_count?: number }>;
+}
+
+const PieChartComponent = ({ data }: PieChartComponentProps) => {
   const [animatedValue] = useState(new Animated.Value(0));
 
   useEffect(() => {

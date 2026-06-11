@@ -263,7 +263,8 @@ function LoginPage() {
       })
       .catch(err => {
         console.error('Login error:', err);
-        Alert.alert('Error', 'An error occurred during login');
+        const errorMsg = err.response?.data?.data || err.response?.data?.message || 'An error occurred during login';
+        Alert.alert('Error', errorMsg);
       })
       .finally(() => setLoading(false));
   };

@@ -51,6 +51,7 @@ export default function BookDetails() {
   const [book, setBook] = useState(initialBook);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [isReading, setIsReading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ url: string | undefined; publicId: string } | null>(null);
   const [isFavourite, setIsFavourite] = useState(false); // Track if book is in wishlist
@@ -78,9 +79,14 @@ export default function BookDetails() {
       const userData = user.data?.data;
       if (userData) {
         const pendingRequest = userData.books_rented?.find(
-          (request: any) => request.book_id === initialBook.book_id && request.status === 'pending'
+          (request: any) => Number(request.book_id) === Number(initialBook.book_id) && request.status === 'pending'
         );
         setHasPendingRequest(!!pendingRequest);
+
+        const approvedRequest = userData.books_rented?.find(
+          (request: any) => Number(request.book_id) === Number(initialBook.book_id) && request.status === 'approved'
+        );
+        setIsReading(!!approvedRequest);
 
         // Check if book is in favouriteBooks
         setIsFavourite(userData.favouriteBooks?.includes(parseInt(initialBook.book_id)) || false);
@@ -137,11 +143,17 @@ export default function BookDetails() {
               const user = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
               const userEmail = user.data.data.email;
 
-              const res = await axios.post(`${BASE_URL}/api/submit-rent-request`, {
-                userEmail,
-                book_id: book.book_id,
-                book_name: book.book_name,
-              });
+              const res = await axios.post(
+                `${BASE_URL}/api/submit-rent-request`,
+                {
+                  userEmail,
+                  book_id: book.book_id,
+                  book_name: book.book_name,
+                },
+                {
+                  headers: { Authorization: `Bearer ${token}` }
+                }
+              );
 
               if (res.data.status === 'Ok') {
                 Alert.alert('Success', 'Rent request submitted. Waiting for admin approval. Email will be sent to you once approved or rejected.');
@@ -170,7 +182,14 @@ export default function BookDetails() {
           text: 'Yes',
           onPress: async () => {
             try {
-              const res = await axios.post(`${BASE_URL}/api/return-book`, { book_id: book.book_id });
+              const token = await AsyncStorage.getItem('token');
+              const res = await axios.post(
+                `${BASE_URL}/api/return-book`,
+                { book_id: book.book_id },
+                {
+                  headers: { Authorization: `Bearer ${token}` }
+                }
+              );
               if (res.data.status === 'Ok') {
                 Alert.alert('Success', 'Book returned successfully');
                 fetchBookDetails();
@@ -202,10 +221,16 @@ export default function BookDetails() {
     }
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.post(`${BASE_URL}/api/toggle-favourite`, {
-        userEmail: currentUserEmail,
-        book_id: book.book_id,
-      });
+      const res = await axios.post(
+        `${BASE_URL}/api/toggle-favourite`,
+        {
+          userEmail: currentUserEmail,
+          book_id: book.book_id,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
       if (res.data.status === 'Ok') {
         setIsFavourite(!isFavourite);
@@ -222,19 +247,7 @@ export default function BookDetails() {
   };
 
   const renderButton = () => {
-    if (book.available && !hasPendingRequest) {
-      return (
-        <Pressable style={styles.rentButton} onPress={handleRentRequest}>
-          <Text style={styles.rentButtonText}>Rent Now</Text>
-        </Pressable>
-      );
-    } else if (hasPendingRequest) {
-      return (
-        <View style={[styles.rentButton, styles.pendingButton]}>
-          <Text style={[styles.rentButtonText, styles.pendingText]}>Asked for rent</Text>
-        </View>
-      );
-    } else if (!book.available && book.owned_by === currentUserEmail) {
+    if (isReading) {
       return (
         <View style={styles.buttonContainer}>
           <View style={[styles.rentButton, styles.readingButton]}>
@@ -245,11 +258,23 @@ export default function BookDetails() {
           </Pressable>
         </View>
       );
-    } else if (!book.available) {
+    } else if (hasPendingRequest) {
+      return (
+        <View style={[styles.rentButton, styles.pendingButton]}>
+          <Text style={[styles.rentButtonText, styles.pendingText]}>Asked for rent</Text>
+        </View>
+      );
+    } else if (book.available) {
+      return (
+        <Pressable style={styles.rentButton} onPress={handleRentRequest}>
+          <Text style={styles.rentButtonText}>Rent Now</Text>
+        </Pressable>
+      );
+    } else {
       return (
         <View style={[styles.rentButton, styles.rentedButton]}>
           <Text style={[styles.rentButtonText, styles.rentedText]}>
-            Rented by {book.owned_by}
+            Rented by {book.owned_by || 'someone else'}
           </Text>
         </View>
       );

@@ -5,6 +5,10 @@ const appSettingsSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isImageGenEnabled: {
+    type: Boolean,
+    default: true
+  },
   // Guest access toggles — controlled from Admin panel
   guestAccess: {
     Bible:            { type: Boolean, default: true },

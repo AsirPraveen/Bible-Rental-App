@@ -4,7 +4,7 @@ const getAppSettings = async (req, res) => {
   try {
     let settings = await AppSettings.findOne();
     if (!settings) {
-      settings = await AppSettings.create({ isGameEnabled: true });
+      settings = await AppSettings.create({ isGameEnabled: true, isImageGenEnabled: true });
     }
     res.status(200).json({ status: 'Success', data: settings });
   } catch (error) {
@@ -14,13 +14,16 @@ const getAppSettings = async (req, res) => {
 
 const updateAppSettings = async (req, res) => {
   try {
-    const { isGameEnabled, guestAccess } = req.body;
+    const { isGameEnabled, isImageGenEnabled, guestAccess } = req.body;
     let settings = await AppSettings.findOne();
     if (!settings) {
       settings = new AppSettings();
     }
     if (isGameEnabled !== undefined) {
       settings.isGameEnabled = isGameEnabled;
+    }
+    if (isImageGenEnabled !== undefined) {
+      settings.isImageGenEnabled = isImageGenEnabled;
     }
     if (guestAccess && typeof guestAccess === 'object') {
       // Merge only the provided keys into existing guestAccess

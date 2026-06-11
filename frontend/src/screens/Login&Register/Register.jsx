@@ -105,7 +105,8 @@ function RegisterPage() {
       })
       .catch(error => {
         console.error('Registration error:', error);
-        Alert.alert('Error', 'An error occurred during registration');
+        const errorMsg = error.response?.data?.data || error.response?.data?.message || 'An error occurred during registration';
+        Alert.alert('Error', errorMsg);
       })
       .finally(() => setLoading(false));
   };

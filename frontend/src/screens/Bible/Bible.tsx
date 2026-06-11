@@ -53,6 +53,12 @@ const BibleComponent = () => {
   const [compareVerseData, setCompareVerseData] = useState<{text: string} | null>(null);
   const [openCompareLanguage, setOpenCompareLanguage] = useState(false);
   
+  // Custom Dictionary Modal State
+  const [isDictModalVisible, setIsDictModalVisible] = useState(false);
+  const [dictWord, setDictWord] = useState('');
+  const [dictMeaning, setDictMeaning] = useState('');
+  const [dictSource, setDictSource] = useState('');
+  
   // Generate Image State
   const [verseImage, setVerseImage] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -62,6 +68,7 @@ const BibleComponent = () => {
   const [userToken, setUserToken] = useState<string | null>(null);
   const [underlinedWordIndices, setUnderlinedWordIndices] = useState<number[]>([]);
   const [verseFontSize, setVerseFontSize] = useState<number>(18);
+  const [isImageGenEnabled, setIsImageGenEnabled] = useState(true);
   
   // Copied state
   const [isCopied, setIsCopied] = useState(false);
@@ -104,11 +111,30 @@ const BibleComponent = () => {
           console.log('[Bible] Guest mode — skipping user data fetch');
         }
 
+        // Fetch App Settings
+        try {
+          const settingsRes = await axios.get(`${API_URL}/api/app-settings`);
+          if (settingsRes.data.status === 'Success') {
+            setIsImageGenEnabled(settingsRes.data.data.isImageGenEnabled !== false);
+          }
+        } catch (settingsError) {
+          console.log('Error fetching settings, defaulting to enabled:', settingsError);
+        }
+
         // Fetch Languages
         try {
           const langRes = await axios.get(`${API_URL}/api/bible/languages`);
           if (langRes.data.status === 'Ok') {
             const langs = langRes.data.data.map((l:any) => ({ label: l === 'Tamil' ? 'Tamil (Offline)' : l, value: l }));
+            langs.sort((a: any, b: any) => {
+              const valA = a.value;
+              const valB = b.value;
+              if (valA === 'Tamil') return -1;
+              if (valB === 'Tamil') return 1;
+              if (valA === 'English') return -1;
+              if (valB === 'English') return 1;
+              return valA.localeCompare(valB);
+            });
             setAvailableLanguages(langs);
           }
         } catch (langError) {
@@ -208,7 +234,12 @@ const BibleComponent = () => {
             }
           }
         });
-        const booksData = Array.from(booksMap.values()).sort((a: any, b: any) => a.value - b.value);
+        const booksData = Array.from(booksMap.values())
+          .sort((a: any, b: any) => a.value - b.value)
+          .map((b: any) => ({
+            ...b,
+            containerStyle: b.value === 38 ? { borderBottomWidth: 2, borderBottomColor: '#19A7CE', paddingBottom: 8, marginBottom: 4 } : undefined
+          }));
         setBooks(booksData);
         return;
       }
@@ -221,7 +252,8 @@ const BibleComponent = () => {
             return {
               label: localizedName || b.bookName,
               value: b.bookNumber,
-              chapterCount: b.chapterCount
+              chapterCount: b.chapterCount,
+              containerStyle: b.bookNumber === 38 ? { borderBottomWidth: 2, borderBottomColor: '#19A7CE', paddingBottom: 8, marginBottom: 4 } : undefined
             };
           });
           setBooks(booksData);
@@ -335,15 +367,19 @@ const BibleComponent = () => {
       ...verse,
       citation: `${bookName} ${selectedChapter}:${verse.verseNumber}`
     });
-    // Start reading from the tapped verse
-    Speech.stop();
-    playRequestRef.current = true;
-    setIsPlaying(true);
-    setShowPlayer(true);
-    Animated.spring(playerBarAnim, { toValue: 0, useNativeDriver: true }).start();
+
+    // Always update current verse index when selected
     currentVerseIndexRef.current = index;
     setCurrentVerseIndex(index);
-    speakVerseRef.current?.(chapterVerses, index);
+
+    // Only start TTS if audio mode (showPlayer) is toggled ON
+    if (showPlayer) {
+      Speech.stop();
+      playRequestRef.current = true;
+      setIsPlaying(true);
+      speakVerseRef.current?.(chapterVerses, index);
+    }
+    // Otherwise, just highlight the verse (selectedVerse is already set above)
   };
 
   const handleVerseLongPress = (verse: any) => {
@@ -585,7 +621,11 @@ const BibleComponent = () => {
         language
       });
       if (res.data.status === 'Ok') {
-        Alert.alert(`Meaning of "${word}"`, res.data.data.meaning);
+        const { meaning, source } = res.data.data;
+        setDictWord(word);
+        setDictMeaning(meaning);
+        setDictSource(source);
+        setIsDictModalVisible(true);
       } else {
         Alert.alert('Error', res.data.message || 'Failed to fetch meaning.');
       }
@@ -668,8 +708,8 @@ const BibleComponent = () => {
     setCurrentVerseIndex(index);
     currentVerseIndexRef.current = index;
     // Auto-scroll: center the speaking verse in the visible reader area
-    if (scrollViewRef.current) {
-      const verseY = verseLayoutsRef.current[index] ?? 0;
+    if (scrollViewRef.current && verseLayoutsRef.current[index] !== undefined) {
+      const verseY = verseLayoutsRef.current[index];
       const verseApproxHeight = 60;
       const scrollY = Math.max(0, verseY - scrollViewHeightRef.current / 2 + verseApproxHeight / 2);
       scrollViewRef.current.scrollTo({ y: scrollY, animated: true });
@@ -797,19 +837,24 @@ const BibleComponent = () => {
         <View style={styles.container}>
           
           <View style={styles.headerRow}>
-            {/* ▶️ Play Button — Top Left */}
+            {/* 🔊 Audio Mode Toggle — Top Left */}
             <TouchableOpacity
               onPress={() => {
-                if (!showPlayer) {
+                if (showPlayer) {
+                  // Toggling OFF — stop any active playback and hide player
+                  stopReading();
+                  Animated.timing(playerBarAnim, { toValue: 100, duration: 250, useNativeDriver: true }).start(() => {
+                    setShowPlayer(false);
+                  });
+                } else {
+                  // Toggling ON — show player bar (paused), wait for verse tap to play
                   setShowPlayer(true);
                   Animated.spring(playerBarAnim, { toValue: 0, useNativeDriver: true }).start();
-                } else {
-                  handlePlayPause();
                 }
               }}
               style={styles.headerPlayBtn}
             >
-              <Icon name={isPlaying ? 'pause-circle' : 'play-circle'} size={34} color="#F6F1F1" />
+              <Icon name={showPlayer ? 'headphones' : 'headphones-off'} size={34} color="#F6F1F1" />
             </TouchableOpacity>
 
             <Text style={styles.headerText}>Bible Reader</Text>
@@ -924,7 +969,7 @@ const BibleComponent = () => {
 
                     return (
                       <TouchableOpacity 
-                        key={index} 
+                        key={`${selectedBookNumber}_${selectedChapter}_${index}`} 
                         onPress={() => handleVerseSelect(verse, index)}
                         onLongPress={() => handleVerseLongPress(verse)}
                         onLayout={(e) => { verseLayoutsRef.current[index] = e.nativeEvent.layout.y; }}
@@ -1079,16 +1124,18 @@ const BibleComponent = () => {
                   </View>
                   
                   <View style={styles.buttonContainer}>
-                    <Button
-                      mode="contained"
-                      onPress={handleGenerateImage}
-                      loading={isGeneratingImage}
-                      style={[styles.actionButton, styles.generateButton]}
-                      labelStyle={styles.buttonText}
-                      disabled={imageGenerationCredits <= 0 || isGeneratingImage}
-                    >
-                      Generate Image ({imageGenerationCredits} left)
-                    </Button>
+                    {isImageGenEnabled && (
+                      <Button
+                        mode="contained"
+                        onPress={handleGenerateImage}
+                        loading={isGeneratingImage}
+                        style={[styles.actionButton, styles.generateButton]}
+                        labelStyle={styles.buttonText}
+                        disabled={imageGenerationCredits <= 0 || isGeneratingImage}
+                      >
+                        Generate Image ({imageGenerationCredits} left)
+                      </Button>
+                    )}
                     <Button
                       mode="contained"
                       onPress={handleCompare}
@@ -1190,6 +1237,43 @@ const BibleComponent = () => {
                   </>
                 )}
               </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Custom Dictionary Modal */}
+        <Modal
+          visible={isDictModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setIsDictModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalDismissArea} 
+              activeOpacity={1} 
+              onPress={() => setIsDictModalVisible(false)} 
+            />
+            <View style={styles.dictModalContainer}>
+              {/* Blue AI Tag in the top-right corner */}
+              {dictSource === 'ai' && (
+                <View style={styles.aiTag}>
+                  <Text style={styles.aiTagText}>AI</Text>
+                </View>
+              )}
+
+              <Text style={styles.dictModalTitle}>Meaning of "{dictWord}"</Text>
+              
+              <ScrollView style={styles.dictModalScroll} showsVerticalScrollIndicator={true}>
+                <Text style={styles.dictModalText}>{dictMeaning}</Text>
+              </ScrollView>
+
+              <TouchableOpacity 
+                style={styles.dictCloseButton} 
+                onPress={() => setIsDictModalVisible(false)}
+              >
+                <Text style={styles.dictCloseButtonText}>Close</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -1650,6 +1734,64 @@ const styles = StyleSheet.create({
   },
   speedBtnTextActive: {
     color: '#146C94',
+  },
+  // Dictionary Modal styles
+  dictModalContainer: {
+    backgroundColor: '#fff',
+    width: '85%',
+    maxHeight: '75%',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    position: 'relative',
+  },
+  aiTag: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    backgroundColor: '#19A7CE',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  aiTagText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  dictModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#146C94',
+    marginBottom: 15,
+    textAlign: 'center',
+    paddingRight: 35,
+  },
+  dictModalScroll: {
+    marginBottom: 15,
+  },
+  dictModalText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+  },
+  dictCloseButton: {
+    backgroundColor: '#146C94',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  dictCloseButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

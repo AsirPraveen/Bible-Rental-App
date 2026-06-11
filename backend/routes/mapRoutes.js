@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const mapController = require('../controllers/mapController');
+const adminAuth = require('../middleware/adminAuth');
 
-// Existing static map endpoints
-router.post('/map/upload-map', mapController.createMap);
+// Public — anyone can view maps and locations
 router.get('/maps', mapController.getAllMaps);
-
-// New dynamic Biblical Locations CRUD
 router.get('/maps/locations', mapController.getLocations);
-router.post('/maps/locations', mapController.addLocation);
-router.delete('/maps/locations/:id', mapController.deleteLocation);
+
+// Admin only — create maps, manage locations
+router.post('/map/upload-map', adminAuth, mapController.createMap);
+router.post('/maps/locations', adminAuth, mapController.addLocation);
+router.delete('/maps/locations/:id', adminAuth, mapController.deleteLocation);
 
 module.exports = router;

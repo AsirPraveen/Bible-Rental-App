@@ -8,7 +8,6 @@ import RegisterPage from "../screens/Login&Register/Register";
 import DrawerNavigator from "./DrawerNavigator";
 import BookDetails from '../screens/BookDetails/BookDetails';
 import AuthorBooks from '../screens/AuthorBooks/AuthorBooks';
-import Bible from '../screens/Bible/Bible';
 import SongComponent from '../screens/Songs/Songs';
 import SongDetailsScreen from '../screens/Songs/SongDetails';
 import BookPdfComponent from '../screens/BookPdf/BookPdf';

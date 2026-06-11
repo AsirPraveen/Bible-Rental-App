@@ -32,11 +32,14 @@ const ReadingStat = require('./models/ReadingStat');
 const mongoUrl = process.env.MONGO_URL;
 const PORT = process.env.PORT || 5001;
 
-app.use(express.json());
+app.use(express.json({ limit: '4mb' }));
 
 mongoose.connect(mongoUrl)
   .then(() => console.log("Database Connected"))
-  .catch((e) => console.log(e));
+  .catch((e) => {
+    console.error("Database connection failed:", e.message);
+    process.exit(1);
+  });
 
 app.get("/", (req, res) => {
   res.send({ status: "Started" });
@@ -113,6 +116,10 @@ cron.schedule('0 * * * *', async () => {
 const { execSync } = require('child_process');
 
 const freePort = (port) => {
+  if (process.platform !== 'win32') {
+    console.log('[Server] Port-freeing is only supported on Windows. Skipping.');
+    return;
+  }
   try {
     // Find the PID using the port on Windows
     const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });

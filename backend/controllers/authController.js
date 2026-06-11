@@ -14,7 +14,7 @@ exports.register = async (req, res) => {
   try {
     console.log("inside register", req.body);
     const oldUser = await User.findOne({ email });
-    if (oldUser) return res.send({ data: "User already exists!!" });
+    if (oldUser) return res.status(409).send({ status: "error", data: "User already exists!!" });
 
     const encryptedPassword = await bcrypt.hash(password, 10);
     
@@ -63,11 +63,11 @@ exports.login = async (req, res) => {
     }
 
     console.log("Invalid password!");
-    res.send({ error: "Invalid credentials!!!" });
+    res.status(401).send({ status: "error", data: "Invalid credentials" });
     
   } catch (error) {
     console.error("Login error:", error);
-    res.send({ "Asir": "123" });
+    res.status(500).send({ status: "error", data: "An error occurred during login" });
   }
 };
 
@@ -181,12 +181,17 @@ exports.verifyOtp = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user || user.otp !== otp || Date.now() > user.otpExpiry) {
-      return res.json({ error: 'Invalid or expired OTP' });
+      return res.status(400).json({ status: 'error', data: 'Invalid or expired OTP' });
     }
+    // Mark OTP as verified by setting a short-lived reset window
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min window to reset
+    await user.save();
     res.json({ status: 'ok', message: 'OTP verified' });
   } catch (error) {
     console.error('Verify OTP error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    res.status(500).json({ status: 'error', data: error.message || 'Internal server error' });
   }
 };
 
@@ -194,17 +199,23 @@ exports.resetPassword = async (req, res) => {
   const { email, newPassword } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.json({ error: "User doesn't exist!!" });
+    if (!user) return res.status(404).json({ status: 'error', data: "User doesn't exist" });
+
+    // Ensure user went through OTP verification (has a valid reset window)
+    if (!user.resetPasswordExpires || Date.now() > user.resetPasswordExpires) {
+      return res.status(400).json({ status: 'error', data: 'Password reset session expired. Please request a new OTP.' });
+    }
 
     user.password = await bcrypt.hash(newPassword, 10);
     user.otp = undefined;
     user.otpExpiry = undefined;
+    user.resetPasswordExpires = undefined;
     await user.save();
 
     res.json({ status: 'ok', message: 'Password reset successfully' });
   } catch (error) {
     console.error('Reset Password error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    res.status(500).json({ status: 'error', data: error.message || 'Internal server error' });
   }
 };
 

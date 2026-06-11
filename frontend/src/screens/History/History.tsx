@@ -90,11 +90,13 @@ const History = () => {
                           request.status === 'pending' && styles.statusPending,
                           request.status === 'approved' && styles.statusApproved,
                           request.status === 'rejected' && styles.statusRejected,
+                          request.status === 'returned' && styles.statusReturned,
                         ]}
                       >
                         {request.status === 'pending' && 'Request Pending...'}
                         {request.status === 'approved' && 'Request Approved'}
                         {request.status === 'rejected' && 'Request Rejected'}
+                        {request.status === 'returned' && 'Returned'}
                       </Text>
                     </View>
                   </View>
@@ -204,6 +206,9 @@ const styles = StyleSheet.create({
   },
   statusRejected: {
     color: '#FF6B6B',
+  },
+  statusReturned: {
+    color: '#146C94',
   },
   emptyContainer: {
     flex: 1,

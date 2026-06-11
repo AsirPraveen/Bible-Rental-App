@@ -4,9 +4,7 @@ const Card = require('../models/Card');
 // Get all game data for a user
 exports.getGameData = async (req, res) => {
   try {
-    const { email } = req.query; // Assuming email is passed, or user ID
-    if (!email) return res.status(400).json({ error: 'Email is required' });
-
+    const email = req.user.email;
     const user = await UserInfo.findOne({ email }).populate('cardInventory.cardId');
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -66,7 +64,8 @@ exports.getAllCards = async (req, res) => {
 // Buy a card pack (Gacha system)
 exports.buyCardPack = async (req, res) => {
   try {
-    const { email, packType } = req.body;
+    const { packType } = req.body;
+    const email = req.user.email;
     let cost = 100;
     let numCards = 3;
 
@@ -128,7 +127,8 @@ exports.buyCardPack = async (req, res) => {
 // Equip deck
 exports.equipDeck = async (req, res) => {
   try {
-    const { email, deckIds, eventId } = req.body; // array of up to 3 card IDs, plus 1 optional event ID
+    const { deckIds, eventId } = req.body; // array of up to 3 card IDs, plus 1 optional event ID
+    const email = req.user.email;
     
     if (!Array.isArray(deckIds) || deckIds.length > 3) {
         return res.status(400).json({ status: 'error', data: 'Deck cannot exceed 3 cards' });
@@ -160,8 +160,9 @@ exports.equipDeck = async (req, res) => {
 // Complete a level
 exports.completeLevel = async (req, res) => {
   try {
-    const { email, levelId, bossName } = req.body;
-    if (!email || !levelId) return res.status(400).json({ error: 'Email and levelId required' });
+    const { levelId, bossName } = req.body;
+    const email = req.user.email;
+    if (!levelId) return res.status(400).json({ error: 'levelId required' });
 
     const user = await UserInfo.findOne({ email });
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -215,8 +216,9 @@ exports.completeLevel = async (req, res) => {
 // Equip Armor to a Card Instance
 exports.equipArmor = async (req, res) => {
   try {
-    const { email, uniqueInstanceId, armorName } = req.body;
-    if (!email || !uniqueInstanceId || !armorName) return res.status(400).json({ error: 'Missing parameters' });
+    const { uniqueInstanceId, armorName } = req.body;
+    const email = req.user.email;
+    if (!uniqueInstanceId || !armorName) return res.status(400).json({ error: 'Missing parameters' });
 
     const user = await UserInfo.findOne({ email });
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -262,9 +264,7 @@ exports.equipArmor = async (req, res) => {
 // Purchase a random piece of the Armor of God
 exports.buyArmorBox = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email required' });
-
+    const email = req.user.email;
     const user = await UserInfo.findOne({ email });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -308,12 +308,13 @@ exports.buyArmorBox = async (req, res) => {
 // Refiner's Fire (Crafting/Upgrading)
 exports.refineCard = async (req, res) => {
   try {
-    const { email, baseInstanceId, materialInstanceIds } = req.body;
+    const { baseInstanceId, materialInstanceIds } = req.body;
+    const email = req.user.email;
     console.log(`[REFINE] Starting for ${email}`);
     console.log(`[REFINE] Base ID: ${baseInstanceId}`);
     console.log(`[REFINE] Material IDs: ${JSON.stringify(materialInstanceIds)}`);
     
-    if (!email || !baseInstanceId || !Array.isArray(materialInstanceIds) || materialInstanceIds.length === 0) {
+    if (!baseInstanceId || !Array.isArray(materialInstanceIds) || materialInstanceIds.length === 0) {
        return res.status(400).json({ status: 'error', data: 'Invalid parameters for refining.' });
     }
 
@@ -384,14 +385,7 @@ exports.refineCard = async (req, res) => {
     // Explicit removal of each material subdocument
     for (const mId of materialsToPull) {
        console.log(`[REFINE] Removing material instance: ${mId}`);
-       const subDoc = user.cardInventory.id(mId);
-       if (subDoc) {
-          subDoc.remove();
-       } else {
-          // Fallback if id() fails again - manual filter
-          console.log(`[REFINE WARN] .id(${mId}) failed during removal, using fallback filter.`);
-          user.cardInventory = user.cardInventory.filter(c => c._id.toString() !== mId.toString());
-       }
+       user.cardInventory.pull({ _id: mId });
     }
 
     await user.save();
@@ -415,7 +409,8 @@ exports.refineCard = async (req, res) => {
 // Ascend (Transform) a card
 exports.ascendCard = async (req, res) => {
   try {
-    const { email, instanceId } = req.body;
+    const { instanceId } = req.body;
+    const email = req.user.email;
     const user = await UserInfo.findOne({ email });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -461,7 +456,8 @@ exports.ascendCard = async (req, res) => {
 // Upgrade a Fruit of the Spirit (Talent Tree)
 exports.upgradeFruit = async (req, res) => {
   try {
-    const { email, fruitName } = req.body;
+    const { fruitName } = req.body;
+    const email = req.user.email;
     const user = await UserInfo.findOne({ email });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -503,7 +499,8 @@ exports.upgradeFruit = async (req, res) => {
 // Claim Lore Reward
 exports.claimLoreReward = async (req, res) => {
   try {
-    const { email, cardName } = req.body;
+    const { cardName } = req.body;
+    const email = req.user.email;
     const user = await UserInfo.findOne({ email });
     if (!user) return res.status(404).json({ error: 'User not found' });
 

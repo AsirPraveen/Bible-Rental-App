@@ -14,8 +14,12 @@ const Colors = {
   accent: '#667eea',
 };
 
+interface BarChartComponentProps {
+  data: Array<{ book_name: string; rent_count?: number }>;
+}
+
 // Enhanced Bar Chart Component
-const BarChartComponent = ({ data }) => {
+const BarChartComponent = ({ data }: BarChartComponentProps) => {
   const [animatedValue] = useState(new Animated.Value(0));
 
   useEffect(() => {
@@ -83,6 +87,7 @@ const BarChartComponent = ({ data }) => {
         width={screenWidth - 80}
         height={220}
         yAxisLabel=""
+        yAxisSuffix=""
         chartConfig={chartConfig}
         style={styles.chart}
         showValuesOnTopOfBars={true}

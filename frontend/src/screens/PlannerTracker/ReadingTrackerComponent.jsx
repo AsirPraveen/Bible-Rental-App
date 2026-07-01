@@ -6,6 +6,7 @@ import { Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useTheme } from '../../context/ThemeContext';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
@@ -32,10 +33,12 @@ const BIBLE_STRUCTURE = {
 };
 
 const ReadingTrackerComponent = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [completedChapters, setCompletedChapters] = useState({});
   const [expandedBook, setExpandedBook] = useState(null);
   const [expandedTestament, setExpandedTestament] = useState('Old Testament');
-  
+
   // Treasures in Heaven states
   const [treasuresInHeaven, setTreasuresInHeaven] = useState(0);
   const [showTreasuresModal, setShowTreasuresModal] = useState(false);
@@ -60,7 +63,7 @@ const ReadingTrackerComponent = () => {
         if (response.data.status === 'Ok') {
           const userData = response.data.data;
           setUserId(userData._id);
-          
+
           if (userData.readingProgress) {
             setCompletedChapters(userData.readingProgress);
             await AsyncStorage.setItem('completedChapters', JSON.stringify(userData.readingProgress));
@@ -70,7 +73,7 @@ const ReadingTrackerComponent = () => {
             setTreasuresInHeaven(userData.treasuresInHeaven);
             // If it's the very first time (null/undefined in DB), show initial setup
             if (userData.treasuresInHeaven === 0 && !await AsyncStorage.getItem('hasAnsweredInitialSetup')) {
-               setShowInitialSetup(true);
+              setShowInitialSetup(true);
             }
           } else {
             // Field doesn't exist yet for this user
@@ -89,7 +92,7 @@ const ReadingTrackerComponent = () => {
       await AsyncStorage.setItem('completedChapters', JSON.stringify(chapters));
 
       const progress = getTotalProgressInternal(chapters);
-      
+
       // Perform background sync to MongoDB
       syncProgressToCloud(chapters, treasuresInHeaven, progress.completed);
 
@@ -123,13 +126,13 @@ const ReadingTrackerComponent = () => {
     const newCount = treasuresInHeaven + 1;
     setTreasuresInHeaven(newCount);
     syncProgressToCloud(completedChapters, newCount, 1189);
-    
+
     Alert.alert(
       '🌟 Treasure Stored in Heaven! 🌟',
       'Congratulations! You have completed the entire Bible. A new treasure has been stored for you in the heavenly realms.',
       [
-        { 
-          text: 'Glory to God!', 
+        {
+          text: 'Glory to God!',
           onPress: () => {
             // Optional: Show celebration effect or ask to reset
             askForResetAfterCompletion();
@@ -145,8 +148,8 @@ const ReadingTrackerComponent = () => {
       'You have finished all chapters. Would you like to reset your progress to start reading from Genesis again? (Your Treasures will remain safe!)',
       [
         { text: 'Not Now', style: 'cancel' },
-        { 
-          text: 'Reset & Start Again', 
+        {
+          text: 'Reset & Start Again',
           onPress: () => {
             saveCompletedChapters({});
           }
@@ -172,12 +175,12 @@ const ReadingTrackerComponent = () => {
   const toggleAllChaptersInBook = (book, chapterCount) => {
     const bookChapters = Array.from({ length: chapterCount }, (_, i) => i + 1);
     const allCompleted = bookChapters.every(ch => completedChapters[`${book}-${ch}`]);
-    
+
     const updated = { ...completedChapters };
     bookChapters.forEach(ch => {
       updated[`${book}-${ch}`] = !allCompleted;
     });
-    
+
     saveCompletedChapters(updated);
   };
 
@@ -213,29 +216,29 @@ const ReadingTrackerComponent = () => {
     const books = BIBLE_STRUCTURE[testament];
     const total = Object.values(books).reduce((sum, ch) => sum + ch, 0);
     const completed = Object.entries(books).reduce((sum, [book, chapterCount]) => {
-      return sum + Array.from({ length: chapterCount }, (_, i) => 
+      return sum + Array.from({ length: chapterCount }, (_, i) =>
         completedChapters[`${book}-${i + 1}`]
       ).filter(Boolean).length;
     }, 0);
     return { completed, total, percentage: Math.round((completed / total) * 100) };
   };
 
-  const getProgressColor = (percentage) => {
+  const getProgressColor = (percentage, colors) => {
     if (percentage === 100) return '#4CAF50'; // Green
     if (percentage >= 75) return '#8BC34A'; // Light green
     if (percentage >= 50) return '#FF9800'; // Orange
     if (percentage >= 25) return '#FFC107'; // Amber
     if (percentage > 0) return '#2196F3'; // Blue
-    return '#AFD3E2'; // Light blue (default)
+    return colors.theme === 'dark' ? colors.secondary : '#AFD3E2'; // Light blue (default)
   };
 
   const progress = getTotalProgress();
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.headerContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.treasureHeaderIcon}
             onPress={() => setShowTreasuresModal(true)}
           >
@@ -246,7 +249,7 @@ const ReadingTrackerComponent = () => {
               </View>
             )}
           </TouchableOpacity>
-          <Text style={styles.headerText}>Chapter Tracker</Text>
+          <Text style={styles.headerText}>Reading Tracker</Text>
           <Text style={styles.subtitleText}>Track every chapter of the Bible</Text>
         </View>
 
@@ -271,12 +274,12 @@ const ReadingTrackerComponent = () => {
         {/* Progress Bar */}
         <View style={styles.overallProgressContainer}>
           <View style={styles.progressBarContainer}>
-            <View style={[styles.progressBar, { 
+            <View style={[styles.progressBar, {
               width: `${progress.percentage}%`,
-              backgroundColor: getProgressColor(progress.percentage)
+              backgroundColor: getProgressColor(progress.percentage, colors)
             }]} />
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.resetButton}
             onPress={resetAllProgress}
           >
@@ -319,7 +322,7 @@ const ReadingTrackerComponent = () => {
                   {isExpanded && (
                     <View style={styles.booksContainer}>
                       {Object.entries(books).map(([book, chapterCount]) => {
-                        const completedInBook = Array.from({ length: chapterCount }, (_, i) => 
+                        const completedInBook = Array.from({ length: chapterCount }, (_, i) =>
                           completedChapters[`${book}-${i + 1}`]
                         ).filter(Boolean).length;
                         const bookProgress = Math.round((completedInBook / chapterCount) * 100);
@@ -346,14 +349,14 @@ const ReadingTrackerComponent = () => {
                               <View style={styles.bookProgressContainer}>
                                 <View style={[
                                   styles.bookProgressCircle,
-                                  { backgroundColor: getProgressColor(bookProgress) }
+                                  { backgroundColor: getProgressColor(bookProgress, colors) }
                                 ]}>
                                   <Text style={styles.bookProgressText}>{bookProgress}%</Text>
                                 </View>
                                 {isBookExpanded ? (
-                                  <ChevronUp color="#146C94" size={20} />
+                                  <ChevronUp color={colors.tint} size={20} />
                                 ) : (
-                                  <ChevronDown color="#146C94" size={20} />
+                                  <ChevronDown color={colors.tint} size={20} />
                                 )}
                               </View>
                             </TouchableOpacity>
@@ -415,12 +418,12 @@ const ReadingTrackerComponent = () => {
         onRequestClose={() => setShowTreasuresModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <LinearGradient colors={['#E3F2FD', '#FFFFFF']} style={styles.heavenlyModalContent}>
-            <TouchableOpacity 
+          <LinearGradient colors={colors.theme === 'dark' ? ['#1A2229', '#12161A'] : ['#E3F2FD', '#FFFFFF']} style={styles.heavenlyModalContent}>
+            <TouchableOpacity
               style={styles.closeModalButton}
               onPress={() => setShowTreasuresModal(false)}
             >
-              <X color="#146C94" size={24} />
+              <X color={colors.tint} size={24} />
             </TouchableOpacity>
 
             <Cloud color="rgba(255,255,255,0.8)" size={100} style={styles.bgCloud1} />
@@ -430,7 +433,7 @@ const ReadingTrackerComponent = () => {
               <Trophy color="#F1C40F" size={80} style={styles.mainTreasureIcon} />
               <Text style={styles.heavenlyTitle}>Treasures in Heaven</Text>
               <Text style={styles.heavenlySubtitle}>"Do not store up for yourselves treasures on earth... but store up for yourselves treasures in heaven."</Text>
-              
+
               <View style={styles.treasureDisplay}>
                 <Text style={styles.treasureCountText}>{treasuresInHeaven}</Text>
                 <Text style={styles.treasureLabel}>Bible Completions</Text>
@@ -443,7 +446,7 @@ const ReadingTrackerComponent = () => {
               </View>
 
               <View style={styles.manualControls}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.controlBtn}
                   onPress={() => {
                     const next = Math.max(0, treasuresInHeaven - 1);
@@ -451,12 +454,12 @@ const ReadingTrackerComponent = () => {
                     syncProgressToCloud(completedChapters, next, getTotalProgress().completed);
                   }}
                 >
-                  <Minus color="#146C94" size={24} />
+                  <Minus color={colors.tint} size={24} />
                 </TouchableOpacity>
                 <View style={styles.controlLabelContainer}>
                   <Text style={styles.controlValue}>{treasuresInHeaven}</Text>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.controlBtn}
                   onPress={() => {
                     const next = treasuresInHeaven + 1;
@@ -464,10 +467,10 @@ const ReadingTrackerComponent = () => {
                     syncProgressToCloud(completedChapters, next, getTotalProgress().completed);
                   }}
                 >
-                  <Plus color="#146C94" size={24} />
+                  <Plus color={colors.tint} size={24} />
                 </TouchableOpacity>
               </View>
-              
+
               <Text style={styles.footerNote}>Each full Bible completion adds a treasure.</Text>
             </View>
           </LinearGradient>
@@ -485,26 +488,26 @@ const ReadingTrackerComponent = () => {
             <Trophy color="#F1C40F" size={60} style={{ alignSelf: 'center', marginBottom: 15 }} />
             <Text style={styles.setupTitle}>Welcome to your Heavenly Record</Text>
             <Text style={styles.setupText}>How many times have you already completed the whole Bible in your life?</Text>
-            
+
             <View style={styles.manualControls}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.controlBtn}
                 onPress={() => setTreasuresInHeaven(prev => Math.max(0, prev - 1))}
               >
-                <Minus color="#146C94" size={24} />
+                <Minus color={colors.tint} size={24} />
               </TouchableOpacity>
               <View style={styles.controlLabelContainer}>
                 <Text style={styles.controlValue}>{treasuresInHeaven}</Text>
               </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.controlBtn}
                 onPress={() => setTreasuresInHeaven(prev => prev + 1)}
               >
-                <Plus color="#146C94" size={24} />
+                <Plus color={colors.tint} size={24} />
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.submitBtn}
               onPress={() => submitInitialTreasures(treasuresInHeaven)}
             >
@@ -517,11 +520,11 @@ const ReadingTrackerComponent = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -544,7 +547,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   statsCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: colors.theme === 'dark' ? colors.cardBg : 'rgba(255, 255, 255, 0.95)',
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 16,
@@ -552,7 +555,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -563,34 +566,34 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.border,
   },
   overallProgressContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: colors.theme === 'dark' ? colors.cardBg : 'rgba(255, 255, 255, 0.95)',
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
     padding: 16,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   progressBarContainer: {
     height: 12,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.border,
     borderRadius: 6,
     overflow: 'hidden',
     marginBottom: 12,
@@ -623,7 +626,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   testamentHeader: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: colors.secondary,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -667,11 +670,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bookCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -706,12 +709,12 @@ const styles = StyleSheet.create({
   bookName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
   },
   bookSubtitle: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
   },
   bookProgressContainer: {
     flexDirection: 'row',
@@ -731,7 +734,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   markAllButton: {
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#AFD3E2',
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 12,
@@ -739,7 +742,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   markAllButtonText: {
-    color: '#146C94',
+    color: colors.tint,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -753,21 +756,21 @@ const styles = StyleSheet.create({
   chapterBox: {
     width: 46,
     height: 46,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#F0F0F0',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   chapterBoxCompleted: {
-    backgroundColor: '#146C94',
-    borderColor: '#19A7CE',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
+    borderColor: colors.theme === 'dark' ? colors.tint : colors.secondary,
   },
   chapterNumber: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#666',
+    color: colors.textSecondary,
   },
   chapterNumberCompleted: {
     color: '#F6F1F1',
@@ -823,7 +826,7 @@ const styles = StyleSheet.create({
     top: 20,
     right: 20,
     zIndex: 20,
-    backgroundColor: 'rgba(20, 108, 148, 0.1)',
+    backgroundColor: colors.theme === 'dark' ? colors.border : 'rgba(20, 108, 148, 0.1)',
     padding: 8,
     borderRadius: 20,
   },
@@ -839,12 +842,12 @@ const styles = StyleSheet.create({
   heavenlyTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textAlign: 'center',
   },
   heavenlySubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
     marginVertical: 12,
@@ -865,7 +868,7 @@ const styles = StyleSheet.create({
   treasureLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
@@ -888,7 +891,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   controlBtn: {
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.theme === 'dark' ? colors.border : '#AFD3E2',
     padding: 12,
     borderRadius: 20,
     elevation: 2,
@@ -900,11 +903,11 @@ const styles = StyleSheet.create({
   controlValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   footerNote: {
     fontSize: 12,
-    color: '#888',
+    color: colors.textSecondary,
     marginTop: 30,
   },
   bgCloud1: {
@@ -922,13 +925,13 @@ const styles = StyleSheet.create({
   // Setup Overlay
   setupOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(20, 108, 148, 0.8)',
+    backgroundColor: colors.theme === 'dark' ? 'rgba(26, 34, 41, 0.8)' : 'rgba(20, 108, 148, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   setupCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.cardBg,
     width: '100%',
     borderRadius: 20,
     padding: 24,
@@ -937,19 +940,19 @@ const styles = StyleSheet.create({
   setupTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textAlign: 'center',
     marginBottom: 10,
   },
   setupText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 22,
   },
   submitBtn: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     padding: 16,
     borderRadius: 12,
     marginTop: 30,

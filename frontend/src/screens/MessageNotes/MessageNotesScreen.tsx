@@ -24,6 +24,7 @@ import { MessageNote, ReminderNote } from './types/MessageNote';
 import MessageNoteCard, { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +34,8 @@ const CATEGORIES = [
 ] as const;
 
 export default function MessageNotesScreen() {
+    const { colors } = useTheme();
+    const styles = getStyles(colors);
     const navigation = useNavigation<any>();
     const { isGuest, logout, user } = useAuth();
 
@@ -195,10 +198,10 @@ export default function MessageNotesScreen() {
 
     return (
         <SafeAreaView style={styles.outer}>
-            <StatusBar barStyle="light-content" backgroundColor="#146C94" />
+            <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
             {/*  ── Gradient Header ── */}
-            <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+            <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
                 <View style={styles.headerContainer}>
                     <View style={styles.headerTop}>
                         <View>
@@ -238,14 +241,14 @@ export default function MessageNotesScreen() {
                                 style={[styles.tab, activeTab === 'my' && styles.tabActive]}
                                 onPress={() => setActiveTab('my')}
                             >
-                                <Ionicons name="person" size={15} color={activeTab === 'my' ? '#146C94' : '#fff'} />
+                                <Ionicons name="person" size={15} color={activeTab === 'my' ? colors.primary : '#fff'} />
                                 <Text style={[styles.tabText, activeTab === 'my' && styles.tabTextActive]}>My Notes</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.tab, activeTab === 'community' && styles.tabActive]}
                                 onPress={() => setActiveTab('community')}
                             >
-                                <Ionicons name="earth" size={15} color={activeTab === 'community' ? '#146C94' : '#fff'} />
+                                <Ionicons name="earth" size={15} color={activeTab === 'community' ? colors.primary : '#fff'} />
                                 <Text style={[styles.tabText, activeTab === 'community' && styles.tabTextActive]}>Community</Text>
                             </TouchableOpacity>
                         </View>
@@ -256,7 +259,7 @@ export default function MessageNotesScreen() {
                 <View style={styles.contentSheet}>
                     {/* Floating Search */}
                     <View style={styles.searchBox}>
-                        <Ionicons name="search-outline" size={16} color="#146C94" />
+                        <Ionicons name="search-outline" size={16} color={colors.tint} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search notes, verses..."
@@ -287,8 +290,8 @@ export default function MessageNotesScreen() {
                                     style={[
                                         styles.catChip,
                                         active
-                                            ? { backgroundColor: '#146C94', borderColor: '#146C94' }
-                                            : { backgroundColor: '#fff', borderColor: meta?.color || '#146C94' },
+                                            ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                                            : { backgroundColor: colors.cardBg, borderColor: meta?.color || colors.border },
                                     ]}
                                     onPress={() => onCategoryChange(item)}
                                 >
@@ -296,11 +299,11 @@ export default function MessageNotesScreen() {
                                         <Ionicons
                                             name={meta.icon}
                                             size={13}
-                                            color={active ? '#fff' : meta.color}
+                                            color={active ? '#fff' : (meta.color || colors.textSecondary)}
                                             style={{ marginRight: 5 }}
                                         />
                                     )}
-                                    <Text style={[styles.catText, { color: active ? '#fff' : (meta?.color || '#146C94') }]}>
+                                    <Text style={[styles.catText, { color: active ? '#fff' : (meta?.color || colors.textSecondary) }]}>
                                         {item}
                                     </Text>
                                 </TouchableOpacity>
@@ -317,7 +320,7 @@ export default function MessageNotesScreen() {
                     ) : filtered.length === 0 ? (
                         <View style={styles.empty}>
                             <View style={styles.emptyIconWrap}>
-                                <Ionicons name="book-outline" size={56} color="#146C94" />
+                                <Ionicons name="book-outline" size={56} color={colors.tint} />
                             </View>
                             <Text style={styles.emptyTitle}>Nothing here yet</Text>
                             <Text style={styles.emptySub}>
@@ -378,12 +381,14 @@ export default function MessageNotesScreen() {
                                         <View style={{ padding: 30, alignItems: 'center' }}>
                                             <Ionicons name="notifications-off-outline" size={48} color="#ccc" />
                                             <Text style={{ marginTop: 12, color: '#94a3b8', fontSize: 15, fontWeight: '600' }}>No reminders yet.</Text>
-                                            <Text style={{ color: '#cbd5e1', fontSize: 13, marginTop: 4, textAlign: 'center' }}>Tap below to set your first reminder.</Text>
+                                            <Ionicons name="notifications-off-outline" size={48} color={colors.border} />
+                                            <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 15, fontWeight: '600' }}>No reminders yet.</Text>
+                                            <Text style={{ color: colors.border, fontSize: 13, marginTop: 4, textAlign: 'center' }}>Tap below to set your first reminder.</Text>
                                         </View>
                                     ) : (
                                         standaloneReminders.map((item) => (
                                             <View key={item.id} style={styles.reminderCard}>
-                                                <Ionicons name="alarm-outline" size={22} color="#146C94" />
+                                                <Ionicons name="alarm-outline" size={22} color={colors.primary} />
                                                 <View style={{ flex: 1, marginLeft: 12 }}>
                                                     <Text style={styles.rmTitle}>{item.title}</Text>
                                                     {item.message ? (
@@ -406,7 +411,7 @@ export default function MessageNotesScreen() {
                                                         setRmFormMode('add');
                                                     }}
                                                 >
-                                                    <Ionicons name="pencil-outline" size={18} color="#146C94" />
+                                                    <Ionicons name="pencil-outline" size={18} color={colors.primary} />
                                                 </TouchableOpacity>
                                                 {/* Delete button */}
                                                 <TouchableOpacity
@@ -475,8 +480,8 @@ export default function MessageNotesScreen() {
 
                                 <Text style={[styles.formLabel, { marginTop: 15 }]}>Time</Text>
                                 <TouchableOpacity style={styles.timePickerBtn} onPress={() => setShowTimePicker(true)}>
-                                    <Ionicons name="time-outline" size={18} color="#146C94" />
-                                    <Text style={{ color: '#146C94', fontWeight: '800', marginLeft: 8, fontSize: 16 }}>
+                                    <Ionicons name="time-outline" size={18} color={colors.primary} />
+                                    <Text style={{ color: colors.primary, fontWeight: '800', marginLeft: 8, fontSize: 16 }}>
                                         {rmTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                     </Text>
                                 </TouchableOpacity>
@@ -490,19 +495,19 @@ export default function MessageNotesScreen() {
                                 )}
 
                                 <TouchableOpacity style={styles.repeatToggle} onPress={() => setRmRepeat(p => !p)}>
-                                    <Ionicons name={rmRepeat ? 'checkbox' : 'square-outline'} size={24} color="#146C94" />
-                                    <Text style={{ marginLeft: 10, color: '#1e293b', fontSize: 14, fontWeight: '700' }}>Repeat daily</Text>
+                                    <Ionicons name={rmRepeat ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
+                                    <Text style={{ marginLeft: 10, color: colors.text, fontSize: 14, fontWeight: '700' }}>Repeat daily</Text>
                                 </TouchableOpacity>
 
                                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
                                     <TouchableOpacity
-                                        style={[styles.formBtn, { backgroundColor: '#f1f5f9', flex: 1 }]}
+                                        style={[styles.formBtn, { backgroundColor: colors.theme === 'dark' ? colors.border : '#f1f5f9', flex: 1 }]}
                                         onPress={() => { setRmFormMode('list'); setEditingReminder(null); }}
                                     >
-                                        <Text style={{ color: '#64748b', fontWeight: '800' }}>Cancel</Text>
+                                        <Text style={{ color: colors.theme === 'dark' ? colors.text : '#64748b', fontWeight: '800' }}>Cancel</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={[styles.formBtn, { backgroundColor: '#146C94', flex: 1, opacity: rmSaving ? 0.7 : 1 }]}
+                                        style={[styles.formBtn, { backgroundColor: colors.primary, flex: 1, opacity: rmSaving ? 0.7 : 1 }]}
                                         disabled={rmSaving}
                                         onPress={async () => {
                                             if (!rmTitle.trim()) {
@@ -556,11 +561,11 @@ export default function MessageNotesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
     outer: {
         flex: 1,
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-        backgroundColor: '#146C94',
+        backgroundColor: colors.primary,
     },
     gradient: {
         flex: 1,
@@ -616,7 +621,7 @@ const styles = StyleSheet.create({
         borderColor: '#fff',
     },
     addBtn: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#fff',
         width: 44,
         height: 44,
         borderRadius: 22,
@@ -645,7 +650,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     tabActive: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.theme === 'dark' ? colors.border : '#fff',
         elevation: 2,
     },
     tabText: {
@@ -654,13 +659,13 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     tabTextActive: {
-        color: '#146C94',
+        color: colors.theme === 'dark' ? colors.text : '#146C94',
     },
 
     // ── Content Sheet ──
     contentSheet: {
         flex: 1,
-        backgroundColor: '#F6F1F1',
+        backgroundColor: colors.background,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         overflow: 'hidden',
@@ -672,12 +677,12 @@ const styles = StyleSheet.create({
     searchBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: colors.cardBg,
         borderRadius: 16,
         paddingHorizontal: 15,
         paddingVertical: 12,
         elevation: 4,
-        shadowColor: '#000',
+        shadowColor: colors.primary,
         shadowOpacity: 0.08,
         shadowRadius: 8,
         gap: 10,
@@ -686,7 +691,7 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 15,
-        color: '#333',
+        color: colors.text,
         fontWeight: '500',
     },
 
@@ -727,7 +732,7 @@ const styles = StyleSheet.create({
     },
     loaderText: {
         marginTop: 12,
-        color: '#94a3b8',
+        color: colors.textSecondary,
         fontWeight: '600',
         fontSize: 14,
     },
@@ -741,7 +746,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: 'rgba(20, 108, 148, 0.1)',
+        backgroundColor: colors.theme === 'dark' ? colors.inputBg : 'rgba(20, 108, 148, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
@@ -749,11 +754,11 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 20,
         fontWeight: '800',
-        color: '#146C94',
+        color: colors.tint,
     },
     emptySub: {
         fontSize: 14,
-        color: '#94a3b8',
+        color: colors.textSecondary,
         marginTop: 8,
         textAlign: 'center',
         paddingHorizontal: 40,
@@ -764,12 +769,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 8,
         marginTop: 24,
-        backgroundColor: '#146C94',
+        backgroundColor: colors.primary,
         paddingHorizontal: 28,
         paddingVertical: 14,
         borderRadius: 30,
         elevation: 5,
-        shadowColor: '#146C94',
+        shadowColor: colors.primary,
         shadowOpacity: 0.4,
         shadowRadius: 10,
     },
@@ -779,23 +784,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.7)', justifyContent: 'flex-end', zIndex: 100 },
-    modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40 },
+    modalBox: { backgroundColor: colors.cardBg, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 20, fontWeight: '900', color: '#1e293b' },
+    modalTitle: { fontSize: 20, fontWeight: '900', color: colors.text },
 
-    reminderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' },
-    rmNoteTitle: { fontSize: 11, fontWeight: '800', color: '#146C94', textTransform: 'uppercase', marginBottom: 2 },
-    rmTitle: { fontSize: 15, fontWeight: '700', color: '#1e293b' },
-    rmMessage: { fontSize: 12, color: '#64748b', marginTop: 1, fontStyle: 'italic' },
-    rmTime: { fontSize: 13, color: '#64748b', marginTop: 2 },
+    reminderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.inputBg, borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+    rmNoteTitle: { fontSize: 11, fontWeight: '800', color: colors.tint, textTransform: 'uppercase', marginBottom: 2 },
+    rmTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+    rmMessage: { fontSize: 12, color: colors.textSecondary, marginTop: 1, fontStyle: 'italic' },
+    rmTime: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
 
-    rmDeleteBtn: { padding: 8, backgroundColor: '#fee2e2', borderRadius: 10 },
+    rmDeleteBtn: { padding: 8, backgroundColor: colors.theme === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2', borderRadius: 10 },
 
-    addRmFullBtn: { flexDirection: 'row', backgroundColor: '#146C94', padding: 15, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginTop: 15 },
-    formLabel: { fontSize: 12, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: 8 },
-    formInput: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, paddingHorizontal: 15, paddingVertical: 12, fontSize: 15, color: '#1e293b' },
-    timePickerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e0f2fe', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12 },
+    addRmFullBtn: { flexDirection: 'row', backgroundColor: colors.primary, padding: 15, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginTop: 15 },
+    formLabel: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase', marginBottom: 8 },
+    formInput: { backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 15, paddingVertical: 12, fontSize: 15, color: colors.text },
+    timePickerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.theme === 'dark' ? colors.border : '#e0f2fe', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12 },
     repeatToggle: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
     formBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    noteSelectChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0', marginRight: 8, backgroundColor: '#f8fafc', maxWidth: 150 }
+    noteSelectChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginRight: 8, backgroundColor: colors.inputBg, maxWidth: 150 }
 });

@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -13,6 +14,8 @@ const MOCK_BOSS = {
 };
 
 const GameBattle = ({ route, navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const { levelData } = route.params || {};
   const currentTheme = (levelData?.theme || ['#7F1D1D', '#450A0A']) as readonly [string, string, ...string[]];
 
@@ -473,8 +476,8 @@ const GameBattle = ({ route, navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentTheme[1] }]}>
-      <LinearGradient colors={currentTheme} style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient colors={colors.theme === 'dark' ? currentTheme : colors.linearGradient} style={styles.container}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -629,6 +632,7 @@ const GameBattle = ({ route, navigation }: any) => {
                 <TextInput 
                   style={styles.modalInput}
                   placeholder="Type the missing word..."
+                  placeholderTextColor={colors.textSecondary}
                   value={qteAnswer}
                   onChangeText={setQteAnswer}
                   autoFocus
@@ -702,8 +706,8 @@ const GameBattle = ({ route, navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#111827' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -730,18 +734,18 @@ const styles = StyleSheet.create({
     gap: 16
   },
   statBox: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.theme === 'dark' ? 'rgba(0,0,0,0.5)' : colors.cardBg,
     padding: 12,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#7F1D1D',
+    borderColor: colors.border,
     minWidth: 200,
   },
-  nameText: { color: '#FFF', fontWeight: 'bold', fontSize: 18 },
-  typeText: { color: '#D1FAE5', fontSize: 12, marginBottom: 8 },
+  nameText: { color: colors.theme === 'dark' ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 18 },
+  typeText: { color: colors.theme === 'dark' ? '#D1FAE5' : colors.textSecondary, fontSize: 12, marginBottom: 8 },
   healthBarContainer: {
     height: 10,
-    backgroundColor: '#374151',
+    backgroundColor: colors.theme === 'dark' ? '#374151' : colors.border,
     borderRadius: 5,
     overflow: 'hidden',
     width: '100%',
@@ -749,7 +753,7 @@ const styles = StyleSheet.create({
   healthBar: {
     height: '100%',
   },
-  hpText: { color: '#FFF', fontSize: 12, textAlign: 'right', marginTop: 4 },
+  hpText: { color: colors.theme === 'dark' ? '#FFF' : colors.textSecondary, fontSize: 12, textAlign: 'right', marginTop: 4 },
   statusRow: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
   statusIcon: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
   statusText: { color: '#FFF', fontSize: 10, marginLeft: 2, fontWeight: 'bold' },
@@ -783,21 +787,23 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   logBox: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.theme === 'dark' ? 'rgba(0,0,0,0.7)' : colors.inputBg,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: colors.border,
     flex: 1,
     marginVertical: 16,
   },
-  logText: { color: '#9CA3AF', fontSize: 13, marginVertical: 4, fontStyle: 'italic' },
-  logTextLatest: { color: '#FFF', fontSize: 16, fontWeight: 'bold', fontStyle: 'normal' },
+  logText: { color: colors.textSecondary, fontSize: 13, marginVertical: 4, fontStyle: 'italic' },
+  logTextLatest: { color: colors.text, fontSize: 16, fontWeight: 'bold', fontStyle: 'normal' },
   controlPanel: {
-    backgroundColor: '#1F2937',
+    backgroundColor: colors.theme === 'dark' ? '#1F2937' : colors.cardBg,
     padding: 16,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border
   },
   actionRow: {
     flexDirection: 'row',
@@ -806,7 +812,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    backgroundColor: '#1D4ED8',
+    backgroundColor: colors.primary,
     padding: 16,
     borderRadius: 12,
     justifyContent: 'center',
@@ -825,19 +831,22 @@ const styles = StyleSheet.create({
     padding: 20
   },
   modalContent: {
-    backgroundColor: '#1E3A8A',
+    backgroundColor: colors.cardBg,
     width: '100%',
     borderRadius: 16,
     padding: 24,
     borderWidth: 2,
-    borderColor: '#60A5FA',
+    borderColor: colors.border,
     alignItems: 'center'
   },
-  modalTitle: { color: '#FBBF24', fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
-  modalDesc: { color: '#FFF', fontSize: 14, textAlign: 'center', marginBottom: 16 },
+  modalTitle: { color: colors.theme === 'dark' ? '#FBBF24' : colors.primary, fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  modalDesc: { color: colors.text, fontSize: 14, textAlign: 'center', marginBottom: 16 },
   verseHint: { color: '#A7F3D0', fontSize: 20, fontStyle: 'italic', marginBottom: 20, textAlign: 'center' },
   modalInput: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.inputBg,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
     width: '100%',
     padding: 16,
     borderRadius: 8,
@@ -857,11 +866,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.inputBg,
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#334155'
+    borderColor: colors.border
   },
   switchCardActive: {
     borderColor: '#10B981',
@@ -872,9 +881,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#450a0a',
     borderColor: '#7f1d1d'
   },
-  switchName: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  switchClass: { color: '#9CA3AF', fontSize: 12, marginTop: 4 },
-  switchHp: { color: '#FFF', fontWeight: 'bold' }
+  switchName: { color: colors.text, fontWeight: 'bold', fontSize: 16 },
+  switchClass: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
+  switchHp: { color: colors.text, fontWeight: 'bold' }
 });
 
 export default GameBattle;

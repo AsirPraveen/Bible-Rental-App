@@ -13,10 +13,11 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import LoadingScreen from "../../components/LoadingScreen";
+import { useTheme, ColorsType } from "../../context/ThemeContext";
 
 interface Post {
   _id: string;
@@ -33,6 +34,8 @@ interface Post {
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? "";
 
 const NotificationScreen = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -225,7 +228,7 @@ const NotificationScreen = () => {
     return (
       <View style={styles.postCard}>
         <LinearGradient
-          colors={["#146C94", "#19A7CE"]}
+          colors={colors.linearGradient}
           style={styles.cardBorder}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -262,10 +265,11 @@ const NotificationScreen = () => {
                   onPress={() => toggleLike(item._id)}
                   style={styles.unifiedLikeButton}
                 >
-                  <Ionicons
-                    name={isLiked ? "heart" : "heart-outline"}
-                    size={22}
-                    color={isLiked ? "#FF4D4F" : "#666"}
+                  <FontAwesome5
+                    name="dove"
+                    size={16}
+                    color={isLiked ? "#60A5FA" : colors.textSecondary}
+                    style={!isLiked && { opacity: 0.6 }}
                   />
                   <Text style={[styles.likeCount, isLiked && styles.activeLikeText]}>
                     {item.likes || 0}
@@ -294,7 +298,7 @@ const NotificationScreen = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={["#146C94", "#19A7CE"]} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           <Text style={styles.headerText}>Notifications</Text>
           {posts.length === 0 ? (
@@ -314,11 +318,11 @@ const NotificationScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#F6F1F1",
+    color: colors.textLight,
     textAlign: "center",
     marginBottom: 24,
     textShadowColor: "rgba(0, 0, 0, 0.2)",
@@ -350,7 +354,7 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   cardInner: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBg,
     borderRadius: 14,
     padding: 20,
     shadowColor: "#000",
@@ -362,12 +366,12 @@ const styles = StyleSheet.create({
   postTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#146C94",
+    color: colors.tint,
     marginBottom: 12,
   },
   postDescription: {
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
     lineHeight: 24,
     marginBottom: 16,
   },
@@ -377,7 +381,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: colors.border,
   },
   footerRow: {
     flexDirection: "row",
@@ -388,21 +392,21 @@ const styles = StyleSheet.create({
   unifiedLikeButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F8F8",
+    backgroundColor: colors.inputBg,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: colors.border,
   },
   likeCount: {
     fontSize: 14,
-    color: "#666",
+    color: colors.textSecondary,
     marginLeft: 6,
     fontWeight: "bold",
   },
   activeLikeText: {
-    color: "#FF4D4F",
+    color: "#60A5FA",
   },
   eventBoxesRow: {
     flexDirection: "row",
@@ -411,17 +415,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   eventBox: {
-    backgroundColor: "#E6F0FA",
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#E6F0FA',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(20, 108, 148, 0.1)",
+    borderColor: colors.theme === 'dark' ? colors.border : 'rgba(20, 108, 148, 0.1)',
   },
   eventBoxLabel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#146C94",
+    color: colors.tint,
   },
   sentTimeContainer: {
     alignItems: "flex-end",
@@ -429,12 +433,12 @@ const styles = StyleSheet.create({
   sentTimeText: {
     fontSize: 10,
     fontWeight: "500",
-    color: "#999",
+    color: colors.textSecondary,
     fontStyle: "italic",
   },
   noPostsText: {
     fontSize: 16,
-    color: "#F6F1F1",
+    color: colors.textLight,
     textAlign: "center",
     marginTop: 20,
     fontStyle: "italic",
@@ -442,5 +446,3 @@ const styles = StyleSheet.create({
 });
 
 export default NotificationScreen;
-
-

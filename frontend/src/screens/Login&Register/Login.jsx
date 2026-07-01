@@ -14,7 +14,8 @@ const {
 } = require('react-native');
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import styles from './style';
+import { getStyles } from './style';
+import { useTheme } from '../../context/ThemeContext';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
@@ -55,6 +56,8 @@ const buildGoogleAuthUrl = () =>
 function LoginPage() {
   const navigation = useNavigation();
   const { continueAsGuest, login } = useAuth();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -262,7 +265,11 @@ function LoginPage() {
         }
       })
       .catch(err => {
-        console.error('Login error:', err);
+        if (err.response && (err.response.status === 401 || err.response.status === 400)) {
+          console.log('Login failed (auth/validation error):', err.response.data?.data || err.response.statusText);
+        } else {
+          console.error('Login error:', err);
+        }
         const errorMsg = err.response?.data?.data || err.response?.data?.message || 'An error occurred during login';
         Alert.alert('Error', errorMsg);
       })
@@ -271,10 +278,22 @@ function LoginPage() {
 
   const handleGuestLogin = async () => {
     try {
+      setLoading(true);
+      const settingsRes = await axios.get(`${API_URL}/api/app-settings`);
+      const isGuestLive = settingsRes.data?.data?.isGuestLoginEnabled !== false;
+
+      if (!isGuestLive) {
+        Alert.alert('Coming Soon', 'Guest login will be available soon. For now, please sign in or create an account to continue.');
+        return;
+      }
+
       await continueAsGuest();
       navigation.replace('Home');
     } catch (err) {
-      Alert.alert('Error', 'Failed to continue as guest');
+      console.error('Guest login verification error:', err);
+      Alert.alert('Error', 'Failed to verify guest access. Please check your internet connection.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -289,9 +308,10 @@ function LoginPage() {
           <Text style={styles.text_header}>Login !!!</Text>
 
           <View style={styles.action}>
-            <FontAwesome name="user-o" color="#146C94" style={styles.smallIcon} />
+            <FontAwesome name="user-o" color={colors.tint} style={styles.smallIcon} />
             <TextInput
               placeholder="Mobile or Email"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={emailOrPhone}
               onChangeText={setEmailOrPhone}
@@ -302,9 +322,10 @@ function LoginPage() {
           {emailOrPhoneError ? <Text style={styles.errorText}>{emailOrPhoneError}</Text> : null}
 
           <View style={styles.action}>
-            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
+            <FontAwesome name="lock" color={colors.tint} style={styles.smallIcon} />
             <TextInput
               placeholder="Password"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={password}
               onChangeText={setPassword}
@@ -314,7 +335,7 @@ function LoginPage() {
               <Feather
                 name={showPassword ? 'eye' : 'eye-off'}
                 style={{ marginRight: -10 }}
-                color={passwordError ? 'red' : '#146C94'}
+                color={passwordError ? 'red' : colors.tint}
                 size={23}
               />
             </TouchableOpacity>
@@ -323,54 +344,57 @@ function LoginPage() {
 
           <View style={{ justifyContent: 'flex-end', alignItems: 'flex-end', marginTop: 8, marginRight: 10 }}>
             <Text
-              style={{ color: '#146C94', fontWeight: '700' }}
-              onPress={() => navigation.navigate('Forgot Password')}>
+              style={{ color: colors.tint, fontWeight: '700' }}
+              onPress={() => {
+                const prefilledEmail = validateEmail(emailOrPhone) ? emailOrPhone : '';
+                navigation.navigate('Forgot Password', { email: prefilledEmail });
+              }}>
               Forgot Password
             </Text>
           </View>
-        </View>
 
-        <View style={styles.button}>
-          <TouchableOpacity style={styles.inBut} onPress={handleSubmit} disabled={loading}>
-            {loading
-              ? <ActivityIndicator size="small" color="#F6F1F1" />
-              : <Text style={styles.textSign}>Log in</Text>
-            }
-          </TouchableOpacity>
+          <View style={styles.button}>
+            <TouchableOpacity style={styles.inBut} onPress={handleSubmit} disabled={loading}>
+              {loading
+                ? <ActivityIndicator size="small" color="#F6F1F1" />
+                : <Text style={styles.textSign}>Log in</Text>
+              }
+            </TouchableOpacity>
 
-          <View style={{ padding: 15 }}>
-            <Text style={styles.text_footer}>----Or Continue as----</Text>
-          </View>
-
-          <View style={styles.bottomButton}>
-            {/* Guest */}
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              <TouchableOpacity style={styles.inBut2} onPress={handleGuestLogin}>
-                <FontAwesome name="user-circle-o" color="white" style={styles.smallIcon2} />
-              </TouchableOpacity>
-              <Text style={styles.bottomText}>Guest</Text>
+            <View style={{ padding: 15 }}>
+              <Text style={styles.text_footer}>----Or Continue as----</Text>
             </View>
 
-            {/* Sign Up */}
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              <TouchableOpacity style={styles.inBut2} onPress={() => navigation.navigate('Register')}>
-                <FontAwesome name="user-plus" color="white" style={[styles.smallIcon2, { fontSize: 30 }]} />
-              </TouchableOpacity>
-              <Text style={styles.bottomText}>Sign Up</Text>
-            </View>
+            <View style={styles.bottomButton}>
+              {/* Guest */}
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity style={styles.inBut2} onPress={handleGuestLogin}>
+                  <FontAwesome name="user-circle-o" color={colors.theme === 'dark' ? colors.tint : 'white'} style={styles.smallIcon2} />
+                </TouchableOpacity>
+                <Text style={styles.bottomText}>Guest</Text>
+              </View>
 
-            {/* Google */}
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              <TouchableOpacity
-                style={[styles.inBut2, googleLoading && { opacity: 0.6 }]}
-                onPress={openGoogleSignIn}
-                disabled={googleLoading}>
-                {googleLoading
-                  ? <ActivityIndicator size="small" color="white" />
-                  : <FontAwesome name="google" color="white" style={[styles.smallIcon2, { fontSize: 30 }]} />
-                }
-              </TouchableOpacity>
-              <Text style={styles.bottomText}>Google</Text>
+              {/* Sign Up */}
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity style={styles.inBut2} onPress={() => navigation.navigate('Register')}>
+                  <FontAwesome name="user-plus" color={colors.theme === 'dark' ? colors.tint : 'white'} style={[styles.smallIcon2, { fontSize: 30 }]} />
+                </TouchableOpacity>
+                <Text style={styles.bottomText}>Sign Up</Text>
+              </View>
+
+              {/* Google */}
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity
+                  style={[styles.inBut2, googleLoading && { opacity: 0.6 }]}
+                  onPress={openGoogleSignIn}
+                  disabled={googleLoading}>
+                  {googleLoading
+                    ? <ActivityIndicator size="small" color={colors.theme === 'dark' ? colors.tint : 'white'} />
+                    : <FontAwesome name="google" color={colors.theme === 'dark' ? colors.tint : 'white'} style={[styles.smallIcon2, { fontSize: 30 }]} />
+                  }
+                </TouchableOpacity>
+                <Text style={styles.bottomText}>Google</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -381,7 +405,7 @@ function LoginPage() {
         visible={showGoogleWebView}
         animationType="slide"
         onRequestClose={() => setShowGoogleWebView(false)}>
-        <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'android' ? 30 : 0 }}>
+        <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'android' ? 30 : 0, backgroundColor: colors.background }}>
           {/* Close button */}
           <TouchableOpacity
             onPress={() => setShowGoogleWebView(false)}
@@ -390,10 +414,10 @@ function LoginPage() {
               paddingHorizontal: 16,
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#f5f5f5',
+              backgroundColor: colors.surface,
             }}>
-            <FontAwesome name="times" size={20} color="#333" />
-            <Text style={{ marginLeft: 10, fontSize: 16, fontWeight: '600', color: '#333' }}>
+            <FontAwesome name="times" size={20} color={colors.text} />
+            <Text style={{ marginLeft: 10, fontSize: 16, fontWeight: '600', color: colors.text }}>
               Cancel Sign-In
             </Text>
           </TouchableOpacity>
@@ -415,9 +439,9 @@ function LoginPage() {
             domStorageEnabled
             startInLoadingState
             renderLoading={() => (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#146C94" />
-                <Text style={{ marginTop: 12, color: '#666' }}>Loading Google Sign-In...</Text>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ marginTop: 12, color: colors.textSecondary }}>Loading Google Sign-In...</Text>
               </View>
             )}
           />

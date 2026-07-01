@@ -26,7 +26,7 @@ const GameShop = ({ navigation }: any) => {
       const resUser = await axios.post(`${API_URL}/api/auth/userdata`, { token });
       const userEmail = resUser.data.data.email;
       setEmail(userEmail);
-      
+
       const resGame = await axios.get(`${API_URL}/api/game/data?email=${userEmail}`);
       setTalents(resGame.data.data.talents);
     } catch (e) {
@@ -45,8 +45,8 @@ const GameShop = ({ navigation }: any) => {
       `Spend ${cost} Talents to open ${packType}?`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Open", 
+        {
+          text: "Open",
           onPress: async () => {
             setLoading(true);
             try {
@@ -54,18 +54,18 @@ const GameShop = ({ navigation }: any) => {
                 email,
                 packType
               });
-                if(res.data.status === 'ok') {
-                  setTalents(res.data.data.talents);
-                  // Start the reveal sequence
-                  setPulledCards(res.data.data.pulledCards);
-                  setRevealIndex(0);
-                  Animated.timing(revealAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-                } else {
-                  Alert.alert("Error", res.data.data);
-                }
-              } catch (e: any) {
-                Alert.alert("Error", e.response?.data?.data || e.response?.data?.error || "Could not purchase pack.");
-              } finally {
+              if (res.data.status === 'ok') {
+                setTalents(res.data.data.talents);
+                // Start the reveal sequence
+                setPulledCards(res.data.data.pulledCards);
+                setRevealIndex(0);
+                Animated.timing(revealAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+              } else {
+                Alert.alert("Error", res.data.data);
+              }
+            } catch (e: any) {
+              Alert.alert("Error", e.response?.data?.data || e.response?.data?.error || "Could not purchase pack.");
+            } finally {
               setLoading(false);
             }
           }
@@ -85,13 +85,13 @@ const GameShop = ({ navigation }: any) => {
       `Spend 250 Talents for a random piece of the Armor of God?`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Open Box", 
+        {
+          text: "Open Box",
           onPress: async () => {
             setLoading(true);
             try {
               const res = await axios.post(`${API_URL}/api/game/shop/buy-armor`, { email });
-              if(res.data.status === 'ok') {
+              if (res.data.status === 'ok') {
                 setTalents(res.data.data.talents);
                 Alert.alert("Armor Pulled!", `You obtained: \n\n🛡️ ${res.data.data.armorPulled}\n\nEquip this in the Deck Builder!`);
               } else {
@@ -122,7 +122,7 @@ const GameShop = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={['#064E3B', '#022C22']} style={styles.container}>
-        
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -137,9 +137,9 @@ const GameShop = ({ navigation }: any) => {
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.welcomeText}>"Welcome, traveler. Trade your Talents for the wisdom of the ancients."</Text>
-          
+
           <View style={styles.packContainer}>
-            
+
             {/* The Pilgrim's Pack */}
             <View style={styles.packCard}>
               <LinearGradient colors={['#A16207', '#713F12']} style={styles.packGradient}>
@@ -148,8 +148,8 @@ const GameShop = ({ navigation }: any) => {
                   <Text style={styles.packTitle}>The Pilgrim's Pack</Text>
                   <Text style={styles.packDesc}>Contains 3 Common cards.</Text>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.buyButton, talents < 100 && styles.buyButtonDisabled]} 
+                <TouchableOpacity
+                  style={[styles.buyButton, talents < 100 && styles.buyButtonDisabled]}
                   onPress={() => buyPack('Pilgrim', 100)}
                   disabled={loading}
                 >
@@ -167,8 +167,8 @@ const GameShop = ({ navigation }: any) => {
                   <Text style={styles.packTitle}>The Prophet's Scroll</Text>
                   <Text style={styles.packDesc}>4 cards. Guaranteed 1 Uncommon.</Text>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.buyButton, { backgroundColor: '#4F46E5' }, talents < 500 && styles.buyButtonDisabled]} 
+                <TouchableOpacity
+                  style={[styles.buyButton, { backgroundColor: '#4F46E5' }, talents < 500 && styles.buyButtonDisabled]}
                   onPress={() => buyPack('Prophet', 500)}
                   disabled={loading}
                 >
@@ -186,8 +186,8 @@ const GameShop = ({ navigation }: any) => {
                   <Text style={styles.packTitle}>The King's Treasury</Text>
                   <Text style={styles.packDesc}>5 cards. Guaranteed Rare or Legendary.</Text>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.buyButton, { backgroundColor: '#DC2626' }, talents < 1500 && styles.buyButtonDisabled]} 
+                <TouchableOpacity
+                  style={[styles.buyButton, { backgroundColor: '#DC2626' }, talents < 1500 && styles.buyButtonDisabled]}
                   onPress={() => buyPack('King', 1500)}
                   disabled={loading}
                 >
@@ -205,8 +205,8 @@ const GameShop = ({ navigation }: any) => {
                   <Text style={styles.packTitle}>Armor of God Box</Text>
                   <Text style={styles.packDesc}>1 random piece of Equipment.</Text>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.buyButton, { backgroundColor: '#0D9488' }, talents < 250 && styles.buyButtonDisabled]} 
+                <TouchableOpacity
+                  style={[styles.buyButton, { backgroundColor: '#0D9488' }, talents < 250 && styles.buyButtonDisabled]}
                   onPress={buyArmor}
                   disabled={loading}
                 >
@@ -224,20 +224,20 @@ const GameShop = ({ navigation }: any) => {
         <Modal visible={revealIndex !== -1} transparent animationType="fade">
           <View style={styles.modalBg}>
             {pulledCards[revealIndex] && (
-              <Animated.View style={[styles.revealCard, { 
+              <Animated.View style={[styles.revealCard, {
                 opacity: revealAnim,
-                transform: [{ scale: revealAnim.interpolate({ inputRange:[0,1], outputRange:[0.8, 1] }) }] 
+                transform: [{ scale: revealAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }]
               }]}>
-                <Image 
-                  source={{ uri: pulledCards[revealIndex].imageUrl || 'https://via.placeholder.com/400' }} 
-                  style={styles.revealedImage} 
+                <Image
+                  source={{ uri: pulledCards[revealIndex].imageUrl || 'https://via.placeholder.com/400' }}
+                  style={styles.revealedImage}
                 />
                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.revealOverlay}>
                   <Text style={styles.revealRarity}>{pulledCards[revealIndex].rarity}</Text>
                   <Text style={styles.revealName}>{pulledCards[revealIndex].name}</Text>
                   <Text style={styles.revealLore} numberOfLines={2}>{pulledCards[revealIndex].loreContext}</Text>
                 </LinearGradient>
-                
+
                 <TouchableOpacity style={styles.tapToContinue} onPress={nextReveal}>
                   <Text style={styles.tapText}>Tap to Continue ({revealIndex + 1}/{pulledCards[revealIndex].total || pulledCards.length})</Text>
                 </TouchableOpacity>
@@ -302,15 +302,15 @@ const styles = StyleSheet.create({
   },
   buyButtonDisabled: { opacity: 0.5 },
   buyText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  
+
   // Reveal Modal
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
-  revealCard: { 
-    width: '85%', 
-    height: '70%', 
-    borderRadius: 24, 
-    overflow: 'hidden', 
-    borderWidth: 4, 
+  revealCard: {
+    width: '85%',
+    height: '70%',
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 4,
     borderColor: '#FCD34D',
     backgroundColor: '#000',
     elevation: 20,

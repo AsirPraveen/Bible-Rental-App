@@ -6,19 +6,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
 
 const getCloudinaryUrl = (publicId: string) => {
   return `https://res.cloudinary.com/${cloudinaryCloudName}/image/upload/${publicId}`;
-};
-
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -48,6 +42,8 @@ export default function BookDetails() {
   const route = useRoute();
   const { book: initialBook } = route.params as { book: Book };
   const { isGuest } = useAuth();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [book, setBook] = useState(initialBook);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
@@ -299,10 +295,10 @@ export default function BookDetails() {
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color={Colors.bg} />
+            <ArrowLeft size={24} color={colors.tint} />
           </Pressable>
           <Pressable onPress={toggleFavourite} style={styles.favouriteButton}>
-            <Heart size={24} color={isFavourite ? Colors.bg : '#666'} fill={isFavourite ? Colors.bg : 'none'} />
+            <Heart size={24} color={isFavourite ? colors.tint : colors.textSecondary} fill={isFavourite ? colors.tint : 'none'} />
           </Pressable>
         </View>
 
@@ -317,7 +313,6 @@ export default function BookDetails() {
               decelerationRate="fast"
             >
               {images.map((item, index) => {
-                // const cldImg = cld.image(item.publicId);
                 return (
                   <Pressable
                     key={index}
@@ -404,15 +399,15 @@ export default function BookDetails() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 16,
@@ -426,7 +421,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.active,
+    backgroundColor: colors.theme === 'dark' ? colors.surface : '#AFD3E2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -434,7 +429,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.active,
+    backgroundColor: colors.theme === 'dark' ? colors.surface : '#AFD3E2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -462,7 +457,7 @@ const styles = StyleSheet.create({
   },
   noImageText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   modalContainer: {
@@ -493,19 +488,19 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     padding: 24,
-    backgroundColor: Colors.active,
+    backgroundColor: colors.theme === 'dark' ? colors.surface : '#AFD3E2',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.bg,
+    color: colors.tint,
     marginBottom: 8,
   },
   author: {
     fontSize: 16,
-    color: '#19A7CE',
+    color: colors.secondary,
     marginBottom: 16,
   },
   // Updated styles for likes instead of rating
@@ -519,17 +514,17 @@ const styles = StyleSheet.create({
     marginRight: 4,
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.bg,
+    color: colors.tint,
   },
   likesLabel: {
     fontSize: 14,
-    color: '#19A7CE',
+    color: colors.secondary,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 24,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
     borderRadius: 12,
     padding: 16,
   },
@@ -538,17 +533,17 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
   },
   statLabel: {
     fontSize: 12,
-    color: '#19A7CE',
+    color: colors.secondary,
     marginBottom: 4,
   },
   statValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.bg,
+    color: colors.tint,
   },
   descriptionContainer: {
     marginBottom: 24,
@@ -556,25 +551,25 @@ const styles = StyleSheet.create({
   descriptionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.bg,
+    color: colors.tint,
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
     lineHeight: 24,
-    color: Colors.bg,
+    color: colors.text,
   },
   buttonContainer: {
     marginBottom: 20,
   },
   rentButton: {
-    backgroundColor: Colors.bg,
+    backgroundColor: colors.tint,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   rentButtonText: {
-    color: Colors.inactive,
+    color: colors.textLight,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -582,29 +577,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFA500',
   },
   pendingText: {
-    color: Colors.inactive,
+    color: '#fff',
   },
   readingButton: {
     backgroundColor: '#28A745',
     marginBottom: 10,
   },
   readingText: {
-    color: Colors.inactive,
+    color: '#fff',
   },
   rentedButton: {
     backgroundColor: '#FF6B6B',
   },
   rentedText: {
-    color: Colors.inactive,
+    color: '#fff',
   },
   returnButton: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
   },
   returnButtonText: {
-    color: Colors.inactive,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },

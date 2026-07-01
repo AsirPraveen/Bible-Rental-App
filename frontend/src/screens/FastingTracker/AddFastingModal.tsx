@@ -6,10 +6,13 @@ import * as Notifications from 'expo-notifications';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [loading, setLoading] = useState(false);
   
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -24,10 +27,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
   const [openType, setOpenType] = useState(false);
   const [type, setType] = useState('Others');
   const [typeItems, setTypeItems] = useState([
-    // { label: 'Water Fast', value: 'Water Fast' },
     { label: 'Daniel Fast', value: 'Daniel Fast' },
-    // { label: 'Intermittent', value: 'Intermittent' },
-    // { label: 'Absolute Fast', value: 'Absolute Fast' },
     { label: 'Others', value: 'Others' }
   ]);
 
@@ -160,7 +160,10 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
                   setOpen={setOpenType}
                   setValue={setType}
                   setItems={setTypeItems}
-                  style={styles.dropdown}
+                  style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+                  textStyle={{ color: colors.text }}
+                  dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
+                  placeholderStyle={{ color: colors.textSecondary }}
                   zIndex={1000}
                   zIndexInverse={3000}
                   listMode="SCROLLVIEW"
@@ -173,6 +176,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. type your fasting name"
+                  placeholderTextColor={colors.textSecondary}
                   value={customType}
                   onChangeText={setCustomType}
                 />
@@ -202,7 +206,10 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
                   setOpen={setOpenNotify}
                   setValue={setNotifyInterval}
                   setItems={setNotifyItems}
-                  style={styles.dropdown}
+                  style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+                  textStyle={{ color: colors.text }}
+                  dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
+                  placeholderStyle={{ color: colors.textSecondary }}
                   zIndex={900}
                   zIndexInverse={2000}
                   listMode="SCROLLVIEW"
@@ -213,6 +220,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
             <TextInput
                style={[styles.input, styles.textArea]}
                placeholder="Praying for..."
+               placeholderTextColor={colors.textSecondary}
                multiline
                numberOfLines={3}
                value={notes}
@@ -238,10 +246,10 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
           <DateTimePickerModal
             isVisible={isStartDatePickerVisible}
             mode="datetime"
-            minimumDate={new Date()} // Ensure they can only pick future Dates
+            minimumDate={new Date()}
             date={startDate || new Date()}
             onConfirm={(date) => { 
-                date.setSeconds(0, 0); // Clear seconds to trigger accurately on the dot
+                date.setSeconds(0, 0);
                 setStartDate(date); 
                 setStartDatePickerVisibility(false); 
             }}
@@ -250,10 +258,10 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
           <DateTimePickerModal
             isVisible={isEndDatePickerVisible}
             mode="datetime"
-            minimumDate={startDate || new Date()} // End date must visibly be after start date
+            minimumDate={startDate || new Date()}
             date={endDate || startDate || new Date()}
             onConfirm={(date) => { 
-                date.setSeconds(0, 0); // Clear seconds to trigger accurately on the dot
+                date.setSeconds(0, 0);
                 setEndDate(date); 
                 setEndDatePickerVisibility(false); 
             }}
@@ -266,7 +274,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -276,7 +284,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '90%',
     maxHeight: '85%',
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 24,
     elevation: 5,
@@ -284,41 +292,42 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 20,
     textAlign: 'center',
   },
   label: {
     fontSize: 14,
-    color: '#555',
+    color: colors.textSecondary,
     marginBottom: 6,
     fontWeight: '600',
   },
   dropdown: {
-    borderColor: '#ccc',
+    borderColor: colors.border,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.inputBg,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.inputBg,
+    color: colors.text,
     marginBottom: 16,
   },
   dateInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 14,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.inputBg,
     marginBottom: 16,
   },
   dateText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.text,
   },
   textArea: {
     minHeight: 80,
@@ -336,11 +345,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
     alignItems: 'center',
   },
   cancelText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -348,7 +357,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#146C94',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

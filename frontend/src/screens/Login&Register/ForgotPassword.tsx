@@ -10,18 +10,22 @@ import {
   Image,
   StyleSheet,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const ForgotPassword = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email || '');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,6 +36,13 @@ const ForgotPassword = () => {
   const [confirmError, setConfirmError] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Prefill email if passed from navigation params
+  useEffect(() => {
+    if (route.params?.email) {
+      setEmail(route.params.email);
+    }
+  }, [route.params?.email]);
 
   // Resend OTP cooldown
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -82,7 +93,11 @@ const ForgotPassword = () => {
       }
     } catch (error: any) {
       const serverErr = error.response?.data?.error || error.message || 'Network error. Check your connection.';
-      console.error('OTP error:', serverErr);
+      if (error.response && error.response.status >= 400 && error.response.status < 500) {
+        console.log('OTP request failed (validation):', serverErr);
+      } else {
+        console.error('OTP error:', error);
+      }
       setEmailError(serverErr);
       Alert.alert('Error', serverErr);
     } finally {
@@ -197,39 +212,39 @@ const ForgotPassword = () => {
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="always">
-      <View style={localStyles.mainContainer}>
-        <View style={localStyles.logoContainer}>
-          <Image style={localStyles.logo} source={require('../../assets/giver.jpg')} />
+      <View style={styles.mainContainer}>
+        <View style={styles.logoContainer}>
+          <Image style={styles.logo} source={require('../../assets/giver.jpg')} />
         </View>
 
-        <View style={localStyles.loginContainer}>
-          <Text style={localStyles.text_header}>Forgot Password</Text>
+        <View style={styles.loginContainer}>
+          <Text style={styles.text_header}>Forgot Password</Text>
 
           {/* Step Indicator */}
-          <View style={localStyles.stepperRow}>
+          <View style={styles.stepperRow}>
             {stepLabels.map((label, idx) => {
               const s = idx + 1;
               const isDone = step > s;
               const isActive = step === s;
               return (
                 <React.Fragment key={s}>
-                  <View style={localStyles.stepItem}>
+                  <View style={styles.stepItem}>
                     <View style={[
-                      localStyles.stepCircle,
-                      isActive && localStyles.stepCircleActive,
-                      isDone && localStyles.stepCircleDone,
+                      styles.stepCircle,
+                      isActive && styles.stepCircleActive,
+                      isDone && styles.stepCircleDone,
                     ]}>
                       {isDone
                         ? <FontAwesome name="check" size={13} color="#fff" />
-                        : <Text style={localStyles.stepText}>{s}</Text>
+                        : <Text style={styles.stepText}>{s}</Text>
                       }
                     </View>
-                    <Text style={[localStyles.stepLabel, (isActive || isDone) && { color: '#146C94', fontWeight: '700' }]}>
+                    <Text style={[styles.stepLabel, (isActive || isDone) && { color: colors.primary, fontWeight: '700' }]}>
                       {label}
                     </Text>
                   </View>
                   {idx < 2 && (
-                    <View style={[localStyles.stepLine, step > s && localStyles.stepLineDone]} />
+                    <View style={[styles.stepLine, step > s && styles.stepLineDone]} />
                   )}
                 </React.Fragment>
               );
@@ -239,12 +254,13 @@ const ForgotPassword = () => {
           {/* Step 1: Email */}
           {step === 1 && (
             <>
-              <Text style={localStyles.subText}>Enter your registered email to receive an OTP.</Text>
-              <View style={localStyles.action}>
-                <FontAwesome name="envelope-o" color="#146C94" style={localStyles.smallIcon} />
+              <Text style={styles.subText}>Enter your registered email to receive an OTP.</Text>
+              <View style={styles.action}>
+                <FontAwesome name="envelope-o" color={colors.tint} style={styles.smallIcon} />
                 <TextInput
                   placeholder="Email address"
-                  style={localStyles.textInput}
+                  placeholderTextColor={colors.textSecondary}
+                  style={styles.textInput}
                   value={email}
                   onChangeText={v => { setEmail(v); setEmailError(''); }}
                   autoCapitalize="none"
@@ -252,12 +268,12 @@ const ForgotPassword = () => {
                   autoCorrect={false}
                 />
               </View>
-              {emailError ? <Text style={localStyles.errorText}>⚠ {emailError}</Text> : null}
-              <View style={localStyles.button}>
-                <TouchableOpacity style={localStyles.inBut} onPress={sendOtp} disabled={loading}>
+              {emailError ? <Text style={styles.errorText}>⚠ {emailError}</Text> : null}
+              <View style={styles.button}>
+                <TouchableOpacity style={styles.inBut} onPress={sendOtp} disabled={loading}>
                   {loading
                     ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={localStyles.textSign}>Send OTP</Text>
+                    : <Text style={styles.textSign}>Send OTP</Text>
                   }
                 </TouchableOpacity>
               </View>
@@ -267,13 +283,13 @@ const ForgotPassword = () => {
           {/* Step 2: OTP */}
           {step === 2 && (
             <>
-              <Text style={localStyles.subText}>Enter the 6-digit OTP sent to <Text style={{ fontWeight: '700', color: '#146C94' }}>{email}</Text></Text>
-              <View style={localStyles.otpContainer}>
+              <Text style={styles.subText}>Enter the 6-digit OTP sent to <Text style={{ fontWeight: '700', color: colors.tint }}>{email}</Text></Text>
+              <View style={styles.otpContainer}>
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
                     ref={ref => { otpInputRefs.current[index] = ref; }}
-                    style={[localStyles.otpBox, digit ? localStyles.otpBoxFilled : null]}
+                    style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
                     value={digit}
                     onChangeText={text => handleOtpChange(text, index)}
                     onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
@@ -284,15 +300,15 @@ const ForgotPassword = () => {
                   />
                 ))}
               </View>
-              {otpError ? <Text style={localStyles.errorText}>⚠ {otpError}</Text> : null}
+              {otpError ? <Text style={styles.errorText}>⚠ {otpError}</Text> : null}
 
               {/* Resend OTP */}
               <TouchableOpacity
                 onPress={handleResendOtp}
                 disabled={resendCooldown > 0 || loading}
-                style={localStyles.resendRow}
+                style={styles.resendRow}
               >
-                <Text style={[localStyles.resendText, resendCooldown > 0 && { color: '#aaa' }]}>
+                <Text style={[styles.resendText, resendCooldown > 0 && { color: colors.textSecondary }]}>
                   {resendCooldown > 0
                     ? `Resend OTP in ${resendCooldown}s`
                     : "Didn't receive OTP? Resend"
@@ -300,15 +316,15 @@ const ForgotPassword = () => {
                 </Text>
               </TouchableOpacity>
 
-              <View style={localStyles.button}>
-                <TouchableOpacity style={localStyles.inBut} onPress={handleVerifyOtp} disabled={loading}>
+              <View style={styles.button}>
+                <TouchableOpacity style={styles.inBut} onPress={handleVerifyOtp} disabled={loading}>
                   {loading
                     ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={localStyles.textSign}>Verify OTP</Text>
+                    : <Text style={styles.textSign}>Verify OTP</Text>
                   }
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setStep(1)} style={{ marginTop: 12 }}>
-                  <Text style={{ color: '#146C94', textAlign: 'center', fontWeight: '600' }}>← Change Email</Text>
+                  <Text style={{ color: colors.tint, textAlign: 'center', fontWeight: '600' }}>← Change Email</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -317,42 +333,44 @@ const ForgotPassword = () => {
           {/* Step 3: New Password */}
           {step === 3 && (
             <>
-              <Text style={localStyles.subText}>Create a new password for your account.</Text>
-              <View style={localStyles.action}>
-                <FontAwesome name="lock" color="#146C94" style={localStyles.smallIcon} />
+              <Text style={styles.subText}>Create a new password for your account.</Text>
+              <View style={styles.action}>
+                <FontAwesome name="lock" color={colors.tint} style={styles.smallIcon} />
                 <TextInput
                   placeholder="New Password (min 6 characters)"
-                  style={localStyles.textInput}
+                  placeholderTextColor={colors.textSecondary}
+                  style={styles.textInput}
                   value={newPassword}
                   onChangeText={v => { setNewPassword(v); setPasswordError(''); }}
                   secureTextEntry={!showNewPassword}
                 />
                 <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
-                  <Feather name={showNewPassword ? 'eye' : 'eye-off'} size={20} color="#146C94" />
+                  <Feather name={showNewPassword ? 'eye' : 'eye-off'} size={20} color={colors.tint} />
                 </TouchableOpacity>
               </View>
-              {passwordError ? <Text style={localStyles.errorText}>⚠ {passwordError}</Text> : null}
+              {passwordError ? <Text style={styles.errorText}>⚠ {passwordError}</Text> : null}
 
-              <View style={localStyles.action}>
-                <FontAwesome name="lock" color="#146C94" style={localStyles.smallIcon} />
+              <View style={styles.action}>
+                <FontAwesome name="lock" color={colors.tint} style={styles.smallIcon} />
                 <TextInput
                   placeholder="Confirm New Password"
-                  style={localStyles.textInput}
+                  placeholderTextColor={colors.textSecondary}
+                  style={styles.textInput}
                   value={confirmPassword}
                   onChangeText={v => { setConfirmPassword(v); setConfirmError(''); }}
                   secureTextEntry={!showConfirmPassword}
                 />
                 <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  <Feather name={showConfirmPassword ? 'eye' : 'eye-off'} size={20} color="#146C94" />
+                  <Feather name={showConfirmPassword ? 'eye' : 'eye-off'} size={20} color={colors.tint} />
                 </TouchableOpacity>
               </View>
-              {confirmError ? <Text style={localStyles.errorText}>⚠ {confirmError}</Text> : null}
+              {confirmError ? <Text style={styles.errorText}>⚠ {confirmError}</Text> : null}
 
-              <View style={localStyles.button}>
-                <TouchableOpacity style={localStyles.inBut} onPress={handleResetPassword} disabled={loading}>
+              <View style={styles.button}>
+                <TouchableOpacity style={styles.inBut} onPress={handleResetPassword} disabled={loading}>
                   {loading
                     ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={localStyles.textSign}>Reset Password</Text>
+                    : <Text style={styles.textSign}>Reset Password</Text>
                   }
                 </TouchableOpacity>
               </View>
@@ -364,10 +382,10 @@ const ForgotPassword = () => {
   );
 };
 
-const localStyles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
     paddingBottom: 30,
   },
   logoContainer: {
@@ -381,20 +399,24 @@ const localStyles = StyleSheet.create({
     borderRadius: 20,
   },
   loginContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     paddingHorizontal: 24,
     paddingVertical: 30,
     marginTop: 20,
+    flex: 1,
+    paddingBottom: 40,
   },
   text_header: {
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
     fontSize: 28,
     textAlign: 'center',
     marginBottom: 20,
   },
   subText: {
-    color: '#64748b',
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 20,
@@ -415,13 +437,13 @@ const localStyles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
   },
   stepCircleActive: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.tint,
   },
   stepCircleDone: {
     backgroundColor: '#22c55e',
@@ -433,13 +455,13 @@ const localStyles = StyleSheet.create({
   },
   stepLabel: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   stepLine: {
     flex: 1,
     height: 2,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.border,
     marginHorizontal: 6,
     marginBottom: 16,
   },
@@ -452,14 +474,14 @@ const localStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderWidth: 1.5,
-    borderColor: '#146C94',
+    borderColor: colors.tint,
     borderRadius: 50,
     alignItems: 'center',
     marginBottom: 6,
   },
   textInput: {
     flex: 1,
-    color: '#05375a',
+    color: colors.text,
     fontSize: 15,
     paddingVertical: 2,
   },
@@ -470,7 +492,7 @@ const localStyles = StyleSheet.create({
   },
   inBut: {
     width: '70%',
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.tint : colors.primary,
     alignItems: 'center',
     paddingVertical: 15,
     borderRadius: 50,
@@ -478,7 +500,7 @@ const localStyles = StyleSheet.create({
   textSign: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: 'white',
+    color: colors.theme === 'dark' ? '#12161A' : 'white',
   },
   smallIcon: {
     marginRight: 10,
@@ -504,17 +526,17 @@ const localStyles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderWidth: 1.5,
-    borderColor: '#c7d2fe',
+    borderColor: colors.border,
     borderRadius: 12,
     textAlign: 'center',
     fontSize: 20,
     fontWeight: '700',
-    color: '#146C94',
-    backgroundColor: '#f8fafc',
+    color: colors.theme === 'dark' ? colors.tint : colors.primary,
+    backgroundColor: colors.inputBg,
   },
   otpBoxFilled: {
-    borderColor: '#146C94',
-    backgroundColor: '#e0f2fe',
+    borderColor: colors.tint,
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#e0f2fe',
   },
 
   resendRow: {
@@ -523,7 +545,7 @@ const localStyles = StyleSheet.create({
     paddingVertical: 4,
   },
   resendText: {
-    color: '#146C94',
+    color: colors.tint,
     fontSize: 13,
     fontWeight: '600',
     textDecorationLine: 'underline',

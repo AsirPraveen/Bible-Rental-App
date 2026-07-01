@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView, TextInput, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import HistoryCard from './components/HistoryCard';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { Ionicons } from '@expo/vector-icons';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const Colors = {
@@ -14,8 +15,11 @@ const Colors = {
 };
 
 const RequestHistoryTab = () => {
-  const [requestHistory, setRequestHistory] = useState([]);
+  const [requestHistory, setRequestHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'rejected'>('all');
+  const [sortBy, setSortBy] = useState<'date-asc' | 'date-desc' | 'book-az'>('date-desc');
 
   const fetchRequestHistory = async () => {
     try {
@@ -38,21 +42,148 @@ const RequestHistoryTab = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const getProcessedHistory = () => {
+    let result = [...requestHistory];
+
+    // Status Filter
+    if (statusFilter !== 'all') {
+      result = result.filter(h => h.status === statusFilter);
+    }
+
+    // Search Query
+    if (searchQuery.trim().length > 0) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(h => 
+        (h.book_name || '').toLowerCase().includes(q) ||
+        (h.userName || '').toLowerCase().includes(q) ||
+        (h.userEmail || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Sorting
+    result.sort((a, b) => {
+      if (sortBy === 'date-asc') {
+        return new Date(a.processed_at).getTime() - new Date(b.processed_at).getTime();
+      } else if (sortBy === 'date-desc') {
+        return new Date(b.processed_at).getTime() - new Date(a.processed_at).getTime();
+      } else if (sortBy === 'book-az') {
+        return (a.book_name || '').localeCompare(b.book_name || '');
+      }
+      return 0;
+    });
+
+    return result;
+  };
+
   if (isLoading) {
     return <LoadingScreen message="Loading history..." />;
   }
+
+  const processed = getProcessedHistory();
 
   return (
     <SafeAreaView style={styles.outer_container}>
     <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Request History</Text>
-        {requestHistory.length > 0 ? (
-          requestHistory.map((history: any) => (
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#64748B" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by book or user..."
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close" size={20} color="#64748B" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Status Filter Chips */}
+        <Text style={styles.filterLabel}>Filter by status:</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterScrollContent}
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, statusFilter === 'all' && styles.filterChipActive]}
+            onPress={() => setStatusFilter('all')}
+          >
+            <Text style={[styles.filterChipText, statusFilter === 'all' && styles.filterChipTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterChip, statusFilter === 'approved' && styles.filterChipActive]}
+            onPress={() => setStatusFilter('approved')}
+          >
+            <Text style={[styles.filterChipText, statusFilter === 'approved' && styles.filterChipTextActive]}>
+              ✅ Approved
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterChip, statusFilter === 'rejected' && styles.filterChipActive]}
+            onPress={() => setStatusFilter('rejected')}
+          >
+            <Text style={[styles.filterChipText, statusFilter === 'rejected' && styles.filterChipTextActive]}>
+              ❌ Rejected
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Sort Chips */}
+        <Text style={styles.filterLabel}>Sort by:</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterScrollContent}
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, sortBy === 'date-desc' && styles.filterChipActive]}
+            onPress={() => setSortBy('date-desc')}
+          >
+            <Text style={[styles.filterChipText, sortBy === 'date-desc' && styles.filterChipTextActive]}>
+              📅 Date (Newest)
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterChip, sortBy === 'date-asc' && styles.filterChipActive]}
+            onPress={() => setSortBy('date-asc')}
+          >
+            <Text style={[styles.filterChipText, sortBy === 'date-asc' && styles.filterChipTextActive]}>
+              📅 Date (Oldest)
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterChip, sortBy === 'book-az' && styles.filterChipActive]}
+            onPress={() => setSortBy('book-az')}
+          >
+            <Text style={[styles.filterChipText, sortBy === 'book-az' && styles.filterChipTextActive]}>
+              📖 Book (A-Z)
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {processed.length > 0 ? (
+          processed.map((history: any) => (
             <HistoryCard key={`${history.userEmail}-${history.book_id}-${history.processed_at}`} history={history} />
           ))
         ) : (
-          <Text style={styles.noDataText}>No request history available</Text>
+          <Text style={styles.noDataText}>
+            {requestHistory.length === 0 ? 'No request history available' : 'No matching history found'}
+          </Text>
         )}
       </View>
     </ScrollView>
@@ -65,8 +196,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
   },
   container: {
     flex: 1,
@@ -89,12 +218,67 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: Colors.bg,
-    marginBottom: 10,
+    marginBottom: 15,
   },
   noDataText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+    marginTop: 20,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 15,
+    color: '#0F172A',
+    paddingVertical: 0,
+  },
+  filterLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  filterScroll: {
+    marginBottom: 16,
+  },
+  filterScrollContent: {
+    gap: 8,
+    flexDirection: 'row',
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginRight: 8,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.bg,
+    borderColor: Colors.bg,
+  },
+  filterChipText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: '#fff',
   },
 });
 

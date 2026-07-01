@@ -17,7 +17,8 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { syncPushTokenWithBackend } from '../../utils/notifications';
 import { useAuth } from '../../context/AuthContext';
-import styles from './style'; // ← Use the same shared styles as Login
+import { getStyles } from './style'; // ← Use the same shared styles as Login
+import { useTheme } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -25,6 +26,8 @@ const GoogleSetPassword = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { login } = useAuth();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   // Params passed from Login when isNewUser === true
   const { name, email, image, googleId } = route.params || {};
@@ -106,27 +109,28 @@ const GoogleSetPassword = () => {
             {image ? (
               <Image
                 source={{ uri: image }}
-                style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#146C94', marginBottom: 8 }}
+                style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: colors.primary, marginBottom: 8 }}
               />
             ) : (
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#146C94', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
                 <FontAwesome name="google" size={26} color="#fff" />
               </View>
             )}
-            <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center' }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
               Signing in as{' '}
-              <Text style={{ color: '#146C94', fontWeight: '700' }}>{email}</Text>
+              <Text style={{ color: colors.primary, fontWeight: '700' }}>{email}</Text>
             </Text>
-            <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 4 }}>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
               Set a password so you can also log in with your email.
             </Text>
           </View>
 
           {/* Name (editable — prefilled from Google) */}
           <View style={styles.action}>
-            <FontAwesome name="user-o" color="#146C94" style={styles.smallIcon} />
+            <FontAwesome name="user-o" color={colors.primary} style={styles.smallIcon} />
             <TextInput
               placeholder="Your Name"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={displayName}
               onChangeText={setDisplayName}
@@ -136,9 +140,10 @@ const GoogleSetPassword = () => {
 
           {/* Password */}
           <View style={styles.action}>
-            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
+            <FontAwesome name="lock" color={colors.primary} style={styles.smallIcon} />
             <TextInput
               placeholder="Set a Password (min 6 chars)"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={password}
               onChangeText={v => { setPassword(v); setPasswordError(''); }}
@@ -148,7 +153,7 @@ const GoogleSetPassword = () => {
               <Feather
                 name={showPassword ? 'eye' : 'eye-off'}
                 style={{ marginRight: -10 }}
-                color={passwordError ? 'red' : '#146C94'}
+                color={passwordError ? 'red' : colors.primary}
                 size={23}
               />
             </TouchableOpacity>
@@ -157,9 +162,10 @@ const GoogleSetPassword = () => {
 
           {/* Confirm Password */}
           <View style={styles.action}>
-            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
+            <FontAwesome name="lock" color={colors.primary} style={styles.smallIcon} />
             <TextInput
               placeholder="Confirm Password"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={confirmPassword}
               onChangeText={v => { setConfirmPassword(v); setConfirmError(''); }}
@@ -169,7 +175,7 @@ const GoogleSetPassword = () => {
               <Feather
                 name={showConfirm ? 'eye' : 'eye-off'}
                 style={{ marginRight: -10 }}
-                color={confirmError ? 'red' : '#146C94'}
+                color={confirmError ? 'red' : colors.primary}
                 size={23}
               />
             </TouchableOpacity>
@@ -191,7 +197,7 @@ const GoogleSetPassword = () => {
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ alignItems: 'center', marginTop: 16 }}>
-            <Text style={{ color: '#146C94', fontSize: 14, fontWeight: '600' }}>
+            <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>
               ← Use a different account
             </Text>
           </TouchableOpacity>

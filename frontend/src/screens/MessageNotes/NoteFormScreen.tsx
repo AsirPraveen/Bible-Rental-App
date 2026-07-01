@@ -28,6 +28,7 @@ import { MessageNote, NoteCategory, HighlightColor } from './types/MessageNote';
 import { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const { tamilBibleData, bookTranslations } = getLocalBibleData();
 
@@ -43,6 +44,8 @@ const HIGHLIGHT_COLORS: { key: HighlightColor; label: string; emoji: string; col
 ];
 
 export default function NoteFormScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const editNote: MessageNote | undefined = route.params?.note;
@@ -332,11 +335,11 @@ export default function NoteFormScreen() {
 
   // ══════════════════════════════════════════════
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#f8fafc' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <StatusBar barStyle="light-content" />
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
       {/* Header */}
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.header}>
+      <LinearGradient colors={colors.linearGradient} style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -378,10 +381,10 @@ export default function NoteFormScreen() {
               <TouchableOpacity key={cat}
                 style={[styles.catChip,
                 active ? { backgroundColor: m.color, borderColor: m.color }
-                  : { backgroundColor: '#fff', borderColor: m.color }]}
+                  : { backgroundColor: colors.cardBg, borderColor: colors.border }]}
                 onPress={() => setCategory(cat)}>
                 <Ionicons name={m.icon} size={11} color={active ? '#fff' : m.color} />
-                <Text style={[styles.catChipText, { color: active ? '#fff' : m.color }]}>{cat}</Text>
+                <Text style={[styles.catChipText, { color: active ? '#fff' : colors.textSecondary }]}>{cat}</Text>
               </TouchableOpacity>
             );
           })}
@@ -432,7 +435,7 @@ export default function NoteFormScreen() {
         {highlights.map(h => {
           const hc = HIGHLIGHT_COLORS.find(x => x.key === h.color)!;
           return (
-            <View key={h.id} style={[styles.hlCard, { borderLeftColor: hc.color, backgroundColor: hc.color + '55' }]}>
+            <View key={h.id} style={[styles.hlCard, { borderLeftColor: hc.color, backgroundColor: colors.theme === 'dark' ? 'rgba(0, 0, 0, 0.3)' : hc.color + '33' }]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.hlRef}>{hc.emoji} {h.book} {h.chapter}:{h.verse} ({h.language})</Text>
                 <Text style={styles.hlText} numberOfLines={2}>{h.verseText}</Text>
@@ -512,7 +515,7 @@ export default function NoteFormScreen() {
 
         {/* ── Save Button ── */}
         <TouchableOpacity 
-            style={[styles.bigSaveBtn, { backgroundColor: '#146C94' }]}
+            style={[styles.bigSaveBtn, { backgroundColor: colors.primary }]}
             onPress={handleSave} 
             disabled={saving}
         >
@@ -592,7 +595,7 @@ export default function NoteFormScreen() {
             </View>
 
             <TouchableOpacity 
-              style={[styles.modalActionBtn, { backgroundColor: '#146C94', opacity: selectedVerseNum ? 1 : 0.6 }]} 
+              style={[styles.modalActionBtn, { backgroundColor: colors.primary, opacity: selectedVerseNum ? 1 : 0.6 }]} 
               onPress={handleVerseSearch}
               disabled={!selectedVerseNum || verseLooking}
             >
@@ -607,7 +610,7 @@ export default function NoteFormScreen() {
                     setVerse(`${bookName} ${selectedChapterNum}:${selectedVerseNum}`); 
                     setShowVerseModal(false); 
                 }}>
-                  <Text style={[styles.useVerseBtn, { color: '#146C94' }]}>Insert Reference ✓</Text>
+                  <Text style={[styles.useVerseBtn, { color: colors.tint }]}>Insert Reference ✓</Text>
                 </TouchableOpacity>
               </View>
             ) : null}
@@ -680,7 +683,7 @@ export default function NoteFormScreen() {
               value={hlNote} onChangeText={setHlNote} placeholderTextColor="#bbb" />
 
             <TouchableOpacity 
-                style={[styles.modalActionBtn, { backgroundColor: '#146C94', marginTop: 15 }]} 
+                style={[styles.modalActionBtn, { backgroundColor: colors.primary, marginTop: 15 }]} 
                 onPress={async () => {
                     const bookName = availableBooks.find(b => b.value === selectedBookNum)?.label || '';
                     const hlText = availableVerses.find(v => v.value === selectedVerseNum)?.text || '';
@@ -702,16 +705,17 @@ export default function NoteFormScreen() {
 
       {/* ══ FULLSCREEN EDITOR ══ */}
       <Modal visible={isFullScreen} animationType="slide">
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 15, alignItems: 'center', borderBottomWidth: 1, borderColor: '#e2e8f0' }}>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: '#1e293b' }}>Write Note</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 15, alignItems: 'center', borderBottomWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Write Note</Text>
                 <TouchableOpacity onPress={() => setIsFullScreen(false)}>
-                    <Text style={{ fontSize: 16, color: '#146C94', fontWeight: '700' }}>Done</Text>
+                    <Text style={{ fontSize: 16, color: colors.tint, fontWeight: '700' }}>Done</Text>
                 </TouchableOpacity>
             </View>
             <TextInput
-                style={{ flex: 1, padding: 20, fontSize: 16, color: '#1e293b', textAlignVertical: 'top', lineHeight: 28 }}
+                style={{ flex: 1, padding: 20, fontSize: 16, color: colors.text, backgroundColor: colors.background, textAlignVertical: 'top', lineHeight: 28 }}
                 placeholder="Write your notes here…"
+                placeholderTextColor={colors.textSecondary}
                 value={content}
                 onChangeText={setContent}
                 multiline
@@ -724,7 +728,7 @@ export default function NoteFormScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   header: {
     paddingTop: 45, paddingBottom: 20,
     paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
@@ -734,8 +738,8 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-  saveHeaderBtn: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, elevation: 2 },
-  saveBtnText: { color: '#146C94', fontWeight: '800', fontSize: 14 },
+  saveHeaderBtn: { backgroundColor: colors.theme === 'dark' ? colors.surface : '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, elevation: 2 },
+  saveBtnText: { color: colors.theme === 'dark' ? colors.tint : '#146C94', fontWeight: '800', fontSize: 14 },
   
   headerToggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)', padding: 10, borderRadius: 15 },
   toggleInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -748,11 +752,11 @@ const styles = StyleSheet.create({
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 60 },
-  label: { fontSize: 12, fontWeight: '700', color: '#64748b', marginBottom: 8, marginTop: 15, textTransform: 'uppercase', letterSpacing: 1 },
+  label: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, marginTop: 15, textTransform: 'uppercase', letterSpacing: 1 },
   
   input: {
-    backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 15, color: '#1e293b', borderWidth: 1, borderColor: '#e2e8f0',
+    backgroundColor: colors.cardBg, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
+    fontSize: 15, color: colors.text, borderWidth: 1, borderColor: colors.border,
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5,
   },
   textarea: { minHeight: 180, lineHeight: 24, textAlignVertical: 'top' },
@@ -760,79 +764,77 @@ const styles = StyleSheet.create({
   
   catChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6, width: 140, height: 45,
-    borderRadius: 25, borderWidth: 1.5, marginRight: 8, marginBottom: 5, backgroundColor: '#fff', elevation: 2,
+    borderRadius: 25, borderWidth: 1.5, marginRight: 8, marginBottom: 5, backgroundColor: colors.cardBg, elevation: 2,
     justifyContent: 'center'
   },
-
-
   catChipText: { fontSize: 12, fontWeight: '800' },
   
   iconActionBtn: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25, marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', flex: 1, color: '#1e293b' },
+  sectionTitle: { fontSize: 16, fontWeight: '800', flex: 1, color: colors.text },
   addSmallBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   addSmallText: { fontSize: 12, fontWeight: '700' },
 
   hlCard: { flexDirection: 'row', alignItems: 'flex-start', borderRadius: 16, padding: 15, marginBottom: 10, elevation: 1 },
-  hlRef: { fontSize: 14, fontWeight: '800', marginBottom: 4, color: '#1e293b' },
-  hlText: { fontSize: 13, color: '#475569', fontStyle: 'italic', lineHeight: 20 },
-  hlNote: { fontSize: 12, color: '#64748b', marginTop: 5, fontWeight: '600' },
+  hlRef: { fontSize: 14, fontWeight: '800', marginBottom: 4, color: colors.text },
+  hlText: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 20 },
+  hlNote: { fontSize: 12, color: colors.tint, marginTop: 5, fontWeight: '600' },
   
-  recordingBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fee2e2', borderRadius: 16, padding: 15, marginBottom: 10 },
+  recordingBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.theme === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2', borderRadius: 16, padding: 15, marginBottom: 10 },
   recordingDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#ef4444' },
-  recordingText: { color: '#b91c1c', fontWeight: '800', fontSize: 14 },
+  recordingText: { color: colors.theme === 'dark' ? '#fca5a5' : '#b91c1c', fontWeight: '800', fontSize: 14 },
   
-  voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0', elevation: 2 },
-  playBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#146C94', alignItems: 'center', justifyContent: 'center' },
-  voiceLabel: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  voiceDur: { fontSize: 12, color: '#94a3b8' },
+  voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.cardBg, borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: colors.border, elevation: 2 },
+  playBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  voiceLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
+  voiceDur: { fontSize: 12, color: colors.textSecondary },
 
-  reminderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0', elevation: 2 },
-  rmTitle: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  rmTime: { fontSize: 12, color: '#94a3b8' },
+  reminderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg, borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: colors.border, elevation: 2 },
+  rmTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  rmTime: { fontSize: 12, color: colors.textSecondary },
 
-  bigSaveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 30, borderRadius: 20, paddingVertical: 18, elevation: 5, shadowColor: '#146C94', shadowOpacity: 0.3, shadowRadius: 10 },
+  bigSaveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 30, borderRadius: 20, paddingVertical: 18, elevation: 5, shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 10 },
   bigSaveBtnText: { color: '#fff', fontSize: 17, fontWeight: '900' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.7)', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40, maxHeight: '90%' },
+  modalBox: { backgroundColor: colors.cardBg, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40, maxHeight: '90%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '900', color: '#1e293b' },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: colors.text },
   
   pickerRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  langChip: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', alignItems: 'center' },
-  langChipActive: { backgroundColor: '#146C94', borderColor: '#146C94' },
-  langChipText: { fontSize: 14, fontWeight: '700', color: '#64748b' },
+  langChip: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
+  langChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  langChipText: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
   langChipTextActive: { color: '#fff' },
 
   selectionGrid: { flexDirection: 'row', gap: 12, height: 200, marginBottom: 20 },
   selectionItem: { flex: 1 },
-  selectionLabel: { fontSize: 12, fontWeight: '800', color: '#94a3b8', marginBottom: 8, textAlign: 'center' },
-  selectorScroll: { backgroundColor: '#f8fafc', borderRadius: 15, borderWidth: 1, borderColor: '#e2e8f0' },
-  selectBtn: { paddingVertical: 12, paddingHorizontal: 10, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  selectBtnActive: { backgroundColor: '#146C94' },
-  selectText: { fontSize: 14, fontWeight: '600', color: '#475569' },
+  selectionLabel: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginBottom: 8, textAlign: 'center' },
+  selectorScroll: { backgroundColor: colors.inputBg, borderRadius: 15, borderWidth: 1, borderColor: colors.border },
+  selectBtn: { paddingVertical: 12, paddingHorizontal: 10, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
+  selectBtnActive: { backgroundColor: colors.primary },
+  selectText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   selectTextActive: { color: '#fff', fontWeight: '800' },
 
-  smallSelectBtn: { paddingVertical: 8, paddingHorizontal: 6, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  smallSelectText: { fontSize: 12, fontWeight: '600', color: '#475569' },
+  smallSelectBtn: { paddingVertical: 8, paddingHorizontal: 6, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
+  smallSelectText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
 
   modalActionBtn: { borderRadius: 16, paddingVertical: 16, alignItems: 'center', elevation: 3 },
   modalActionText: { color: '#fff', fontWeight: '900', fontSize: 16 },
   
-  verseResultBox: { backgroundColor: '#f0f9ff', borderRadius: 16, padding: 15, marginTop: 15, borderWidth: 1, borderColor: '#bae6fd' },
-  verseResultText: { fontSize: 14, color: '#0c4a6e', lineHeight: 22, fontStyle: 'italic' },
+  verseResultBox: { backgroundColor: colors.inputBg, borderRadius: 16, padding: 15, marginTop: 15, borderWidth: 1, borderColor: colors.border },
+  verseResultText: { fontSize: 14, color: colors.text, lineHeight: 22, fontStyle: 'italic' },
   useVerseBtn: { fontWeight: '800', marginTop: 10, fontSize: 14, textAlign: 'right' },
   
   hlColorBtn: { flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
-  hlColorActive: { borderColor: '#1e293b' },
+  hlColorActive: { borderColor: colors.text },
 
-  timePickerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', padding: 12, borderRadius: 12, marginTop: 5 },
+  timePickerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.theme === 'dark' ? colors.border : '#e0f2fe', padding: 12, borderRadius: 12, marginTop: 5 },
   modalClose: { marginTop: 15, padding: 10, alignItems: 'center' },
-  modalCloseText: { color: '#64748b', fontWeight: '700', fontSize: 14 },
+  modalCloseText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
   voiceLabelInput: {
-    fontSize: 14, fontWeight: '700', color: '#1e293b', 
-    backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 
+    fontSize: 14, fontWeight: '700', color: colors.text, 
+    backgroundColor: colors.inputBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 
   }
 });

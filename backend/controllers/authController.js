@@ -17,10 +17,10 @@ exports.register = async (req, res) => {
     if (oldUser) return res.status(409).send({ status: "error", data: "User already exists!!" });
 
     const encryptedPassword = await bcrypt.hash(password, 10);
-    
+
     await User.create({
-      name, 
-      email, 
+      name,
+      email,
       mobile,
       password: encryptedPassword,
       userType,
@@ -36,7 +36,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   const { emailOrPhone, password } = req.body;
   console.log("inside login", req.body);
-  
+
   try {
     const isPhone = /^[6-9][0-9]{9}$/.test(emailOrPhone); // tightened regex
     const query = isPhone ? { mobile: emailOrPhone } : { email: emailOrPhone };
@@ -64,7 +64,7 @@ exports.login = async (req, res) => {
 
     console.log("Invalid password!");
     res.status(401).send({ status: "error", data: "Invalid credentials" });
-    
+
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).send({ status: "error", data: "An error occurred during login" });
@@ -74,7 +74,7 @@ exports.login = async (req, res) => {
 
 exports.getUserData = async (req, res) => {
   const { token } = req.body;
-  
+
   if (!token) {
     return res.send({ status: "error", data: "Token missing" });
   }
@@ -83,7 +83,7 @@ exports.getUserData = async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     // Use .lean() to get a plain JS object that we can modify
     const user = await User.findOne({ email: decoded.email }).lean();
-    
+
     if (!user) {
       return res.status(404).send({ status: "error", message: "User not found" });
     }
@@ -93,7 +93,7 @@ exports.getUserData = async (req, res) => {
       const bookIds = user.books_rented.map(r => r.book_id);
       const books = await Book.find({ book_id: { $in: bookIds } }).select('book_id book_name');
       const bookMap = new Map(books.map(b => [b.book_id, b.book_name]));
-      
+
       user.books_rented = user.books_rented.map(r => ({
         ...r,
         book_name: bookMap.get(r.book_id) || 'Unknown Book'
@@ -168,7 +168,7 @@ exports.forgotPassword = async (req, res) => {
     });
 
     console.log(`OTP email sent to ${email}`);
-    res.json({ status: 'ok', message: `OTP sent to ${email}. Check your inbox (and spam folder).` });
+    res.json({ status: 'ok', message: `OTP sent to ${email}.` });
 
   } catch (error) {
     console.error('Forgot Password error:', error);
@@ -224,7 +224,7 @@ exports.updatePushToken = async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findOne({ email: decoded.email });
-    
+
     if (!user) {
       return res.status(404).send({ status: "error", message: "User not found" });
     }
@@ -320,4 +320,4 @@ exports.googleSetPassword = async (req, res) => {
     res.status(500).json({ error: error.message || 'Failed to create account' });
   }
 };
-
+

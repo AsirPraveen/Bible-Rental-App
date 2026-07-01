@@ -9,6 +9,10 @@ const appSettingsSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isGuestLoginEnabled: {
+    type: Boolean,
+    default: true
+  },
   // Guest access toggles — controlled from Admin panel
   guestAccess: {
     Bible:            { type: Boolean, default: true },

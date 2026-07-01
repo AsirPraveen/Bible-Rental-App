@@ -1,14 +1,14 @@
 import { StyleSheet } from 'react-native';
 
-const styles = StyleSheet.create({
+export const getStyles = (colors) => StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
   },
   textSign: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: colors.theme === 'dark' ? '#12161A' : 'white',
   },
   smallIcon: {
     marginRight: 10,
@@ -26,40 +26,41 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   text_footer: {
-    color: '#05375a',
+    color: colors.textSecondary,
     fontSize: 18,
     textAlign: 'center',
   },
   action: {
     flexDirection: 'row',
-    paddingTop: 14,
-    paddingBottom: 3,
+    paddingVertical: 12,
     marginTop: 15,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#146C94',
+    borderColor: colors.tint,
     borderRadius: 50,
     alignItems: 'center',
   },
   textInput: {
     flex: 1,
-    marginTop: -12,
-    color: '#05375a',
-    paddingVertical: 5,
+    color: colors.text,
+    paddingVertical: 2,
+    fontSize: 15,
   },
   loginContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 20,
     paddingVertical: 30,
+    flex: 1,
+    paddingBottom: 40,
   },
   header: {
     justifyContent: 'flex-end',
     paddingHorizontal: 20,
   },
   text_header: {
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
     fontSize: 30,
     textAlign: 'center',
@@ -67,26 +68,28 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: 'center',
-    marginTop: -20,
-    alignItems: 'center',
+    marginTop: 20,
     textAlign: 'center',
-    margin: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
   inBut: {
     width: '70%',
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.tint : colors.primary,
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 15,
     borderRadius: 50,
   },
   inBut2: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : colors.primary,
     height: 65,
     width: 65,
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: colors.theme === 'dark' ? 1 : 0,
+    borderColor: colors.border,
   },
   bottomButton: {
     width: '100%',
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
     fontSize: 40,
   },
   bottomText: {
-    color: '#000000',
+    color: colors.text,
     fontSize: 12,
     fontWeight: '600',
     marginTop: 5,
@@ -119,11 +122,11 @@ const styles = StyleSheet.create({
   },
   radioButton_title: {
     fontSize: 20,
-    color: '#146C94',
+    color: colors.tint,
   },
   radioButton_text: {
     fontSize: 16,
-    color: '#000000',
+    color: colors.text,
     marginRight: 5,
   },
   errorText: {
@@ -133,5 +136,3 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
-
-export default styles;

@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, Share, Platform, ActivityIndicator, Linking, Modal
+  Alert, Share, Platform, ActivityIndicator, Linking, Modal, StatusBar
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,8 +22,11 @@ import { MessageNote, VoiceNote, VerseHighlight } from './types/MessageNote';
 import { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 export default function NoteDetailScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { noteId } = route.params;
@@ -174,7 +177,7 @@ export default function NoteDetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#146C94" />
+        <ActivityIndicator size="large" color={colors.loader} />
       </View>
     );
   }
@@ -186,8 +189,9 @@ export default function NoteDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       {/* Header */}
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.header}>
+      <LinearGradient colors={colors.linearGradient} style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -240,9 +244,9 @@ export default function NoteDetailScreen() {
               <Text style={[styles.badgeText, { color: meta.color }]}>{note.category}</Text>
             </View>
             {note.isPublic && (
-              <View style={[styles.badge, { backgroundColor: '#E8F5E9' }]}>
-                <Ionicons name="earth" size={12} color="#2E7D32" />
-                <Text style={[styles.badgeText, { color: '#2E7D32' }]}>Public</Text>
+              <View style={[styles.badge, { backgroundColor: colors.theme === 'dark' ? 'rgba(46, 125, 50, 0.2)' : '#E8F5E9' }]}>
+                <Ionicons name="earth" size={12} color={colors.theme === 'dark' ? '#4ADE80' : '#2E7D32'} />
+                <Text style={[styles.badgeText, { color: colors.theme === 'dark' ? '#4ADE80' : '#2E7D32' }]}>Public</Text>
               </View>
             )}
           </View>
@@ -290,7 +294,7 @@ export default function NoteDetailScreen() {
               <View key={(vn as any)._id || vn.id || index} style={styles.voiceCard}>
                 <TouchableOpacity
                   onPress={() => playVoice(vn)}
-                  style={[styles.playBtn, { backgroundColor: '#146C94' }]}
+                  style={[styles.playBtn, { backgroundColor: colors.primary }]}
                 >
                   <Ionicons name={playingId === vn.id ? 'pause' : 'play'} size={22} color="#fff" />
                 </TouchableOpacity>
@@ -333,7 +337,7 @@ export default function NoteDetailScreen() {
         {isOwner && (
           <View style={{ marginTop: 20 }}>
             <TouchableOpacity
-              style={[styles.deleteBtn, { backgroundColor: '#146C94', borderWidth: 0, marginBottom: 12 }]}
+              style={[styles.deleteBtn, { backgroundColor: colors.primary, borderWidth: 0, marginBottom: 12 }]}
               onPress={() => navigation.navigate('NoteForm', { note })}
             >
               <Ionicons name="create" size={18} color="#fff" />
@@ -418,9 +422,9 @@ const getHlLabel = (key: string) => {
 };
 
 // ─── Styles ───────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
 
   header: {
     paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20,
@@ -431,7 +435,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
   headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-  editBtn: { backgroundColor: '#fff', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', elevation: 2 },
+  editBtn: { backgroundColor: colors.theme === 'dark' ? colors.surface : '#fff', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', elevation: 2 },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 60 },
@@ -439,56 +443,56 @@ const styles = StyleSheet.create({
   actionGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   actionItem: { alignItems: 'center', gap: 6 },
   actionIcon: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', elevation: 3 },
-  actionLabel: { fontSize: 11, fontWeight: '800', color: '#64748b' },
+  actionLabel: { fontSize: 11, fontWeight: '800', color: colors.textSecondary },
 
-  mainCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 4, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, marginBottom: 25 },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, marginBottom: 15 },
+  mainCard: { backgroundColor: colors.cardBg, borderRadius: 20, padding: 20, elevation: 4, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, marginBottom: 25 },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 15 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   badgeText: { fontSize: 11, fontWeight: '800' },
 
-  verseBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 15, borderLeftWidth: 4 },
-  verseRef: { fontSize: 14, fontWeight: '800' },
+  verseBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.inputBg, padding: 12, borderRadius: 12, marginBottom: 15, borderLeftWidth: 4 },
+  verseRef: { fontSize: 14, fontWeight: '800', color: colors.text },
 
-  content: { fontSize: 16, color: '#1e293b', lineHeight: 28, fontWeight: '500' },
+  content: { fontSize: 16, color: colors.text, lineHeight: 28, fontWeight: '500' },
 
   section: { marginBottom: 25 },
-  sectionLabel: { fontSize: 14, fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  sectionLabel: { fontSize: 14, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
 
   // Highlight cards
-  hlCard: { backgroundColor: '#fff', padding: 15, borderRadius: 16, borderLeftWidth: 5, marginBottom: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 },
+  hlCard: { backgroundColor: colors.cardBg, padding: 15, borderRadius: 16, borderLeftWidth: 5, marginBottom: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 },
   hlCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  hlRef: { fontSize: 13, fontWeight: '800', color: '#1e293b' },
+  hlRef: { fontSize: 13, fontWeight: '800', color: colors.text },
   hlColorPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   hlColorPillText: { fontSize: 9, fontWeight: '800', color: '#1e293b' },
-  hlText: { fontSize: 14, color: '#475569', fontStyle: 'italic', lineHeight: 20 },
-  hlUserNote: { fontSize: 13, marginTop: 8, color: '#146C94', fontWeight: '700' },
-  hlTapHint: { fontSize: 11, color: '#94a3b8', marginTop: 6, fontWeight: '600' },
+  hlText: { fontSize: 14, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 20 },
+  hlUserNote: { fontSize: 13, marginTop: 8, color: colors.tint, fontWeight: '700' },
+  hlTapHint: { fontSize: 11, color: colors.textSecondary, marginTop: 6, fontWeight: '600' },
 
-  voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 15, backgroundColor: '#fff', padding: 15, borderRadius: 16, marginBottom: 10, elevation: 2 },
+  voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 15, backgroundColor: colors.cardBg, padding: 15, borderRadius: 16, marginBottom: 10, elevation: 2 },
   playBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  voiceLabel: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  voiceDur: { fontSize: 12, color: '#94a3b8' },
+  voiceLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
+  voiceDur: { fontSize: 12, color: colors.textSecondary },
 
-  reminderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 16, marginBottom: 10, elevation: 2 },
-  rmTitle: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  rmMessage: { fontSize: 12, color: '#64748b', marginTop: 2, fontStyle: 'italic' },
-  rmTime: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  reminderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg, padding: 15, borderRadius: 16, marginBottom: 10, elevation: 2 },
+  rmTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  rmMessage: { fontSize: 12, color: colors.textSecondary, marginTop: 2, fontStyle: 'italic' },
+  rmTime: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
 
-  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 15, borderRadius: 12, borderWidth: 1.5, borderColor: '#FF5252', backgroundColor: '#fff' },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 15, borderRadius: 12, borderWidth: 1.5, borderColor: '#FF5252', backgroundColor: colors.theme === 'dark' ? colors.cardBg : '#fff' },
   deleteBtnText: { color: '#FF5252', fontWeight: '800', fontSize: 15 },
 
   // Full Verse Modal
   verseModalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.75)', justifyContent: 'flex-end' },
-  verseModalBox: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden', paddingBottom: 30 },
+  verseModalBox: { backgroundColor: colors.cardBg, borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden', paddingBottom: 30 },
   verseModalHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  verseModalRef: { fontSize: 20, fontWeight: '900', color: '#1e293b' },
-  verseModalLang: { fontSize: 12, color: '#64748b', fontWeight: '600', marginTop: 2 },
-  verseColorBadge: { backgroundColor: 'rgba(255,255,255,0.6)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  verseColorBadgeText: { fontSize: 11, fontWeight: '800', color: '#1e293b' },
-  verseModalText: { fontSize: 18, color: '#1e293b', lineHeight: 30, fontStyle: 'italic', fontWeight: '500' },
-  verseNoteBox: { marginTop: 20, backgroundColor: '#f0f9ff', padding: 15, borderRadius: 14, borderLeftWidth: 4, borderLeftColor: '#146C94' },
-  verseNoteLabel: { fontSize: 12, fontWeight: '800', color: '#146C94', marginBottom: 6 },
-  verseNoteText: { fontSize: 14, color: '#1e293b', lineHeight: 22 },
-  verseModalCloseBtn: { marginHorizontal: 20, marginTop: 10, backgroundColor: '#146C94', padding: 15, borderRadius: 14, alignItems: 'center' },
+  verseModalRef: { fontSize: 20, fontWeight: '900', color: colors.text },
+  verseModalLang: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', marginTop: 2 },
+  verseColorBadge: { backgroundColor: colors.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  verseColorBadgeText: { fontSize: 11, fontWeight: '800', color: colors.text },
+  verseModalText: { fontSize: 18, color: colors.text, lineHeight: 30, fontStyle: 'italic', fontWeight: '500' },
+  verseNoteBox: { marginTop: 20, backgroundColor: colors.inputBg, padding: 15, borderRadius: 14, borderLeftWidth: 4, borderLeftColor: colors.primary },
+  verseNoteLabel: { fontSize: 12, fontWeight: '800', color: colors.tint, marginBottom: 6 },
+  verseNoteText: { fontSize: 14, color: colors.text, lineHeight: 22 },
+  verseModalCloseBtn: { marginHorizontal: 20, marginTop: 10, backgroundColor: colors.primary, padding: 15, borderRadius: 14, alignItems: 'center' },
   verseModalCloseTxt: { color: '#fff', fontWeight: '800', fontSize: 15 },
 });

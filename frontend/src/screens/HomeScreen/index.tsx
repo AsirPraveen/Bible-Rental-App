@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Image, ImageBackground, StyleSheet, Pressable } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import styles from "./style";
+import getStyles from "./style";
+import { useTheme } from "../../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { TextInput, ScrollView, Alert } from "react-native";
@@ -45,6 +46,7 @@ type SkeletonBoxProps = {
 };
 
 const SkeletonBox = ({ width, height, borderRadius = 4, style = {} }: SkeletonBoxProps) => {
+  const { colors } = useTheme();
   const animatedValue = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -69,7 +71,7 @@ const SkeletonBox = ({ width, height, borderRadius = 4, style = {} }: SkeletonBo
 
   const backgroundColor = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#146C94', '#19A7CE'],
+    outputRange: [colors.border, colors.inputBg],
   });
 
   return (
@@ -88,36 +90,50 @@ const SkeletonBox = ({ width, height, borderRadius = 4, style = {} }: SkeletonBo
 };
 
 // Skeleton Components
-const BookCardSkeleton = () => (
-  <View style={[styles.bookCard, { backgroundColor: 'transparent' }]}>
-    <SkeletonBox width={120} height={160} borderRadius={8} style={{ marginBottom: 8 }} />
-    <SkeletonBox width={100} height={12} style={{ marginBottom: 4 }} />
-    <SkeletonBox width={80} height={10} />
-  </View>
-);
-
-const AuthorCardSkeleton = () => (
-  <View style={[styles.authorCard, { backgroundColor: 'transparent' }]}>
-    <SkeletonBox width={80} height={80} borderRadius={40} style={{ marginBottom: 8 }} />
-    <SkeletonBox width={70} height={12} />
-  </View>
-);
-
-const TopBookCardSkeleton = () => (
-  <View style={[styles.topBookCard, { backgroundColor: 'transparent' }]}>
-    <SkeletonBox width={60} height={80} borderRadius={4} style={{ marginRight: 12 }} />
-    <View style={styles.topBookInfo}>
-      <SkeletonBox width={200} height={16} style={{ marginBottom: 8 }} />
-      <SkeletonBox width={120} height={12} style={{ marginBottom: 4 }} />
-      <SkeletonBox width={100} height={12} style={{ marginBottom: 8 }} />
-      <SkeletonBox width={50} height={14} />
+const BookCardSkeleton = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+  return (
+    <View style={[styles.bookCard, { backgroundColor: 'transparent' }]}>
+      <SkeletonBox width={120} height={160} borderRadius={8} style={{ marginBottom: 8 }} />
+      <SkeletonBox width={100} height={12} style={{ marginBottom: 4 }} />
+      <SkeletonBox width={80} height={10} />
     </View>
-  </View>
-);
+  );
+};
+
+const AuthorCardSkeleton = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+  return (
+    <View style={[styles.authorCard, { backgroundColor: 'transparent' }]}>
+      <SkeletonBox width={80} height={80} borderRadius={40} style={{ marginBottom: 8 }} />
+      <SkeletonBox width={70} height={12} />
+    </View>
+  );
+};
+
+const TopBookCardSkeleton = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+  return (
+    <View style={[styles.topBookCard, { backgroundColor: 'transparent' }]}>
+      <SkeletonBox width={60} height={80} borderRadius={4} style={{ marginRight: 12 }} />
+      <View style={styles.topBookInfo}>
+        <SkeletonBox width={200} height={16} style={{ marginBottom: 8 }} />
+        <SkeletonBox width={120} height={12} style={{ marginBottom: 4 }} />
+        <SkeletonBox width={100} height={12} style={{ marginBottom: 8 }} />
+        <SkeletonBox width={50} height={14} />
+      </View>
+    </View>
+  );
+};
 
 const HomeView = () => {
   const navigation = useNavigation<any>();
   const { logout } = useAuth();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   const [userData, setUserData] = useState("");
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
@@ -291,29 +307,29 @@ const HomeView = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+    <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.stickyHeader}>
           <View style={styles.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={styles.logo}>{APP_NAME}</Text>
               {isGameEnabled && (
                 <Pressable onPress={() => isGameEnabled && navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
-                  <Ionicons name="game-controller" size={28} color="#F6F1F1" />
+                  <Ionicons name="game-controller" size={28} color={colors.theme === 'dark' ? colors.tint : "#F6F1F1"} />
                 </Pressable>
               )}
             </View>
             <Pressable onPress={handleLogout} style={{ marginLeft: 10 }}>
-              <Ionicons name="log-out-outline" size={24} color="#AFD3E2" />
+              <Ionicons name="log-out-outline" size={24} color={colors.theme === 'dark' ? colors.tint : "#AFD3E2"} />
             </Pressable>
           </View>
           <View style={styles.searchWrapper}>
             <View style={styles.searchContainer}>
-              <Search size={20} color="#146C94" style={styles.searchIcon} />
+              <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search Books..."
-                placeholderTextColor="#146C94"
+                placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={(text) => {
                   setSearchQuery(text);
@@ -386,14 +402,11 @@ const HomeView = () => {
                   key={`${category.id}-${index}`}
                   style={[
                     styles.categoryButton,
-                    { backgroundColor: category.color, width: categoryItemWidth },
+                    { width: categoryItemWidth },
                   ]}
                 >
                   <Text
-                    style={[
-                      styles.categoryText,
-                      { color: category.color === '#F6F1F1' ? '#146C94' : '#F6F1F1' },
-                    ]}
+                    style={styles.categoryText}
                   >
                     {category.name}
                   </Text>
@@ -520,7 +533,7 @@ const HomeView = () => {
                     </View>
                     <View style={styles.ratingContainer}>
                       <Text style={styles.likesCount}>{book.likes || 0}</Text>
-                      <Heart size={15} color="#146C94" fill="#146C94" />
+                      <Heart size={15} color={colors.tint} fill={colors.tint} />
                     </View>
                   </View>
                 </Pressable>
@@ -528,8 +541,8 @@ const HomeView = () => {
             )}
           </View>
         </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 

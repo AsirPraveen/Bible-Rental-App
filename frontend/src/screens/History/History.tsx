@@ -1,24 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Clock, CheckCircle, XCircle, RotateCcw } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
 
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
+// ── Time-ago helper ──────────────────────────────────────────────
+function timeAgo(dateString: string): string {
+  const now = Date.now();
+  const then = new Date(dateString).getTime();
+  if (isNaN(then)) return dateString;
+  const diffMs = now - then;
+  const seconds = Math.floor(diffMs / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+  return new Date(dateString).toLocaleDateString();
+}
+
+const statusConfig: Record<string, { label: string; color: string; darkColor: string; icon: any }> = {
+  pending: { label: 'Pending', color: '#F59E0B', darkColor: '#FBBF24', icon: Clock },
+  approved: { label: 'Approved', color: '#10B981', darkColor: '#34D399', icon: CheckCircle },
+  rejected: { label: 'Rejected', color: '#EF4444', darkColor: '#F87171', icon: XCircle },
+  returned: { label: 'Returned', color: '#6366F1', darkColor: '#818CF8', icon: RotateCcw },
 };
 
 const History = () => {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [rentHistory, setRentHistory] = useState([]);
   type Book = { book_id: string | number; book_name: string };
   const [books, setBooks] = useState<Book[]>([]);
@@ -60,165 +82,220 @@ const History = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={[Colors.bg, '#19A7CE']} style={styles.gradient}>
-        <View style={styles.header}>
+    <SafeAreaView style={styles.outer_container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        {/* ── Gradient Header ────────────────────────────────── */}
+        <View style={styles.headerContainer}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color={Colors.inactive} />
+            <ArrowLeft size={22} color="#F6F1F1" />
           </Pressable>
-          <Text style={styles.headerTitle}>Rent History</Text>
+          <View style={styles.headerTextWrapper}>
+            <Text style={styles.headerTitle}>Rent History</Text>
+            <Text style={styles.subtitleText}>
+              {rentHistory.length > 0
+                ? `${rentHistory.length} ${rentHistory.length === 1 ? 'request' : 'requests'}`
+                : 'Your rental records'}
+            </Text>
+          </View>
+          <View style={{ width: 38 }} />
         </View>
 
-        <ScrollView style={styles.scrollView}>
-          {rentHistory.length > 0 ? (
-            rentHistory.map((request: any, index: number) => {
-              const book = books.find((b: any) => b.book_id === request.book_id);
-              const bookName = book ? book.book_name : 'Unknown Book';
+        {/* ── Content container ───────────────────────────────── */}
+        <View style={styles.container}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {rentHistory.length > 0 ? (
+              rentHistory.map((request: any, index: number) => {
+                const book = books.find((b: any) => b.book_id === request.book_id);
+                const bookName = book ? book.book_name : 'Unknown Book';
+                const status = statusConfig[request.status] || statusConfig.pending;
+                const StatusIcon = status.icon;
+                const statusColor = colors.theme === 'dark' ? status.darkColor : status.color;
 
-              return (
-                <View key={`${request.book_id}-${request.requested_at}`} style={styles.historyCard}>
-                  <View style={styles.historyContent}>
-                    <View style={styles.historyIndicator} />
-                    <View style={styles.historyDetails}>
-                      <Text style={styles.bookTitle}>{bookName}</Text>
-                      <Text style={styles.requestDate}>
-                        Requested on: {new Date(request.requested_at).toLocaleString()}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.statusText,
-                          request.status === 'pending' && styles.statusPending,
-                          request.status === 'approved' && styles.statusApproved,
-                          request.status === 'rejected' && styles.statusRejected,
-                          request.status === 'returned' && styles.statusReturned,
-                        ]}
-                      >
-                        {request.status === 'pending' && 'Request Pending...'}
-                        {request.status === 'approved' && 'Request Approved'}
-                        {request.status === 'rejected' && 'Request Rejected'}
-                        {request.status === 'returned' && 'Returned'}
-                      </Text>
+                return (
+                  <View key={`${request.book_id}-${request.requested_at}`} style={styles.historyCard}>
+                    {/* Status indicator strip */}
+                    <View style={[styles.statusStrip, { backgroundColor: statusColor }]} />
+                    <View style={styles.cardContent}>
+                      <View style={styles.cardHeader}>
+                        <Text style={styles.bookTitle} numberOfLines={2}>{bookName}</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: statusColor + '18' }]}>
+                          <StatusIcon size={12} color={statusColor} />
+                          <Text style={[styles.statusBadgeText, { color: statusColor }]}>
+                            {status.label}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.cardFooter}>
+                        <Clock size={12} color={colors.textSecondary} />
+                        <Text style={styles.requestDate}>
+                          {timeAgo(request.requested_at)}
+                        </Text>
+                        <Text style={styles.requestDateFull}>
+                          · {new Date(request.requested_at).toLocaleDateString()}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            })
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No rent history available</Text>
-            </View>
-          )}
-        </ScrollView>
+                );
+              })
+            ) : (
+              <View style={styles.emptyContainer}>
+                <BookOpen color={colors.secondary} size={72} />
+                <Text style={styles.emptyTitle}>No History Yet</Text>
+                <Text style={styles.emptySubtext}>
+                  Your rental history will appear here
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
       </LinearGradient>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: Colors.bg,
-  },
-  header: {
+
+  // ── Header ─────────────────────────────────────────────────────
+  headerContainer: {
+    padding: 20,
+    paddingTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: Colors.bg,
   },
   backButton: {
     padding: 8,
-    backgroundColor: Colors.active,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.inactive,
-    marginLeft: 10,
+    color: '#F6F1F1',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: '#F6F1F1',
+    textAlign: 'center',
+    opacity: 0.85,
+  },
+
+  // ── Main container ─────────────────────────────────────────────
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
-    padding: 15,
   },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 24,
+  },
+
+  // ── History cards ──────────────────────────────────────────────
   historyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 15,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: Colors.active,
-  },
-  historyContent: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 14,
+    marginBottom: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  historyIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.active,
-    marginRight: 15,
+  statusStrip: {
+    width: 4,
   },
-  historyDetails: {
+  cardContent: {
     flex: 1,
+    padding: 16,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    gap: 12,
   },
   bookTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    color: Colors.bg,
-    marginBottom: 5,
+    color: colors.text,
+    flex: 1,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   requestDate: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    fontSize: 13,
+    color: colors.textSecondary,
   },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
+  requestDateFull: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    opacity: 0.7,
   },
-  statusPending: {
-    color: '#FFA500',
-  },
-  statusApproved: {
-    color: '#28A745',
-  },
-  statusRejected: {
-    color: '#FF6B6B',
-  },
-  statusReturned: {
-    color: '#146C94',
-  },
+
+  // ── Empty state ────────────────────────────────────────────────
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingVertical: 80,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginTop: 20,
+  },
+  emptySubtext: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

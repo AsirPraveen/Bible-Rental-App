@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, SafeAreaView, Platform, StatusBar, Animated } from 'react-native';
 import { Button } from 'react-native-paper';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +23,9 @@ const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? '';
 const STABILITY_API_URL = Constants.expoConfig?.extra?.stabilityApiUrl ?? '';
 
 const BibleComponent = () => {
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors);
+
   // State for Dropdowns
   const [language, setLanguage] = useState('Tamil');
   const [availableLanguages, setAvailableLanguages] = useState<{label: string, value: string}[]>([]);
@@ -238,7 +242,7 @@ const BibleComponent = () => {
           .sort((a: any, b: any) => a.value - b.value)
           .map((b: any) => ({
             ...b,
-            containerStyle: b.value === 38 ? { borderBottomWidth: 2, borderBottomColor: '#19A7CE', paddingBottom: 8, marginBottom: 4 } : undefined
+            containerStyle: b.value === 38 ? { borderBottomWidth: 2, borderBottomColor: colors.secondary, paddingBottom: 8, marginBottom: 4 } : undefined
           }));
         setBooks(booksData);
         return;
@@ -253,7 +257,7 @@ const BibleComponent = () => {
               label: localizedName || b.bookName,
               value: b.bookNumber,
               chapterCount: b.chapterCount,
-              containerStyle: b.bookNumber === 38 ? { borderBottomWidth: 2, borderBottomColor: '#19A7CE', paddingBottom: 8, marginBottom: 4 } : undefined
+              containerStyle: b.bookNumber === 38 ? { borderBottomWidth: 2, borderBottomColor: colors.secondary, paddingBottom: 8, marginBottom: 4 } : undefined
             };
           });
           setBooks(booksData);
@@ -833,7 +837,7 @@ const BibleComponent = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           
           <View style={styles.headerRow}>
@@ -854,16 +858,16 @@ const BibleComponent = () => {
               }}
               style={styles.headerPlayBtn}
             >
-              <Icon name={showPlayer ? 'headphones' : 'headphones-off'} size={34} color="#F6F1F1" />
+              <Icon name={showPlayer ? 'headphones' : 'headphones-off'} size={34} color={colors.textLight} />
             </TouchableOpacity>
 
             <Text style={styles.headerText}>Bible Reader</Text>
             <View style={styles.zoomControls}>
               <TouchableOpacity onPress={handleZoomOut} style={styles.zoomButton}>
-                <Icon name="minus-circle-outline" size={24} color="#F6F1F1" />
+                <Icon name="minus-circle-outline" size={24} color={colors.textLight} />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleZoomIn} style={styles.zoomButton}>
-                <Icon name="plus-circle-outline" size={24} color="#F6F1F1" />
+                <Icon name="plus-circle-outline" size={24} color={colors.textLight} />
               </TouchableOpacity>
             </View>
           </View>
@@ -949,7 +953,7 @@ const BibleComponent = () => {
             >
               {loading && chapterVerses.length > 0 && (
                 <View style={{ padding: 10 }}>
-                  <ActivityIndicator size="small" color="#146C94" />
+                  <ActivityIndicator size="small" color={colors.tint} />
                 </View>
               )}
               
@@ -992,7 +996,7 @@ const BibleComponent = () => {
                             style={{ marginLeft: 6, alignSelf: 'flex-start', marginTop: 2, padding: 4 }}
                             onPress={() => openSavedImage(verse)}
                           >
-                            <Icon name="image-outline" size={20} color="#19A7CE" />
+                            <Icon name="image-outline" size={20} color={colors.secondary} />
                           </TouchableOpacity>
                         )}
                       </TouchableOpacity>
@@ -1031,17 +1035,17 @@ const BibleComponent = () => {
               <View style={styles.playerControls}>
                 {/* Prev Chapter */}
                 <TouchableOpacity onPress={handlePrevChapter} style={styles.playerBtn}>
-                  <Icon name="skip-previous" size={28} color="#fff" />
+                  <Icon name="skip-previous" size={28} color={theme === 'light' ? '#fff' : colors.text} />
                 </TouchableOpacity>
 
                 {/* Play / Pause */}
                 <TouchableOpacity onPress={handlePlayPause} style={styles.playerPlayBtn}>
-                  <Icon name={isPlaying ? 'pause' : 'play'} size={32} color="#146C94" />
+                  <Icon name={isPlaying ? 'pause' : 'play'} size={32} color={theme === 'light' ? '#146C94' : colors.textLight} />
                 </TouchableOpacity>
 
                 {/* Next Chapter */}
                 <TouchableOpacity onPress={handleNextChapter} style={styles.playerBtn}>
-                  <Icon name="skip-next" size={28} color="#fff" />
+                  <Icon name="skip-next" size={28} color={theme === 'light' ? '#fff' : colors.text} />
                 </TouchableOpacity>
 
                 {/* Auto-play toggle */}
@@ -1049,13 +1053,13 @@ const BibleComponent = () => {
                   <Icon
                     name={autoPlayNext ? 'repeat' : 'repeat-off'}
                     size={22}
-                    color={autoPlayNext ? '#FFD700' : 'rgba(255,255,255,0.5)'}
+                    color={autoPlayNext ? '#FFD700' : (theme === 'light' ? 'rgba(255,255,255,0.5)' : colors.textSecondary)}
                   />
                 </TouchableOpacity>
 
                 {/* Close */}
                 <TouchableOpacity onPress={handleClosePlayer} style={styles.playerBtn}>
-                  <Icon name="close" size={22} color="rgba(255,255,255,0.7)" />
+                  <Icon name="close" size={22} color={theme === 'light' ? 'rgba(255,255,255,0.7)' : colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -1094,7 +1098,7 @@ const BibleComponent = () => {
             <View style={styles.actionModalContainer}>
               {loadingMeaning && (
                 <View style={styles.meaningLoader}>
-                  <ActivityIndicator size="small" color="#146C94" />
+                  <ActivityIndicator size="small" color={colors.tint} />
                   <Text style={styles.meaningLoaderText}>Looking up meaning...</Text>
                 </View>
               )}
@@ -1111,7 +1115,7 @@ const BibleComponent = () => {
                           key={index} 
                           style={[
                             styles.modalVerseWord,
-                            isUnderlined && { textDecorationLine: 'underline', color: '#146C94', fontWeight: 'bold' }
+                            isUnderlined && { textDecorationLine: 'underline', color: colors.tint, fontWeight: 'bold' }
                           ]}
                           onPress={() => toggleWordUnderline(index)}
                           onLongPress={() => handleWordLongPress(word)}
@@ -1309,11 +1313,11 @@ const BibleComponent = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },  
   gradient: {
     flex: 1,
@@ -1338,7 +1342,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#F6F1F1',
+    color: colors.textLight,
     textAlign: 'center',
   },
   zoomControls: {
@@ -1352,7 +1356,7 @@ const styles = StyleSheet.create({
   },
   // ─── Player Bar ───
   playerBar: {
-    backgroundColor: 'rgba(14, 55, 80, 0.97)',
+    backgroundColor: colors.theme === 'light' ? 'rgba(14, 55, 80, 0.97)' : colors.surface,
     borderRadius: 18,
     padding: 12,
     marginTop: 10,
@@ -1364,26 +1368,26 @@ const styles = StyleSheet.create({
   },
   playerProgressBg: {
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.theme === 'light' ? 'rgba(255,255,255,0.2)' : colors.border,
     borderRadius: 3,
     marginBottom: 8,
     overflow: 'hidden',
   },
   playerProgressFill: {
     height: 3,
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     borderRadius: 3,
   },
   playerVerseLabel: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.theme === 'light' ? 'rgba(255,255,255,0.85)' : colors.text,
     textAlign: 'center',
     marginBottom: 8,
     fontWeight: '600',
   },
   playerVerseCount: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
+    color: colors.theme === 'light' ? 'rgba(255,255,255,0.5)' : colors.textSecondary,
     fontWeight: 'normal',
   },
   playerControls: {
@@ -1405,11 +1409,11 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#fff',
+    backgroundColor: colors.theme === 'light' ? '#fff' : colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 12,
-    shadowColor: '#19A7CE',
+    shadowColor: colors.secondary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 4,
@@ -1422,17 +1426,17 @@ const styles = StyleSheet.create({
     elevation: 5000, // Ensure dropdown flows over flatlist
   },
   dropdown: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.inputBg,
     borderRadius: 8,
     borderWidth: 0,
     minHeight: 45,
   },
   dropdownText: {
     fontSize: 14,
-    color: '#146C94',
+    color: colors.text,
   },
   dropdownMenu: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.inputBg,
     borderRadius: 8,
     borderWidth: 0,
     maxHeight: 250,
@@ -1440,12 +1444,12 @@ const styles = StyleSheet.create({
     zIndex: 4000,
   },
   modalTitle: {
-    color: '#146C94',
+    color: colors.primary,
     fontWeight: 'bold'
   },
   readerCard: {
     flex: 1,
-    backgroundColor: '#FAF9F6', 
+    backgroundColor: colors.cardBg, 
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -1464,17 +1468,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   selectedVerseRow: {
-    backgroundColor: '#DDEEFE', // Light blue highlight
+    backgroundColor: colors.theme === 'light' ? '#DDEEFE' : '#2A3C4D',
   },
   speakingVerseRow: {
-    backgroundColor: 'rgba(25, 167, 206, 0.12)',
+    backgroundColor: colors.theme === 'light' ? 'rgba(25, 167, 206, 0.12)' : 'rgba(56, 189, 248, 0.15)',
     borderLeftWidth: 3,
-    borderLeftColor: '#19A7CE',
+    borderLeftColor: colors.secondary,
   },
   verseNumberText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginRight: 8,
     marginTop: 2,
   },
@@ -1482,16 +1486,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     lineHeight: 28,
-    color: '#333',
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   selectedVerseText: {
-    color: '#003366',
+    color: colors.theme === 'light' ? '#003366' : colors.tint,
     textDecorationLine: 'underline',
   },
   placeholder: {
     fontSize: 16,
-    color: '#999',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 50,
   },
@@ -1507,7 +1511,7 @@ const styles = StyleSheet.create({
     top: 0, bottom: 0, left: 0, right: 0
   },
   actionModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     width: '85%',
     borderRadius: 12,
     padding: 20,
@@ -1521,7 +1525,7 @@ const styles = StyleSheet.create({
   modalCitation: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 10,
     textAlign: 'center',
   },
@@ -1533,12 +1537,12 @@ const styles = StyleSheet.create({
   },
   modalVerseWord: {
     fontSize: 16,
-    color: '#444',
+    color: colors.text,
     lineHeight: 28,
   },
   meaningLoader: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.theme === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(26, 34, 41, 0.9)',
     zIndex: 100,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1546,7 +1550,7 @@ const styles = StyleSheet.create({
   },
   meaningLoaderText: {
     marginTop: 10,
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
   },
   buttonContainer: {
@@ -1559,21 +1563,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   generateButton: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
   },
   compareButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
   },
   copyButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     marginTop: 5,
   },
   disabledButton: {
-    backgroundColor: '#A9A9A9',
+    backgroundColor: colors.theme === 'light' ? '#A9A9A9' : '#475569',
   },
   buttonText: {
     fontSize: 14,
-    color: '#F6F1F1',
+    color: colors.textLight,
     fontWeight: 'bold',
   },
   thumbnailContainer: {
@@ -1585,11 +1589,11 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   thumbnailHint: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 5,
     fontStyle: 'italic',
   },
@@ -1600,7 +1604,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   compareModalContainer: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '75%',
@@ -1612,13 +1616,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border,
     marginBottom: 15,
   },
   compareModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   compareCloseButton: {
     padding: 5,
@@ -1626,7 +1630,7 @@ const styles = StyleSheet.create({
   compareCloseButtonText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   compareScrollContainer: {
     paddingHorizontal: 20,
@@ -1634,7 +1638,7 @@ const styles = StyleSheet.create({
   compareCitationText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -1644,11 +1648,11 @@ const styles = StyleSheet.create({
   compareVersionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   compareTextContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 8,
     padding: 15,
     shadowColor: '#000',
@@ -1660,23 +1664,23 @@ const styles = StyleSheet.create({
   compareVerseText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#333',
+    color: colors.text,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#146C94',
+    color: colors.tint,
   },
   // Full screen Modal
   fullScreenContainer: {
     flex: 1,
-    backgroundColor: '#1C2526',
+    backgroundColor: colors.theme === 'light' ? '#1C2526' : '#090D0F',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1700,7 +1704,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   fullScreenDownloadButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     borderRadius: 8,
     paddingVertical: 8,
     marginTop: 20,
@@ -1719,25 +1723,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: colors.theme === 'light' ? 'rgba(255,255,255,0.12)' : colors.border,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: colors.theme === 'light' ? 'rgba(255,255,255,0.2)' : colors.border,
   },
   speedBtnActive: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
+    backgroundColor: colors.theme === 'light' ? '#fff' : colors.secondary,
+    borderColor: colors.theme === 'light' ? '#fff' : colors.secondary,
   },
   speedBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.theme === 'light' ? 'rgba(255,255,255,0.7)' : colors.textSecondary,
   },
   speedBtnTextActive: {
-    color: '#146C94',
+    color: colors.theme === 'light' ? colors.primary : colors.textLight,
   },
   // Dictionary Modal styles
   dictModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     width: '85%',
     maxHeight: '75%',
     borderRadius: 12,
@@ -1754,7 +1758,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 15,
     right: 15,
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -1768,7 +1772,7 @@ const styles = StyleSheet.create({
   dictModalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 15,
     textAlign: 'center',
     paddingRight: 35,
@@ -1778,12 +1782,12 @@ const styles = StyleSheet.create({
   },
   dictModalText: {
     fontSize: 15,
-    color: '#333',
+    color: colors.text,
     lineHeight: 22,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
   },
   dictCloseButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -1794,6 +1798,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
 
 export default BibleComponent;

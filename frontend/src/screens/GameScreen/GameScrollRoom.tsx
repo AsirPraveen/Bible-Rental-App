@@ -6,10 +6,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const GameScrollRoom = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [unlockedLore, setUnlockedLore] = useState<string[]>([]);
   const [claimedRewards, setClaimedRewards] = useState<string[]>([]);
   const [allCards, setAllCards] = useState<any[]>([]);
@@ -75,7 +78,7 @@ const GameScrollRoom = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#2E1065', '#1e1b4b']} style={styles.container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.container}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -159,8 +162,8 @@ const GameScrollRoom = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#2E1065', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#2E1065' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -182,24 +185,24 @@ const styles = StyleSheet.create({
   
   infoBox: {
     padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: colors.inputBg,
     marginHorizontal: 16,
     borderRadius: 8,
     marginBottom: 16,
   },
-  infoText: { color: '#DDD6FE', fontSize: 13, fontStyle: 'italic', textAlign: 'center' },
+  infoText: { color: colors.textSecondary, fontSize: 13, fontStyle: 'italic', textAlign: 'center' },
   
   scrollContent: { padding: 16, gap: 16, paddingBottom: 40 },
   scrollCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)'
+    borderColor: colors.border
   },
   scrollCardLocked: {
     opacity: 0.6,
-    backgroundColor: 'rgba(0,0,0,0.2)'
+    backgroundColor: colors.inputBg
   },
   scrollHeader: {
     flexDirection: 'row',
@@ -208,7 +211,7 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   scrollTitleBox: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  scrollName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  scrollName: { color: colors.text, fontSize: 18, fontWeight: 'bold' },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -218,11 +221,11 @@ const styles = StyleSheet.create({
   badgeClaimed: { backgroundColor: '#10B981' },
   badgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
   
-  loreText: { color: '#DDD6FE', fontSize: 14, lineHeight: 20, marginBottom: 12 },
-  lockedText: { color: '#6B7280', fontSize: 12, fontStyle: 'italic' },
+  loreText: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 12 },
+  lockedText: { color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' },
   
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  readMore: { color: '#A78BFA', fontWeight: 'bold' },
+  readMore: { color: colors.tint, fontWeight: 'bold' },
   claimBtn: {
     flexDirection: 'row',
     alignItems: 'center',

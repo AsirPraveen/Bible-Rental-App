@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme, ColorsType } from "../context/ThemeContext";
 
 interface LoadingScreenProps {
   message?: string;
@@ -12,6 +13,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
   message = "Loading...",
   variant = "default",
 }) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -67,13 +70,13 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
   }
 
   return (
-    <LinearGradient colors={["#146C94", "#19A7CE"]} style={styles.container}>
+    <LinearGradient colors={colors.linearGradient} style={styles.container}>
       {content}
     </LinearGradient>
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
@@ -96,12 +99,12 @@ const styles = StyleSheet.create({
   text: {
     marginTop: 16,
     fontSize: 16,
-    color: "#F6F1F1",
+    color: colors.textLight,
     fontWeight: "600",
     letterSpacing: 0.5,
   },
   transparentText: {
-    color: "#146C94",
+    color: colors.primary,
   },
 });
 

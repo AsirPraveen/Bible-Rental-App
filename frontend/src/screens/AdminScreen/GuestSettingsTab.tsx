@@ -12,22 +12,23 @@ import Constants from 'expo-constants';
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const FEATURE_LABELS: Record<string, { label: string; icon: string; description: string }> = {
-  Bible:           { label: 'Bible',            icon: 'book-outline',          description: 'Read Bible chapters & verses' },
-  Songs:           { label: 'Songs',            icon: 'musical-notes-outline', description: 'Browse worship songs' },
-  HistoricalMaps:  { label: 'Historical Maps',  icon: 'map-outline',           description: 'View Biblical maps' },
-  Notifications:   { label: 'Notifications',    icon: 'notifications-outline', description: 'View posts & announcements' },
-  ReadingTracker:  { label: 'Reading Tracker',   icon: 'calendar-outline',      description: 'Track daily Bible reading' },
-  ReadingPlanner:  { label: 'Reading Planner',   icon: 'today-outline',         description: 'Plan reading goals' },
-  DiscussionForum: { label: 'Discussion Forum', icon: 'chatbubbles-outline',   description: 'Community Q&A' },
-  PrayerRequests:  { label: 'Prayer Requests',  icon: 'hand-left-outline',     description: 'Submit & view prayer requests' },
-  FastingTracker:  { label: 'Fasting Tracker',  icon: 'timer-outline',         description: 'Track fasting periods' },
-  BookRental:      { label: 'Book Rental',      icon: 'library-outline',       description: 'Rent & return physical books' },
-  MessageNotes:    { label: 'Message Notes',    icon: 'document-text-outline', description: 'Create & share sermon notes' },
-  BookPdf:         { label: 'Book PDFs',        icon: 'reader-outline',        description: 'Read digital books' },
+  Bible: { label: 'Bible', icon: 'book-outline', description: 'Read Bible chapters & verses' },
+  Songs: { label: 'Songs', icon: 'musical-notes-outline', description: 'Browse worship songs' },
+  HistoricalMaps: { label: 'Historical Maps', icon: 'map-outline', description: 'View Biblical maps' },
+  Notifications: { label: 'Notifications', icon: 'notifications-outline', description: 'View posts & announcements' },
+  ReadingTracker: { label: 'Reading Tracker', icon: 'calendar-outline', description: 'Track daily Bible reading' },
+  ReadingPlanner: { label: 'Reading Planner', icon: 'today-outline', description: 'Plan reading goals' },
+  DiscussionForum: { label: 'Discussion Forum', icon: 'chatbubbles-outline', description: 'Community Q&A' },
+  PrayerRequests: { label: 'Prayer Requests', icon: 'hand-left-outline', description: 'Submit & view prayer requests' },
+  FastingTracker: { label: 'Fasting Tracker', icon: 'timer-outline', description: 'Track fasting periods' },
+  BookRental: { label: 'Book Rental', icon: 'library-outline', description: 'Rent & return physical books' },
+  MessageNotes: { label: 'Message Notes', icon: 'document-text-outline', description: 'Create & share sermon notes' },
+  BookPdf: { label: 'Book PDFs', icon: 'reader-outline', description: 'Read digital books' },
 };
 
 export default function GuestSettingsTab() {
   const [guestAccess, setGuestAccess] = useState<Record<string, boolean>>({});
+  const [isGuestLoginEnabled, setIsGuestLoginEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -40,6 +41,7 @@ export default function GuestSettingsTab() {
       const res = await axios.get(`${API_URL}/api/app-settings`);
       if (res.data.status === 'Success') {
         setGuestAccess(res.data.data.guestAccess || {});
+        setIsGuestLoginEnabled(res.data.data.isGuestLoginEnabled !== false);
       }
     } catch (err) {
       console.error('Error fetching guest settings:', err);
@@ -55,7 +57,7 @@ export default function GuestSettingsTab() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await axios.put(`${API_URL}/api/app-settings`, { guestAccess });
+      const res = await axios.put(`${API_URL}/api/app-settings`, { guestAccess, isGuestLoginEnabled });
       if (res.data.status === 'Success') {
         Alert.alert('✅ Saved', 'Guest access settings updated.');
       } else {
@@ -90,6 +92,33 @@ export default function GuestSettingsTab() {
           </Text>
         </View>
       </View>
+
+      {/* Global Guest Login Option */}
+      <View style={[styles.row, { borderColor: '#bae6fd', backgroundColor: '#f0f9ff', borderWidth: 1.5 }]}>
+        <View style={styles.rowLeft}>
+          <View style={[styles.iconCircle, { backgroundColor: isGuestLoginEnabled ? '#bae6fd' : '#e2e8f0' }]}>
+            <Ionicons
+              name="people-outline"
+              size={20}
+              color={isGuestLoginEnabled ? '#0369a1' : '#64748b'}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowLabel}>Guest Login Option</Text>
+            <Text style={styles.rowDesc}>
+              Show or hide the Guest option on the login screen. If disabled, clicking Guest will show "Coming Soon" message.
+            </Text>
+          </View>
+        </View>
+        <Switch
+          value={isGuestLoginEnabled}
+          onValueChange={setIsGuestLoginEnabled}
+          trackColor={{ false: '#cbd5e1', true: '#7dd3fc' }}
+          thumbColor={isGuestLoginEnabled ? '#0369a1' : '#94a3b8'}
+        />
+      </View>
+
+      <View style={{ height: 10 }} />
 
       {/* Toggle list */}
       {Object.entries(FEATURE_LABELS).map(([key, { label, icon, description }]) => (

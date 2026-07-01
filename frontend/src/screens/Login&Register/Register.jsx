@@ -9,7 +9,8 @@ const {
   ActivityIndicator,
 } = require('react-native');
 import { useNavigation } from '@react-navigation/native';
-import styles from './style';
+import { getStyles } from './style';
+import { useTheme } from '../../context/ThemeContext';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -27,6 +28,8 @@ const SECRET_TEXT = Constants.expoConfig.extra.secretText;
 
 function RegisterPage() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -104,7 +107,11 @@ function RegisterPage() {
         }
       })
       .catch(error => {
-        console.error('Registration error:', error);
+        if (error.response && (error.response.status === 409 || error.response.status === 400)) {
+          console.log('Registration failed (validation/conflict):', error.response.data?.data || error.response.statusText);
+        } else {
+          console.error('Registration error:', error);
+        }
         const errorMsg = error.response?.data?.data || error.response?.data?.message || 'An error occurred during registration';
         Alert.alert('Error', errorMsg);
       })
@@ -116,8 +123,8 @@ function RegisterPage() {
       contentContainerStyle={{ flexGrow: 1 }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps={'always'}
-      style={{ backgroundColor: 'white' }}>
-      <View>
+      style={{ backgroundColor: colors.background }}>
+      <View style={styles.mainContainer}>
         <View style={styles.logoContainer}>
           <Image
             style={styles.logo}
@@ -135,6 +142,8 @@ function RegisterPage() {
                 value="User"
                 status={userType === 'User' ? 'checked' : 'unchecked'}
                 onPress={() => setUserType('User')}
+                color={colors.tint}
+                uncheckedColor={colors.textSecondary}
               />
             </View>
             <View style={styles.radioButton_inner_div}>
@@ -143,15 +152,18 @@ function RegisterPage() {
                 value="Admin"
                 status={userType === 'Admin' ? 'checked' : 'unchecked'}
                 onPress={() => setUserType('Admin')}
+                color={colors.tint}
+                uncheckedColor={colors.textSecondary}
               />
             </View>
           </View>
 
           {userType === 'Admin' && (
             <View style={styles.action}>
-              <FontAwesome name="user-secret" color="#146C94" style={styles.smallIcon} />
+              <FontAwesome name="user-secret" color={colors.tint} style={styles.smallIcon} />
               <TextInput
                 placeholder="Secret Text"
+                placeholderTextColor={colors.textSecondary}
                 style={styles.textInput}
                 value={secretText}
                 onChangeText={(text) => {
@@ -168,7 +180,7 @@ function RegisterPage() {
                 <Feather
                   name={showSecretText ? 'eye' : 'eye-off'}
                   style={{ marginRight: -10 }}
-                  color={secretError ? 'red' : '#146C94'}
+                  color={secretError ? 'red' : colors.tint}
                   size={23}
                 />
               </TouchableOpacity>
@@ -177,9 +189,10 @@ function RegisterPage() {
           {secretError ? <Text style={styles.errorText}>{secretError}</Text> : null}
 
           <View style={styles.action}>
-            <FontAwesome name="user-o" color="#146C94" style={styles.smallIcon} />
+            <FontAwesome name="user-o" color={colors.tint} style={styles.smallIcon} />
             <TextInput
               placeholder="Name"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={name}
               onChangeText={(text) => {
@@ -192,9 +205,10 @@ function RegisterPage() {
           {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
           <View style={styles.action}>
-            <Fontisto name="email" color="#146C94" size={24} style={{ marginLeft: 0, paddingRight: 5 }} />
+            <Fontisto name="email" color={colors.tint} size={24} style={{ marginLeft: 0, paddingRight: 5 }} />
             <TextInput
               placeholder="Email"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={email}
               onChangeText={(text) => {
@@ -208,9 +222,10 @@ function RegisterPage() {
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
           <View style={styles.action}>
-            <FontAwesome name="mobile" color="#146C94" size={35} style={{ paddingRight: 10, marginTop: -7, marginLeft: 5 }} />
+            <FontAwesome name="mobile" color={colors.tint} size={35} style={{ paddingRight: 10, marginLeft: 5 }} />
             <TextInput
               placeholder="Mobile"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={mobile}
               onChangeText={(text) => {
@@ -225,9 +240,10 @@ function RegisterPage() {
           {mobileError ? <Text style={styles.errorText}>{mobileError}</Text> : null}
 
           <View style={styles.action}>
-            <FontAwesome name="lock" color="#146C94" style={styles.smallIcon} />
+            <FontAwesome name="lock" color={colors.tint} style={styles.smallIcon} />
             <TextInput
               placeholder="Password"
+              placeholderTextColor={colors.textSecondary}
               style={styles.textInput}
               value={password}
               onChangeText={(text) => {
@@ -241,24 +257,25 @@ function RegisterPage() {
               <Feather
                 name={showPassword ? 'eye' : 'eye-off'}
                 style={{ marginRight: -10 }}
-                color={passwordError ? 'red' : '#146C94'}
+                color={passwordError ? 'red' : colors.tint}
                 size={23}
               />
             </TouchableOpacity>
           </View>
           {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-        </View>
-        <View style={styles.button}>
-          <TouchableOpacity
-            style={styles.inBut}
-            onPress={handleSubmit}
-            disabled={loading}>
-            {loading ? (
-              <ActivityIndicator size="small" color="#F6F1F1" />
-            ) : (
-              <Text style={styles.textSign}>Register</Text>
-            )}
-          </TouchableOpacity>
+
+          <View style={styles.button}>
+            <TouchableOpacity
+              style={styles.inBut}
+              onPress={handleSubmit}
+              disabled={loading}>
+              {loading ? (
+                <ActivityIndicator size="small" color="#F6F1F1" />
+              ) : (
+                <Text style={styles.textSign}>Register</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </ScrollView>

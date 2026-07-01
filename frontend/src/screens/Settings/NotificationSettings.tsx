@@ -8,15 +8,9 @@ import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
-
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
-};
 
 interface NotificationSettingsState {
   readingReminders: boolean;
@@ -28,8 +22,10 @@ interface NotificationSettingsState {
 
 const NotificationSettings = () => {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingKeys, setSavingKeys] = useState<{ [key: string]: boolean }>({});
   const [isTimePickerVisible, setTimePickerVisibility] = useState(false);
   const [settings, setSettings] = useState<NotificationSettingsState>({
     readingReminders: true,
@@ -67,18 +63,19 @@ const NotificationSettings = () => {
     setSettings(newSettings);
 
     try {
-      setSaving(true);
+      setSavingKeys(prev => ({ ...prev, [key]: true }));
       const token = await AsyncStorage.getItem('token');
       await axios.put(`${BASE_URL}/api/users/notification-settings`,
         { settings: newSettings },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      Alert.alert('Success', 'Notification preference updated successfully!');
     } catch (error) {
       console.error('Error updating notification settings:', error);
       Alert.alert('Error', 'Failed to update settings. Please try again.');
       setSettings(oldSettings);
     } finally {
-      setSaving(false);
+      setSavingKeys(prev => ({ ...prev, [key]: false }));
     }
   };
 
@@ -96,18 +93,19 @@ const NotificationSettings = () => {
     hideTimePicker();
 
     try {
-      setSaving(true);
+      setSavingKeys(prev => ({ ...prev, readingReminderTime: true }));
       const token = await AsyncStorage.getItem('token');
       await axios.put(`${BASE_URL}/api/users/notification-settings`,
         { settings: newSettings },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      Alert.alert('Success', 'Daily reminder time updated successfully!');
     } catch (error) {
       console.error('Error updating reminder time:', error);
       Alert.alert('Error', 'Failed to update reminder time.');
       setSettings(oldSettings);
     } finally {
-      setSaving(false);
+      setSavingKeys(prev => ({ ...prev, readingReminderTime: false }));
     }
   };
 
@@ -124,102 +122,154 @@ const NotificationSettings = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
-      <LinearGradient colors={[Colors.bg, '#19A7CE']} style={styles.gradient}>
-        <View style={styles.header}>
+    <SafeAreaView style={styles.outer_container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        {/* ── Gradient Header ────────────────────────────────── */}
+        <View style={styles.headerContainer}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color={Colors.inactive} />
+            <ArrowLeft size={22} color="#F6F1F1" />
           </Pressable>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <View style={styles.headerTextWrapper}>
+            <Text style={styles.headerTitle}>Notifications</Text>
+            <Text style={styles.subtitleText}>Manage your alerts</Text>
+          </View>
+          <View style={{ width: 38 }} />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+        {/* ── Content container ───────────────────────────────── */}
+        <View style={styles.container}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Section label */}
+            <Text style={styles.sectionTitle}>PREFERENCES</Text>
 
-          <View style={styles.settingCard}>
-            <View style={styles.settingInfo}>
-              <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
-                <BookOpen color="#146C94" size={22} />
+            {/* Bible Reading */}
+            <View style={styles.settingCard}>
+              <View style={styles.settingInfo}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.12)' : '#E3F2FD' }]}>
+                  <BookOpen color={colors.tint} size={20} />
+                </View>
+                <View style={styles.textContainer}>
+                  <Text style={styles.settingLabel}>Bible Reading</Text>
+                  <TouchableOpacity
+                    onPress={showTimePicker}
+                    style={styles.timePickerBtn}
+                    disabled={savingKeys.readingReminderTime}
+                  >
+                    {savingKeys.readingReminderTime ? (
+                      <View style={styles.inlineTimeLoaderContainer}>
+                        <ActivityIndicator size="small" color={colors.tint} style={styles.inlineTimeLoader} />
+                        <Text style={styles.settingDescription}>Updating reminder time...</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.settingDescription}>
+                        Reminders at <Text style={styles.timeHighlight}>{formatTimeDisplay(settings.readingReminderTime)}</Text> to finish daily portions. [Reading Planner]
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.settingLabel}>Bible Reading</Text>
-                <TouchableOpacity onPress={showTimePicker} style={styles.timePickerBtn}>
-                  <Text style={styles.settingDescription}>
-                    Reminders at <Text style={styles.timeHighlight}>{formatTimeDisplay(settings.readingReminderTime)}</Text> to finish daily portions. [Reading Planner]
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {savingKeys.readingReminders ? (
+                <View style={styles.switchPlaceholder}>
+                  <ActivityIndicator size="small" color={colors.tint} />
+                </View>
+              ) : (
+                <Switch
+                  value={settings.readingReminders}
+                  onValueChange={() => toggleSetting('readingReminders')}
+                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  thumbColor={settings.readingReminders ? colors.tint : colors.textSecondary}
+                />
+              )}
             </View>
-            <Switch
-              value={settings.readingReminders}
-              onValueChange={() => toggleSetting('readingReminders')}
-              trackColor={{ false: '#D1D1D1', true: Colors.active }}
-              thumbColor={settings.readingReminders ? Colors.bg : '#F4F3F4'}
-            />
-          </View>
 
-          <View style={styles.settingCard}>
-            <View style={styles.settingInfo}>
-              <View style={[styles.iconContainer, { backgroundColor: '#F3E5F5' }]}>
-                <MessageSquare color="#9C27B0" size={22} />
+            {/* Forum Activity */}
+            <View style={styles.settingCard}>
+              <View style={styles.settingInfo}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.theme === 'dark' ? 'rgba(168, 85, 247, 0.12)' : '#F3E5F5' }]}>
+                  <MessageSquare color={colors.theme === 'dark' ? '#C084FC' : '#9C27B0'} size={20} />
+                </View>
+                <View style={styles.textContainer}>
+                  <Text style={styles.settingLabel}>Forum Activity</Text>
+                  <Text style={styles.settingDescription}>Alerts when someone answers your questions.</Text>
+                </View>
               </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.settingLabel}>Forum Activity</Text>
-                <Text style={styles.settingDescription}>Alerts when someone answers your questions.</Text>
-              </View>
+              {savingKeys.forumActivity ? (
+                <View style={styles.switchPlaceholder}>
+                  <ActivityIndicator size="small" color={colors.tint} />
+                </View>
+              ) : (
+                <Switch
+                  value={settings.forumActivity}
+                  onValueChange={() => toggleSetting('forumActivity')}
+                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  thumbColor={settings.forumActivity ? colors.tint : colors.textSecondary}
+                />
+              )}
             </View>
-            <Switch
-              value={settings.forumActivity}
-              onValueChange={() => toggleSetting('forumActivity')}
-              trackColor={{ false: '#D1D1D1', true: Colors.active }}
-              thumbColor={settings.forumActivity ? Colors.bg : '#F4F3F4'}
-            />
-          </View>
 
-          <View style={styles.settingCard}>
-            <View style={styles.settingInfo}>
-              <View style={[styles.iconContainer, { backgroundColor: '#FCE4EC' }]}>
-                <HandHeart color="#E91E63" size={22} />
+            {/* Prayer Alerts */}
+            <View style={styles.settingCard}>
+              <View style={styles.settingInfo}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.theme === 'dark' ? 'rgba(244, 63, 94, 0.12)' : '#FCE4EC' }]}>
+                  <HandHeart color={colors.theme === 'dark' ? '#FB7185' : '#E91E63'} size={20} />
+                </View>
+                <View style={styles.textContainer}>
+                  <Text style={styles.settingLabel}>Prayer Alerts</Text>
+                  <Text style={styles.settingDescription}>Notifications when others pray for your requests.</Text>
+                </View>
               </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.settingLabel}>Prayer Alerts</Text>
-                <Text style={styles.settingDescription}>Notifications when others pray for your requests.</Text>
-              </View>
+              {savingKeys.prayerActivity ? (
+                <View style={styles.switchPlaceholder}>
+                  <ActivityIndicator size="small" color={colors.tint} />
+                </View>
+              ) : (
+                <Switch
+                  value={settings.prayerActivity}
+                  onValueChange={() => toggleSetting('prayerActivity')}
+                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  thumbColor={settings.prayerActivity ? colors.tint : colors.textSecondary}
+                />
+              )}
             </View>
-            <Switch
-              value={settings.prayerActivity}
-              onValueChange={() => toggleSetting('prayerActivity')}
-              trackColor={{ false: '#D1D1D1', true: Colors.active }}
-              thumbColor={settings.prayerActivity ? Colors.bg : '#F4F3F4'}
-            />
-          </View>
 
-          <View style={styles.settingCard}>
-            <View style={styles.settingInfo}>
-              <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
-                <ShieldCheck color="#4CAF50" size={22} />
+            {/* Rental Updates */}
+            <View style={styles.settingCard}>
+              <View style={styles.settingInfo}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.theme === 'dark' ? 'rgba(52, 211, 153, 0.12)' : '#E8F5E9' }]}>
+                  <ShieldCheck color={colors.theme === 'dark' ? '#34D399' : '#4CAF50'} size={20} />
+                </View>
+                <View style={styles.textContainer}>
+                  <Text style={styles.settingLabel}>Rental Updates</Text>
+                  <Text style={styles.settingDescription}>Status updates on your book rent requests.</Text>
+                </View>
               </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.settingLabel}>Rental Updates</Text>
-                <Text style={styles.settingDescription}>Status updates on your book rent requests.</Text>
-              </View>
+              {savingKeys.rentalUpdates ? (
+                <View style={styles.switchPlaceholder}>
+                  <ActivityIndicator size="small" color={colors.tint} />
+                </View>
+              ) : (
+                <Switch
+                  value={settings.rentalUpdates}
+                  onValueChange={() => toggleSetting('rentalUpdates')}
+                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  thumbColor={settings.rentalUpdates ? colors.tint : colors.textSecondary}
+                />
+              )}
             </View>
-            <Switch
-              value={settings.rentalUpdates}
-              onValueChange={() => toggleSetting('rentalUpdates')}
-              trackColor={{ false: '#D1D1D1', true: Colors.active }}
-              thumbColor={settings.rentalUpdates ? Colors.bg : '#F4F3F4'}
-            />
-          </View>
 
-          <View style={styles.infoBox}>
-            <Bell color={Colors.inactive} size={18} />
-            <Text style={styles.infoText}>
-              Stay connected with the community and maintain your spiritual routines.
-            </Text>
-          </View>
-        </ScrollView>
+            {/* Info box */}
+            <View style={styles.infoBox}>
+              <Bell color={colors.tint} size={18} />
+              <Text style={styles.infoText}>
+                Stay connected with the community and maintain your spiritual routines.
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
       </LinearGradient>
 
       <DateTimePickerModal
@@ -234,84 +284,108 @@ const NotificationSettings = () => {
           return date;
         })()}
       />
-
-      {saving && (
-        <View style={styles.savingOverlay}>
-          <ActivityIndicator color="#fff" />
-        </View>
-      )}
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
   },
-  header: {
+
+  // ── Header ─────────────────────────────────────────────────────
+  headerContainer: {
+    padding: 20,
+    paddingTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: Colors.bg,
   },
   backButton: {
     padding: 8,
-    backgroundColor: Colors.active,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.inactive,
-    marginLeft: 10,
+    color: '#F6F1F1',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: '#F6F1F1',
+    textAlign: 'center',
+    opacity: 0.85,
+  },
+
+  // ── Main container ─────────────────────────────────────────────
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
-    padding: 15,
   },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+
+  // ── Section label ──────────────────────────────────────────────
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.inactive,
-    marginBottom: 15,
-    marginLeft: 5,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: colors.textSecondary,
+    marginBottom: 14,
+    marginLeft: 4,
+    letterSpacing: 1.2,
   },
+
+  // ── Setting cards ──────────────────────────────────────────────
   settingCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 15,
-    padding: 15,
+    backgroundColor: colors.cardBg,
+    borderRadius: 14,
+    marginBottom: 12,
+    padding: 16,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: Colors.active,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   settingInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: 10,
+    marginRight: 12,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   textContainer: {
     flex: 1,
@@ -322,40 +396,54 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.bg,
-    marginBottom: 2,
+    color: colors.text,
+    marginBottom: 3,
   },
   settingDescription: {
     fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
+    color: colors.textSecondary,
+    lineHeight: 17,
   },
   timeHighlight: {
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
     textDecorationLine: 'underline',
   },
+
+  // ── Info box ───────────────────────────────────────────────────
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.08)' : 'rgba(20, 108, 148, 0.06)',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 30,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(20, 108, 148, 0.1)',
   },
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: Colors.inactive,
-    marginLeft: 10,
+    color: colors.textSecondary,
+    marginLeft: 12,
     fontStyle: 'italic',
+    lineHeight: 19,
   },
-  savingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+
+  // ── Saving loaders ─────────────────────────────────────────────
+  switchPlaceholder: {
+    width: 50,
+    height: 31,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  inlineTimeLoaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  inlineTimeLoader: {
+    marginRight: 6,
   }
 });
 

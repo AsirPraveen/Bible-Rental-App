@@ -6,10 +6,13 @@ import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const GameHome = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +41,7 @@ const GameHome = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#1F2937', '#111827']} style={styles.container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.container}>
         {/* Header Options */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -152,10 +155,10 @@ const GameHome = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: colors.theme === 'dark' ? '#111827' : colors.primary,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {

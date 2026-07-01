@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import AddFastingModal from './AddFastingModal';
@@ -14,6 +15,8 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { useAuth } from '../../context/AuthContext';
 
 export default function FastingTrackerScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const { isGuest } = useAuth();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +71,7 @@ export default function FastingTrackerScreen() {
 
     return (
       <View style={styles.cardWrapper}>
-        <LinearGradient colors={['#ffffff', '#f8fdfd']} style={styles.card}>
+        <LinearGradient colors={colors.theme === 'dark' ? [colors.cardBg, colors.cardBg] : ['#ffffff', '#f8fdfd']} style={styles.card}>
           <View style={styles.header}>
             <View style={styles.typeContainer}>
               <Text style={styles.type}>{item.type}</Text>
@@ -84,7 +87,7 @@ export default function FastingTrackerScreen() {
           <View style={styles.datesRow}>
             <View style={styles.dateCol}>
               <View style={styles.dateLabelRow}>
-                <Clock color="#146C94" size={14} />
+                <Clock color={colors.tint} size={14} />
                 <Text style={styles.dateLabel}>STARTED</Text>
               </View>
               <Text style={styles.dateVal}>{new Date(item.startDate).toLocaleDateString()}</Text>
@@ -93,7 +96,7 @@ export default function FastingTrackerScreen() {
             <View style={styles.dateDivider} />
             <View style={styles.dateCol}>
               <View style={styles.dateLabelRow}>
-                <Clock color="#19A7CE" size={14} />
+                <Clock color={colors.secondary} size={14} />
                 <Text style={styles.dateLabel}>ENDS</Text>
               </View>
               <Text style={styles.dateVal}>{new Date(item.endDate).toLocaleDateString()}</Text>
@@ -103,7 +106,7 @@ export default function FastingTrackerScreen() {
 
           {item.notes ? (
             <View style={styles.notesContainer}>
-              <Info color="#888" size={16} />
+              <Info color={colors.textSecondary} size={16} />
               <Text style={styles.notes}>{item.notes}</Text>
             </View>
           ) : null}
@@ -118,7 +121,7 @@ export default function FastingTrackerScreen() {
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={styles.actionBtnWrapper} onPress={() => updateStatus(item._id, 'Broken')}>
-                <LinearGradient colors={['#fff', '#fff']} style={[styles.actionBtn, styles.breakBtnOutline]}>
+                <LinearGradient colors={colors.theme === 'dark' ? [colors.inputBg, colors.inputBg] : ['#fff', '#fff']} style={[styles.actionBtn, styles.breakBtnOutline]}>
                   <Text style={styles.actionTextOutline}>End Early</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -131,7 +134,7 @@ export default function FastingTrackerScreen() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.headerContainer}>
           <View style={styles.headerTop}>
             <Text style={styles.headerText}>Fasting Tracker</Text>
@@ -165,7 +168,7 @@ export default function FastingTrackerScreen() {
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={
                   <View style={styles.emptyState}>
-                    <Clock color="#F6F1F1" size={80} />
+                    <Clock color={colors.secondary} size={80} />
                     <Text style={styles.emptyStateText}>No Active Fasts</Text>
                     <Text style={styles.emptyStateSubtext}>You haven't tracked any fasts yet.</Text>
                   </View>
@@ -185,11 +188,11 @@ export default function FastingTrackerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -222,7 +225,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -235,12 +238,12 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F6F1F1',
+    color: colors.text,
     marginTop: 20,
   },
   emptyStateSubtext: {
     fontSize: 16,
-    color: '#F6F1F1',
+    color: colors.textSecondary,
     opacity: 0.8,
     marginTop: 8,
     textAlign: 'center',
@@ -257,7 +260,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 16,
     elevation: 4,
-    shadowColor: '#146C94',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -266,7 +269,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E8F1F5',
+    borderColor: colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -281,12 +284,12 @@ const styles = StyleSheet.create({
   type: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#146C94',
+    color: colors.tint,
     letterSpacing: -0.5,
   },
   customType: {
     fontSize: 14,
-    color: '#19A7CE',
+    color: colors.secondary,
     fontWeight: '600',
     marginTop: 2,
   },
@@ -308,11 +311,11 @@ const styles = StyleSheet.create({
   datesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#FAFDFF',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#FAFDFF',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E8F1F5',
+    borderColor: colors.border,
     marginBottom: 16,
   },
   dateCol: {
@@ -320,7 +323,7 @@ const styles = StyleSheet.create({
   },
   dateDivider: {
     width: 1,
-    backgroundColor: '#E8F1F5',
+    backgroundColor: colors.border,
     marginHorizontal: 16,
   },
   dateLabelRow: {
@@ -331,32 +334,32 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 11,
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
     letterSpacing: 1,
   },
   dateVal: {
     fontSize: 15,
-    color: '#333',
+    color: colors.text,
     fontWeight: '700',
     marginBottom: 2,
   },
   timeVal: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   notesContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.theme === 'dark' ? colors.border : '#F5F5F5',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     gap: 8,
   },
   notes: {
-    color: '#555',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     fontSize: 14,
     flex: 1,
@@ -382,7 +385,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   breakBtnOutline: {
-    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#EF5350',
     elevation: 0,
@@ -394,14 +396,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   actionTextOutline: {
-    color: '#C62828',
+    color: '#EF5350',
     fontWeight: '800',
     fontSize: 15,
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 60,
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 16,
   },
 });

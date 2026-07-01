@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Book, Music, FileText, MessageSquare, Target, Calendar, HandHeart, Map as MapIcon, Users, Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
@@ -26,6 +27,8 @@ const GUEST_KEY_MAP: Record<string, string> = {
 export default function StuffComponent() {
   const navigation = useNavigation<any>();
   const { isGuest } = useAuth();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [guestAccess, setGuestAccess] = useState<Record<string, boolean>>({});
 
   // Fetch guest settings once on mount (only matters for guests)
@@ -44,66 +47,69 @@ export default function StuffComponent() {
     fetchGuestSettings();
   }, [isGuest]);
 
+  const iconColor = colors.tint;
+  const cardBg = colors.theme === 'dark' ? colors.surface : '#AFD3E2';
+
   const cards = [
     {
       title: 'Bible',
-      icon: <Book color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <Book color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: false,
     },
     {
       title: 'Songs',
-      icon: <Music color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <Music color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: false,
       isComingSoon: false,
     },
     {
       title: 'HistoricalMaps',
-      icon: <MapIcon color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <MapIcon color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: true,
     },
     {
       title: 'ReadingTracker',
-      icon: <Calendar color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <Calendar color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: true,
     },
     {
       title: 'ReadingPlanner',
-      icon: <Target color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <Target color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: true,
     },
     {
       title: 'DiscussionForum',
-      icon: <Users color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <Users color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: true,
     },
     {
       title: 'FastingTracker',
-      icon: <Calendar color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <Calendar color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: true,
     },
     {
       title: 'PrayerRequests',
-      icon: <HandHeart color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <HandHeart color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: true,
     },
     {
       title: 'MessageNotes',
-      icon: <MessageSquare color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <MessageSquare color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: true,
     },
     {
       title: 'BookPdf',
-      icon: <FileText color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <FileText color={iconColor} size={32} />,
+      bgColor: cardBg,
       isNew: false,
       isComingSoon: true,
     },
@@ -136,7 +142,7 @@ export default function StuffComponent() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
             {cards.map((card, index) => {
@@ -176,11 +182,11 @@ export default function StuffComponent() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -222,7 +228,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textAlign: 'center',
   },
   newBadge: {

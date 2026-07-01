@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const readingStatSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'UserInfo',
     required: true,
     unique: true // One stats document per user tracking their total lifetime stats
   },

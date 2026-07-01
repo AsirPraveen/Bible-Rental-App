@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const postController = require('../controllers/postController');
+const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 
-router.post('/posts', postController.createPost);
+// Public — users and guests can view posts
 router.get('/posts', postController.getAllPosts);
-router.get('/admin/posts', postController.adminGetAllPosts);
-router.delete('/posts/:postId', postController.deletePost);
-router.put('/posts/:postId/likes', postController.toggleLike);
+
+// Authenticated users
+router.put('/posts/:postId/likes', auth, postController.toggleLike);
+
+// Admin only
+router.post('/posts', adminAuth, postController.createPost);
+router.get('/admin/posts', adminAuth, postController.adminGetAllPosts);
+router.delete('/posts/:postId', adminAuth, postController.deletePost);
 
 module.exports = router;

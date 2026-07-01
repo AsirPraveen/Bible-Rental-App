@@ -1,24 +1,23 @@
 import { StyleSheet, Dimensions } from "react-native";
-import { colors } from "../../utils/colors";
 import { Platform, StatusBar } from 'react-native';
 
 const { width, height } = Dimensions.get("window"); // Get device width and height
 
-const styles = StyleSheet.create({
+export const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   screen: {
     flex: 1,
-    backgroundColor: colors.black,
+    backgroundColor: colors.background,
   },
   text: {
-    color: colors.white,
-    textShadowColor: "rgba(0, 0, 0, 0.1)", // Darker shadow for border effect
+    color: '#fff',
+    textShadowColor: "rgba(0, 0, 0, 0.4)", // Darker shadow for border effect
     textShadowOffset: { width: 1, height: 1 }, // Offset to create the border effect
     textShadowRadius: 2, // Radius for a smoother look
   },
@@ -35,8 +34,8 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     letterSpacing: 0.5,
     fontFamily: "Sora_600SemiBold",
-    color: colors.white,
-    textShadowColor: "rgba(0, 0, 0, 0.8)", // Stronger black border effect
+    color: '#fff',
+    textShadowColor: "rgba(0, 0, 0, 0.9)", // Stronger black border effect
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 3,
   },
@@ -45,11 +44,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 20,
     letterSpacing: 0.2,
-    color: colors.white,
+    color: '#eee',
     marginTop: 8,
     fontFamily: "Sora_400Regular",
     paddingHorizontal: 20,
-    textShadowColor: "rgba(0, 0, 0, 0.3)", // Subtle stroke effect
+    textShadowColor: "rgba(0, 0, 0, 0.6)", // Subtle stroke effect
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
@@ -59,19 +58,23 @@ const styles = StyleSheet.create({
     width: width * 0.9, // 90% of screen width
     alignSelf: "center",
     flexDirection: "row",
-    backgroundColor: colors.white,
+    backgroundColor: colors.theme === 'dark' ? colors.primary : '#fff',
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
     gap: 18,
     borderRadius: 16,
-    borderColor: colors.black,
+    borderColor: colors.border,
     borderWidth: 0.5,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   button_text: {
-    color: "rgba(0,0,0,0.54)",
+    color: colors.theme === 'dark' ? '#fff' : 'rgba(0,0,0,0.7)',
     fontSize: 20,
+    fontWeight: '600',
   },
 });
-
-export default styles;

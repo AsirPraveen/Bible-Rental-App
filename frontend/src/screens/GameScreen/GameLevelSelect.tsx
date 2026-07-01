@@ -8,8 +8,11 @@ import Constants from 'expo-constants';
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const GameLevelSelect = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   const levels = [
     { id: 1, name: "The Garden of Eden", boss: { name: "The Serpent", hp: 150, maxHp: 150, attack: 30, defense: 10, type: "Deception", sinWeakness: "Truth", ability: "Twist the Word" }, trait: "Deception", theme: ['#065F46', '#064E3B'] },
@@ -47,7 +50,7 @@ const GameLevelSelect = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#78350F', '#451A03']} style={styles.container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.container}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -102,8 +105,8 @@ const GameLevelSelect = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#451A03', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#451A03' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',

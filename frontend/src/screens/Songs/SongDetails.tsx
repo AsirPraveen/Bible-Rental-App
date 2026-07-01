@@ -1,18 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Text, SafeAreaView, Platform, StatusBar, Linking, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Text, SafeAreaView, Platform, StatusBar, TouchableOpacity, Dimensions } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import YoutubePlayer from "react-native-youtube-iframe";
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function SongDetailsScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { songId } = route.params;
@@ -51,7 +54,7 @@ export default function SongDetailsScreen() {
   if (loading) return <LoadingScreen message="Unrolling lyrics..." />;
   if (!song) return (
     <View style={styles.errorContainer}>
-      <Text>Song not found</Text>
+      <Text style={{ color: colors.text }}>Song not found</Text>
     </View>
   );
 
@@ -59,7 +62,7 @@ export default function SongDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.header}>
+      <LinearGradient colors={colors.linearGradient} style={styles.header}>
         <View style={styles.headerContent}>
           <IconButton 
             icon="arrow-left" 
@@ -144,11 +147,11 @@ export default function SongDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
   },
   header: {
     paddingBottom: 16,
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
     color: '#fff',
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -196,7 +199,7 @@ const styles = StyleSheet.create({
   },
   languageToggle: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     margin: 16,
     borderRadius: 12,
     padding: 4,
@@ -213,12 +216,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   toggleBtnActive: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.primary,
   },
   toggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: colors.textSecondary,
   },
   toggleTextActive: {
     color: '#fff',
@@ -230,7 +233,7 @@ const styles = StyleSheet.create({
   activeTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textAlign: 'center',
     marginBottom: 16,
     marginTop: 8,
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   lyricsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 24,
     elevation: 2,
@@ -259,15 +262,15 @@ const styles = StyleSheet.create({
   },
   lyrics: {
     lineHeight: 32,
-    color: '#333',
+    color: colors.text,
     textAlign: 'center',
   },
   metadataSection: {
-    backgroundColor: 'rgba(20, 108, 148, 0.05)',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : 'rgba(20, 108, 148, 0.05)',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(20, 108, 148, 0.1)',
+    borderColor: colors.border,
     marginBottom: 40,
   },
   metaRow: {
@@ -277,13 +280,13 @@ const styles = StyleSheet.create({
   metaLabel: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     width: 80,
   },
   metaValue: {
     flex: 1,
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
   },
   topicsContainer: {
     flex: 1,
@@ -295,5 +298,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.background,
   },
 });

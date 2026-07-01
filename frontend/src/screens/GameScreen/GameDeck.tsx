@@ -5,10 +5,13 @@ import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const GameDeck = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [inventory, setInventory] = useState<any[]>([]);
   const [activeDeck, setActiveDeck] = useState<string[]>([]); // Storing uniqueInstanceIds
   const [activeEvent, setActiveEvent] = useState<string | null>(null); // Storing the Event Card uniqueInstanceId
@@ -133,7 +136,7 @@ const GameDeck = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#1E3A8A', '#0F172A']} style={styles.container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.container}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -353,8 +356,8 @@ const GameDeck = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#0F172A', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#0F172A' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   headerTitle: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
-  sectionTitle: { color: '#93C5FD', fontSize: 16, fontWeight: 'bold', marginLeft: 16, marginBottom: 12 },
+  sectionTitle: { color: colors.theme === 'dark' ? '#93C5FD' : colors.primary, fontSize: 16, fontWeight: 'bold', marginLeft: 16, marginBottom: 12 },
   
   activeDeckContainer: {
     paddingVertical: 10,
@@ -380,10 +383,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
     overflow: 'hidden',
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.cardBg,
   },
   emptySlot: {
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -394,8 +397,8 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'flex-end',
   },
-  slotName: { color: '#FFF', fontWeight: 'bold', fontSize: 13 },
-  slotClass: { color: '#9CA3AF', fontSize: 10 },
+  slotName: { color: colors.theme === 'dark' ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 13 },
+  slotClass: { color: colors.textSecondary, fontSize: 10 },
   equippedBadge: {
     position: 'absolute',
     top: 5,
@@ -408,7 +411,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  divider: { height: 1, backgroundColor: '#334155', marginVertical: 16, marginHorizontal: 16 },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 16, marginHorizontal: 16 },
   
   inventorySection: {
     flex: 1,
@@ -421,7 +424,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardItem: {
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
@@ -443,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  cardName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  cardName: { color: colors.text, fontSize: 18, fontWeight: 'bold' },
   rarityBadge: {
     backgroundColor: 'rgba(0,0,0,0.3)',
     paddingHorizontal: 8,
@@ -451,12 +454,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   rarityText: { fontSize: 11, fontWeight: 'bold' },
-  cardAttributes: { color: '#9CA3AF', fontSize: 13, marginBottom: 12 },
+  cardAttributes: { color: colors.textSecondary, fontSize: 13, marginBottom: 12 },
   statsRow: {
     flexDirection: 'row',
     gap: 16,
   },
-  statText: { color: '#FFF', fontSize: 13, fontWeight: 'bold' },
+  statText: { color: colors.text, fontSize: 13, fontWeight: 'bold' },
   
   equippedOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -482,7 +485,7 @@ const styles = StyleSheet.create({
   },
   equipArmorBtn: {
     flexDirection: 'row',
-    backgroundColor: '#0EA5E9',
+    backgroundColor: colors.primary,
     padding: 8,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
@@ -498,16 +501,16 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   modalContent: {
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.cardBg,
     width: '85%',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#38BDF8',
+    borderColor: colors.border,
   },
   modalTitle: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
@@ -515,7 +518,7 @@ const styles = StyleSheet.create({
   armorOptionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.inputBg,
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,

@@ -111,6 +111,44 @@ exports.getVerse = async (req, res) => {
   }
 };
 
+const fetchStandardDictionary = async (word) => {
+  try {
+    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()"]/g, "").trim();
+    if (!cleanWord) return null;
+
+    const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`, {
+      timeout: 4000 // 4 seconds timeout
+    });
+
+    if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {
+      const entry = response.data[0];
+      const phonetic = entry.phonetic || (entry.phonetics && entry.phonetics.find(p => p.text)?.text) || '';
+      
+      let meaningText = phonetic ? `Pronunciation: ${phonetic}\n\n` : '';
+      
+      if (Array.isArray(entry.meanings)) {
+        entry.meanings.slice(0, 3).forEach((meaning) => {
+          const partOfSpeech = meaning.partOfSpeech || '';
+          meaningText += `[${partOfSpeech}]\n`;
+          if (Array.isArray(meaning.definitions)) {
+            meaning.definitions.slice(0, 2).forEach((def, dIdx) => {
+              meaningText += `${dIdx + 1}. ${def.definition}\n`;
+              if (def.example) {
+                meaningText += `   Example: "${def.example}"\n`;
+              }
+            });
+          }
+          meaningText += '\n';
+        });
+      }
+      return meaningText.trim();
+    }
+  } catch (error) {
+    console.log(`Dictionary API failed for "${word}":`, error.message);
+  }
+  return null;
+};
+
 exports.getDictionaryMeaning = async (req, res) => {
   try {
     const { word, verseContext, language } = req.body;
@@ -119,6 +157,18 @@ exports.getDictionaryMeaning = async (req, res) => {
       return res.status(400).json({ status: 'Error', message: 'Word is required' });
     }
 
+    // 1. Try standard dictionary if language is English
+    if (language && language.toLowerCase() === 'english') {
+      const standardMeaning = await fetchStandardDictionary(word);
+      if (standardMeaning) {
+        return res.status(200).json({
+          status: 'Ok',
+          data: { word, meaning: standardMeaning, source: 'dictionary' }
+        });
+      }
+    }
+
+    // 2. Fallback to AI definition (Groq)
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ status: 'Error', message: 'GROQ_API_KEY is not configured in environment variables' });
@@ -143,9 +193,9 @@ exports.getDictionaryMeaning = async (req, res) => {
 
     const meaning = response.data.choices[0].message.content.trim();
 
-    res.status(200).json({ status: 'Ok', data: { word, meaning } });
+    res.status(200).json({ status: 'Ok', data: { word, meaning, source: 'ai' } });
   } catch (error) {
-    console.error('Error fetching Groq meaning:', error.response?.data || error.message);
+    console.error('Error fetching meaning:', error.response?.data || error.message);
     res.status(500).json({ status: 'Error', message: 'Failed to fetch dictionary meaning' });
   }
 };

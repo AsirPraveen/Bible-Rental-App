@@ -17,6 +17,7 @@ import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X } from 'lucide-react-na
 import axios from "axios";
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 type RootStackParamList = {
@@ -32,6 +33,8 @@ const AllAuthors = () => {
     name: string;
     params?: { authors?: any[] };
   }>();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [authors, setAuthors] = useState(route.params?.authors || []);
   const [filteredAuthors, setFilteredAuthors] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -141,7 +144,7 @@ const AllAuthors = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter & Sort</Text>
               <Pressable onPress={() => setFilterModalVisible(false)}>
-                <X size={24} color="#146C94" />
+                <X size={24} color={colors.tint} />
               </Pressable>
             </View>
             
@@ -194,27 +197,27 @@ const AllAuthors = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={24} color="#146C94" />
+          <ArrowLeft size={24} color={colors.tint} />
         </Pressable>
         <Text style={styles.headerTitle}>All Authors</Text>
         <Pressable style={styles.filterButton} onPress={() => setFilterModalVisible(true)}>
-          <Filter size={24} color="#146C94" />
+          <Filter size={24} color={colors.tint} />
         </Pressable>
       </View>
       
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color="#146C94" />
+          <Search size={20} color={colors.tint} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search authors..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#97CADB"
+            placeholderTextColor={colors.textSecondary}
           />
           {searchQuery ? (
             <Pressable onPress={() => setSearchQuery("")}>
-              <X size={20} color="#146C94" />
+              <X size={20} color={colors.tint} />
             </Pressable>
           ) : null}
         </View>
@@ -275,10 +278,10 @@ const AllAuthors = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F0F8FF',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -286,9 +289,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: colors.border,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -301,7 +304,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   filterButton: {
     padding: 8,
@@ -310,38 +313,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: colors.inputBg,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
-    color: '#146C94',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: colors.text,
   },
   activeFiltersContainer: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -355,7 +353,7 @@ const styles = StyleSheet.create({
   resultsCount: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    color: '#146C94',
+    color: colors.tint,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -367,7 +365,7 @@ const styles = StyleSheet.create({
   },
   authorCard: {
     width: '48%',
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
@@ -388,7 +386,7 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textAlign: 'center',
   },
   paginationContainer: {
@@ -397,12 +395,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: colors.border,
   },
   pageButton: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -413,12 +411,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   disabledButton: {
-    backgroundColor: '#97CADB',
+    backgroundColor: colors.theme === 'dark' ? colors.border : '#97CADB',
+    opacity: 0.6,
   },
   pageIndicator: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#146C94',
+    color: colors.tint,
   },
   modalContainer: {
     flex: 1,
@@ -426,7 +425,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -437,12 +436,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   modalBody: {
     padding: 16,
@@ -451,7 +450,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginTop: 16,
     marginBottom: 8,
   },
@@ -461,21 +460,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   optionButton: {
-    backgroundColor: '#F0F8FF',
+    backgroundColor: colors.inputBg,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: colors.border,
   },
   optionText: {
     fontSize: 14,
-    color: '#146C94',
+    color: colors.tint,
   },
   resetButton: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.inputBg,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -483,15 +482,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   resetButtonText: {
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: '500',
   },
   activeOption: {
-    backgroundColor: '#19A7CE',
-    borderColor: '#19A7CE',
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
   applyButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.tint,
     paddingVertical: 16,
     alignItems: 'center',
   },
@@ -506,7 +505,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 16,
   },
 });

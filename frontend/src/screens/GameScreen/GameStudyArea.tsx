@@ -2,13 +2,16 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const GameStudyArea = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#4C1D95', '#2E1065']} style={styles.container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.container}>
         <View style={styles.content}>
-          <MaterialCommunityIcons name="book-open-page-variant" size={80} color="#DDD6FE" />
+          <MaterialCommunityIcons name="book-open-page-variant" size={80} color={colors.theme === 'dark' ? '#DDD6FE' : '#FFF'} />
           <Text style={styles.title}>The Study Area</Text>
           <Text style={styles.desc}>Cards placed here will passively gain XP when you read books in the main app.</Text>
         </View>
@@ -17,12 +20,12 @@ const GameStudyArea = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#2E1065', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#2E1065' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { color: '#FFF', fontSize: 24, fontWeight: 'bold', marginTop: 20 },
-  desc: { color: '#DDD6FE', fontSize: 16, textAlign: 'center', marginTop: 10 }
+  title: { color: colors.theme === 'dark' ? '#FFF' : colors.text, fontSize: 24, fontWeight: 'bold', marginTop: 20 },
+  desc: { color: colors.textSecondary, fontSize: 16, textAlign: 'center', marginTop: 10 }
 });
 
 export default GameStudyArea;

@@ -12,7 +12,13 @@ const Colors = {
   glow: '#00d2ff',
 };
 
-const AnalyticsCard = ({ title, value, delay = 0 }) => {
+interface AnalyticsCardProps {
+  title: string;
+  value: number;
+  delay?: number;
+}
+
+const AnalyticsCard = ({ title, value, delay = 0 }: AnalyticsCardProps) => {
   const [scaleAnim] = useState(new Animated.Value(0.8));
   const [fadeAnim] = useState(new Animated.Value(0));
   const [pulseAnim] = useState(new Animated.Value(1));

@@ -1,20 +1,17 @@
 import { StyleSheet, Dimensions, Platform } from "react-native";
 const { width, height } = Dimensions.get("window");
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    // backgroundColor: '#19A7CE',
   },
   gradient: {
     flex: 1,
   },
   container: {
     flex: 1,
-    // backgroundColor: '#19A7CE',
   },
   stickyHeader: {
-    // backgroundColor: '#19A7CE',
     zIndex: 10,
   },
   header: {
@@ -23,22 +20,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    // backgroundColor: '#19A7CE',
   },
   logo: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#F6F1F1',
+    color: colors.textLight,
   },
   searchWrapper: {
-    // backgroundColor: '#19A7CE',
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.inputBg,
     paddingHorizontal: 12,
     borderRadius: 12,
   },
@@ -49,14 +44,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     fontSize: 16,
-    color: '#146C94',
+    color: colors.text,
   },
   searchResults: {
     position: 'absolute',
     top: 45,
     left: 16,
     right: 16,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 8,
     shadowColor: '#000',
@@ -70,7 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#AFD3E2',
+    borderBottomColor: colors.border,
   },
   searchResultImage: {
     width: 40,
@@ -84,46 +79,41 @@ const styles = StyleSheet.create({
   searchResultTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#146C94',
+    color: colors.text,
   },
   searchResultAuthor: {
     fontSize: 12,
-    color: '#19A7CE',
+    color: colors.textSecondary,
   },
-    clearButton: {
-      padding: 8,
-    },
-    
-    clearIconContainer: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: '#e0e0e0',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    
-    clearIcon: {
-      fontSize: 12,
-      color: '#146C94',
-      fontWeight: 'bold',
-    },
-    
-    resultsList: {
-      width: '100%',
-    },
-    
-    noResultsContainer: {
-      padding: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    
-    noResultsText: {
-      color: '#146C94',
-      fontSize: 16,
-      fontWeight: '500',
-    },
+  clearButton: {
+    padding: 8,
+  },
+  clearIconContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clearIcon: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  resultsList: {
+    width: '100%',
+  },
+  noResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noResultsText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '500',
+  },
   categoriesContainer: {
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -135,10 +125,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
+    backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.12)' : colors.primary,
+    borderWidth: 1.5,
+    borderColor: colors.theme === 'dark' ? colors.tint : 'transparent',
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    color: colors.theme === 'dark' ? colors.tint : colors.textLight,
   },
   section: {
     paddingHorizontal: 16,
@@ -148,7 +142,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     marginBottom: 16,
-    color: '#AFD3E2',
+    color: colors.textLight,
     textShadowColor: 'black',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
@@ -160,13 +154,13 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   viewAllButton: {
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.inputBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   viewAllText: {
-    color: '#F6F1F1',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -175,15 +169,17 @@ const styles = StyleSheet.create({
     marginRight: 4,
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.text,
   },
   bookCard: {
     height: 275,
     width: 160,
     marginRight: 16,
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   bookCover: {
     width: 144,
@@ -196,11 +192,11 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     fontWeight: '500',
     marginBottom: 4,
-    color: '#146C94',
+    color: colors.text,
   },
   bookAuthor: {
     fontSize: 14,
-    color: '#19A7CE',
+    color: colors.textSecondary,
   },
   authorCard: {
     width: 120,
@@ -216,20 +212,20 @@ const styles = StyleSheet.create({
   },
   authorName: {
     fontSize: 14,
-    color: '#146C94',
+    color: colors.text,
     textAlign: 'center',
     height: 40,
   },
   noAuthorsText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 20,
   },
   topBookCard: {
     flexDirection: 'row',
     marginBottom: 16,
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     shadowColor: '#000',
@@ -240,6 +236,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   topBookCover: {
     width: 60,
@@ -254,7 +252,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 8,
-    color: '#146C94',
+    color: colors.text,
   },
   topBookMeta: {
     flexDirection: 'row',
@@ -263,12 +261,12 @@ const styles = StyleSheet.create({
   },
   topBookMetaText: {
     fontSize: 12,
-    color: '#146C94',
+    color: colors.textSecondary,
     marginRight: 12,
   },
   topBookDetail: {
     fontSize: 12,
-    color: '#19A7CE',
+    color: colors.textSecondary,
   },
   ratingContainer: {
     position: 'absolute',
@@ -281,9 +279,8 @@ const styles = StyleSheet.create({
   rating: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.text,
   },
-  
 });
 
-export default styles;
+export default getStyles;

@@ -17,6 +17,12 @@ export default {
     android: {
       package: "com.asirpraveen.youthroom",
       googleServicesFile: "./google-services.json",
+      versionCode: 1,
+      permissions: [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       adaptiveIcon: {
         foregroundImage: "./src/assets/jesus-holding-bible.jpg",
         backgroundColor: "#ffffff",
@@ -28,7 +34,7 @@ export default {
       favicon: "./src/assets/jesus-holding-bible.jpg",
     },
     extra: {
-      apiUrl: process.env.API_URL ? process.env.API_URL.replace(/\/$/, "") : "",
+      apiUrl: process.env.API_URL ? process.env.API_URL.replace(/\s/g, "").replace(/\/$/, "") : "",
       appName: process.env.APP_NAME,
       secretText: process.env.SECRET_TEXT,
       eas: {
@@ -41,6 +47,9 @@ export default {
 
       stabilityApiKey: process.env.STABILITY_API_KEY,
       stabilityApiUrl: process.env.STABILITY_API_URL,
+
+      // Google Sign-In: Add your Web Client ID from Google Cloud Console
+      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID ?? '',
     },
     plugins: [
       "expo-font",
@@ -48,6 +57,20 @@ export default {
       "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-asset",
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Allow Youth Room to access your camera"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Allow Youth Room to access your photos",
+          savePhotosPermission: "Allow Youth Room to save photos to your library"
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -61,9 +84,5 @@ export default {
     experiments: {
       typedRoutes: true,
     },
-    permissions: [
-      "camera",
-      "mediaLibrary",
-    ],
   },
 };

@@ -5,15 +5,10 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.updateUser = async (req, res) => {
-  const { token, name, mobile, gender, profession, image } = req.body;
+  const { name, mobile, gender, profession, image } = req.body;
   console.log(req.body);
   try {
-    const user = jwt.verify(token, JWT_SECRET);
-    const userData = await User.findOne({ email: user.email });
-
-    if (!userData) {
-      return res.status(404).send({ status: "error", data: "User not found" });
-    }
+    const userData = req.user;
 
     userData.name = name || userData.name;
     userData.mobile = mobile || userData.mobile;
@@ -52,23 +47,9 @@ exports.deleteUser = async (req, res) => {
 // New function to get user credits
 exports.getUserCredits = async (req, res) => {
   try {
-    // Extract token from Authorization header
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).send({ status: "error", data: "No token provided" });
-    }
-
-    const user = jwt.verify(token, JWT_SECRET);
-    const userData = await User.findOne({ email: user.email });
-
-    if (!userData) {
-      return res.status(404).send({ status: "error", data: "User not found" });
-    }
-
     res.send({ 
       status: "Ok", 
-      credits: userData.image_generation_credits_available || 0 
+      credits: req.user.image_generation_credits_available || 0 
     });
   } catch (error) {
     console.error('Error fetching user credits:', error);
@@ -79,19 +60,7 @@ exports.getUserCredits = async (req, res) => {
 // New function to deduct credit
 exports.deductCredit = async (req, res) => {
   try {
-    // Extract token from Authorization header
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).send({ status: "error", data: "No token provided" });
-    }
-
-    const user = jwt.verify(token, JWT_SECRET);
-    const userData = await User.findOne({ email: user.email });
-
-    if (!userData) {
-      return res.status(404).send({ status: "error", data: "User not found" });
-    }
+    const userData = req.user;
 
     // Check if user has credits
     if (userData.image_generation_credits_available <= 0) {
@@ -183,16 +152,8 @@ exports.searchUsers = async (req, res) => {
 };
 
 exports.getNotificationSettings = async (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).send({ status: "error", data: "No token provided" });
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findOne({ email: decoded.email }).select('notificationSettings');
-    
-    if (!user) return res.status(404).send({ status: "error", data: "User not found" });
-
-    res.send({ status: "Ok", data: user.notificationSettings });
+    res.send({ status: "Ok", data: req.user.notificationSettings });
   } catch (error) {
     res.status(500).send({ status: "error", data: error.message });
   }
@@ -200,15 +161,8 @@ exports.getNotificationSettings = async (req, res) => {
 
 exports.updateNotificationSettings = async (req, res) => {
   const { settings } = req.body;
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).send({ status: "error", data: "No token provided" });
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findOne({ email: decoded.email });
-    
-    if (!user) return res.status(404).send({ status: "error", data: "User not found" });
-
+    const user = req.user;
     user.notificationSettings = { ...user.notificationSettings, ...settings };
     await user.save();
 

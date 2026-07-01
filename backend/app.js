@@ -22,6 +22,8 @@ const bibleRoutes = require('./routes/bibleRoutes'); // Bible routes
 const readingTrackerRoutes = require('./routes/readingTrackerRoutes');
 const appSettingsRoutes = require('./routes/appSettingsRoutes');
 const songRoutes = require('./routes/songRoutes');
+const messageNoteRoutes = require('./routes/messageNoteRoutes');
+const standaloneReminderRoutes = require('./routes/standaloneReminderRoutes');
 
 const cron = require('node-cron');
 const { notifyUserById } = require('./utils/notificationService');
@@ -30,11 +32,14 @@ const ReadingStat = require('./models/ReadingStat');
 const mongoUrl = process.env.MONGO_URL;
 const PORT = process.env.PORT || 5001;
 
-app.use(express.json());
+app.use(express.json({ limit: '4mb' }));
 
 mongoose.connect(mongoUrl)
   .then(() => console.log("Database Connected"))
-  .catch((e) => console.log(e));
+  .catch((e) => {
+    console.error("Database connection failed:", e.message);
+    process.exit(1);
+  });
 
 app.get("/", (req, res) => {
   res.send({ status: "Started" });
@@ -59,6 +64,8 @@ app.use('/api/bible', bibleRoutes); // Bible routes
 app.use('/api/reading-tracker', readingTrackerRoutes);
 app.use('/api', appSettingsRoutes);
 app.use('/api', songRoutes); // Songs
+app.use('/api/notes', messageNoteRoutes);
+app.use('/api/reminders', standaloneReminderRoutes);
 
 /**
  * DYNAMIC DAILY BIBLE READING REMINDER
@@ -106,6 +113,47 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Node js server started on port ${PORT}`);
+const { execSync } = require('child_process');
+
+const freePort = (port) => {
+  if (process.platform !== 'win32') {
+    console.log('[Server] Port-freeing is only supported on Windows. Skipping.');
+    return;
+  }
+  try {
+    // Find the PID using the port on Windows
+    const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
+    const lines = result.split('\n').filter(l => l.includes('LISTENING'));
+    const pids = [...new Set(lines.map(l => l.trim().split(/\s+/).pop()).filter(Boolean))];
+    pids.forEach(pid => {
+      try {
+        execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8' });
+        console.log(`[Server] Killed process PID ${pid} blocking port ${port}`);
+      } catch (e) {
+        // already dead
+      }
+    });
+  } catch (_) {
+    // netstat found nothing — port truly free
+  }
+};
+
+const server = app.listen(PORT, () => {
+  console.log(`✅  Node.js server started on port ${PORT}`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`⚠️  Port ${PORT} is in use. Attempting to free it...`);
+    freePort(PORT);
+    setTimeout(() => {
+      server.close();
+      app.listen(PORT, () => {
+        console.log(`✅  Server restarted on port ${PORT} after freeing the port.`);
+      });
+    }, 1500);
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
+  }
 });

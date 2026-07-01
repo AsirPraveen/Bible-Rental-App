@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -22,6 +23,8 @@ const FRUITS_CONFIG = [
 ];
 
 const GameFruitsTree = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [userFruits, setUserFruits] = useState<any>({});
   const [talents, setTalents] = useState(0);
   const [email, setEmail] = useState('');
@@ -85,7 +88,7 @@ const GameFruitsTree = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#451a03', '#78350f']} style={styles.container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.container}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -146,8 +149,8 @@ const GameFruitsTree = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#451a03', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#451a03' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -169,7 +172,7 @@ const styles = StyleSheet.create({
   
   scrollContent: { padding: 16, paddingBottom: 40 },
   treeHeader: { alignItems: 'center', marginBottom: 30 },
-  treeDesc: { color: '#FDE68A', fontSize: 14, textAlign: 'center', marginTop: 10, paddingHorizontal: 20, lineHeight: 20 },
+  treeDesc: { color: colors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 10, paddingHorizontal: 20, lineHeight: 20 },
   
   grid: {
     flexDirection: 'row',
@@ -179,12 +182,12 @@ const styles = StyleSheet.create({
   },
   fruitCard: {
     width: '47%',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)'
+    borderColor: colors.border
   },
   iconCircle: {
     width: 60,
@@ -195,9 +198,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     marginBottom: 10
   },
-  fruitName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-  fruitLevel: { color: '#FDE047', fontSize: 14, marginTop: 2 },
-  fruitEffect: { color: '#9CA3AF', fontSize: 11, textAlign: 'center', marginTop: 8, height: 32 },
+  fruitName: { color: colors.text, fontSize: 18, fontWeight: 'bold' },
+  fruitLevel: { color: colors.theme === 'dark' ? '#FDE047' : colors.tint, fontSize: 14, marginTop: 2 },
+  fruitEffect: { color: colors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 8, height: 32 },
   
   upgradeBtn: {
     flexDirection: 'row',

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bibleController = require('../controllers/bibleController');
+const auth = require('../middleware/auth');
 
 // Get list of supported languages
 router.get('/languages', bibleController.getLanguages);
@@ -15,6 +16,6 @@ router.get('/chapter', bibleController.getChapter);
 router.get('/verse', bibleController.getVerse);
 
 // Get contextual meaning using Groq AI
-router.post('/dictionary', bibleController.getDictionaryMeaning);
+router.post('/dictionary', auth, bibleController.getDictionaryMeaning);
 
 module.exports = router;

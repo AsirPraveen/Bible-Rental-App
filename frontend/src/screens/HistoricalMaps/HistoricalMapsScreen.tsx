@@ -7,11 +7,14 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
 export default function HistoricalMapsScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -127,7 +130,7 @@ export default function HistoricalMapsScreen() {
         onPress={() => focusMapOnLocation(item.id)}
         activeOpacity={0.7}
       >
-        <MapPin color={isActive ? '#146C94' : '#888'} size={24} style={styles.pinIcon} />
+        <MapPin color={isActive ? colors.tint : colors.textSecondary} size={24} style={styles.pinIcon} />
         <View style={styles.locInfo}>
           <Text style={[styles.locName, isActive && styles.locNameActive]}>{item.name}</Text>
           <Text style={styles.locDate}>{formatYear(item.periodStart)} - {formatYear(item.periodEnd)}</Text>
@@ -139,7 +142,7 @@ export default function HistoricalMapsScreen() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         {/* Header */}
         <View style={styles.headerContainer}>
           <View style={styles.headerTextWrapper}>
@@ -187,7 +190,7 @@ export default function HistoricalMapsScreen() {
       {/* Locations List */}
       <View style={styles.listContainer}>
         <View style={styles.listHeader}>
-          <ListIcon color="#146C94" size={20} />
+          <ListIcon color={colors.tint} size={20} />
           <Text style={styles.listTitle}>Chronological Locations</Text>
         </View>
         <Text style={styles.listSubtitle}>{sortedLocations.length} significant sites recorded</Text>
@@ -215,31 +218,31 @@ export default function HistoricalMapsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: { flex: 1 },
   headerContainer: { padding: 20, paddingTop: 16, flexDirection: 'row', alignItems: 'center' },
   headerTextWrapper: { flex: 1, alignItems: 'center' },
-  headerText: { fontSize: 24, fontWeight: 'bold', color: '#F6F1F1', textAlign: 'center', marginBottom: 4 },
-  subtitleText: { fontSize: 14, color: '#F6F1F1', textAlign: 'center', opacity: 0.9 },
-  container: { flex: 1, backgroundColor: '#F6F1F1', borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' },
+  headerText: { fontSize: 24, fontWeight: 'bold', color: colors.textLight, textAlign: 'center', marginBottom: 4 },
+  subtitleText: { fontSize: 14, color: colors.textLight, textAlign: 'center', opacity: 0.9 },
+  container: { flex: 1, backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' },
   
   mapContainer: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: '#E5E3DF', // Leaflet loading background color
+    backgroundColor: colors.theme === 'dark' ? colors.surface : '#E5E3DF',
   },
   map: {
     flex: 1,
   },
   
   listContainer: {
-    backgroundColor: '#fff',
-    height: 380, // Takes up bottom portion of screen for smooth scrolling
+    backgroundColor: colors.cardBg,
+    height: 380,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     elevation: 8,
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
-    marginTop: -20, // Overlap the map slightly
+    marginTop: -20,
     paddingTop: 16,
   },
   listHeader: {
@@ -260,11 +263,11 @@ const styles = StyleSheet.create({
   listTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   listSubtitle: {
     paddingHorizontal: 20,
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 13,
     marginBottom: 12,
   },
@@ -275,18 +278,18 @@ const styles = StyleSheet.create({
   locationCard: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.inputBg,
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#E8F1F5',
+    borderColor: colors.border,
     alignItems: 'flex-start',
   },
   locationCardActive: {
-    backgroundColor: '#F0F8FA', // Subtle highlight
-    borderColor: '#19A7CE',
+    backgroundColor: colors.theme === 'dark' ? colors.surface : '#F0F8FA',
+    borderColor: colors.secondary,
     elevation: 2,
-    shadowColor: '#19A7CE',
+    shadowColor: colors.secondary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -301,11 +304,11 @@ const styles = StyleSheet.create({
   locName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 4,
   },
   locNameActive: {
-    color: '#146C94',
+    color: colors.tint,
   },
   locDate: {
     fontSize: 12,
@@ -315,7 +318,7 @@ const styles = StyleSheet.create({
   },
   locDesc: {
     fontSize: 13,
-    color: '#555',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
 });

@@ -6,13 +6,7 @@ import * as Sharing from 'expo-sharing';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ArrowLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
-};
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 interface GenImage {
   id: string;
@@ -27,6 +21,8 @@ interface GenImage {
 }
 
 const GeneratedImages = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [images, setImages] = useState<GenImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<GenImage | null>(null);
 
@@ -102,17 +98,17 @@ const GeneratedImages = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={[Colors.bg, '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color={Colors.inactive} />
+            <ArrowLeft size={24} color={colors.textLight} />
           </Pressable>
           <Text style={styles.headerTitle}>Generated Images</Text>
         </View>
 
         {images.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Icon name="image-off-outline" size={60} color={Colors.inactive} />
+            <Icon name="image-off-outline" size={60} color={colors.textLight} />
             <Text style={styles.emptyText}>No generated images found.</Text>
           </View>
         ) : (
@@ -156,11 +152,11 @@ const GeneratedImages = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -169,11 +165,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: Colors.bg,
+    backgroundColor: colors.primary,
   },
   backButton: {
     padding: 8,
-    backgroundColor: Colors.active,
+    backgroundColor: colors.secondary,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -181,7 +177,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.inactive,
+    color: colors.textLight,
     marginLeft: 10,
   },
   emptyContainer: {
@@ -191,7 +187,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.inactive,
+    color: colors.textLight,
     marginTop: 10,
   },
   listContainer: {
@@ -200,7 +196,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     margin: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     borderRadius: 8,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -223,7 +219,7 @@ const styles = StyleSheet.create({
   citationText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     flex: 1,
     marginRight: 5,
   },
@@ -253,7 +249,7 @@ const styles = StyleSheet.create({
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,

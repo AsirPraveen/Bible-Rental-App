@@ -22,7 +22,15 @@ const Colors = {
   glow: '#00d2ff',
 };
 
-const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }) => {
+interface AddBookFormProps {
+  visible: boolean;
+  onToggle: () => void;
+  newBook: any;
+  setNewBook: (book: any) => void;
+  onAddBook: () => void;
+}
+
+const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }: AddBookFormProps) => {
   const [expandAnim] = useState(new Animated.Value(0));
   const [rotateAnim] = useState(new Animated.Value(0));
   const [formOpacity] = useState(new Animated.Value(0));

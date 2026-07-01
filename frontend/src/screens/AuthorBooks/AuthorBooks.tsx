@@ -5,6 +5,7 @@ import { ArrowLeft, Heart } from 'lucide-react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
@@ -13,6 +14,8 @@ type AuthorBooksRouteParams = {
 };
 
 export default function AuthorBooks() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<{ params: AuthorBooksRouteParams }, 'params'>>();
   const { id: authorId } = route.params;
@@ -136,7 +139,7 @@ export default function AuthorBooks() {
     >
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#146C94" />
+          <ArrowLeft size={24} color={colors.tint} />
         </Pressable>
       </View>
 
@@ -180,7 +183,7 @@ export default function AuthorBooks() {
                   <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
                     <Text style={styles.bookYear}>{book.year_of_publication || 'N/A'}</Text>
                     <View style={styles.likesContainer}>
-                      <Heart size={15} color="#146C94" fill="#146C94" />
+                      <Heart size={15} color={colors.primary} fill={colors.primary} />
                       <Text style={styles.bookRating}>{book.likes || 0}</Text>
                     </View>
                   </View>
@@ -197,28 +200,26 @@ export default function AuthorBooks() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     padding: 24,
   },
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
   },
   contentContainer: {
-    justifyContent: 'center', // Moved here
-    alignItems: 'center',     // Moved here
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   likesContainer: {
     top: 0,
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.theme === 'dark' ? colors.surface : '#AFD3E2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -254,19 +255,19 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 8,
   },
   bio: {
     fontSize: 14,
-    color: '#19A7CE',
+    color: colors.secondary,
     textAlign: 'center',
     marginBottom: 24,
     paddingHorizontal: 32,
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#AFD3E2',
     borderRadius: 12,
     padding: 16,
     width: '80%',
@@ -277,17 +278,17 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
   },
   statValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#19A7CE',
+    color: colors.secondary,
   },
   booksContainer: {
     padding: 24,
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 16,
   },
   booksGrid: {
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
   },
   bookCard: {
     width: '48%',
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.theme === 'dark' ? colors.surface : '#AFD3E2',
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
@@ -322,31 +323,31 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
     height: 40,
   },
   bookYear: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#19A7CE',
+    color: colors.secondary,
     marginBottom: 4,
   },
   bookRating: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.tint,
   },
   noBooksText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 20,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#146C94',
+    color: colors.tint,
   },
   errorText: {
     fontSize: 16,

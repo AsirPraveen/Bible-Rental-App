@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -27,6 +28,8 @@ const SURVIVAL_THEMES = [
 ];
 
 const GameSurvival = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   const [playerDeck, setPlayerDeck] = useState<any[]>([]);
   const [activeEventCard, setActiveEventCard] = useState<any>(null);
@@ -325,8 +328,8 @@ const GameSurvival = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme[1] }]}>
-      <LinearGradient colors={theme} style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient colors={colors.theme === 'dark' ? theme : colors.linearGradient} style={styles.container}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -471,20 +474,20 @@ const GameSurvival = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#451a03' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
   headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
   battlefield: { flex: 1, padding: 16, justifyContent: 'space-between' },
   enemySide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 16 },
   playerSide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 16 },
-  statBox: { backgroundColor: 'rgba(0,0,0,0.5)', padding: 12, borderRadius: 8, borderWidth: 2, borderColor: '#4338CA', minWidth: 200 },
-  nameText: { color: '#FFF', fontWeight: 'bold', fontSize: 18 },
-  typeText: { color: '#D1FAE5', fontSize: 12, marginBottom: 8 },
-  healthBarContainer: { height: 10, backgroundColor: '#374151', borderRadius: 5, overflow: 'hidden', width: '100%' },
+  statBox: { backgroundColor: colors.theme === 'dark' ? 'rgba(0,0,0,0.5)' : colors.cardBg, padding: 12, borderRadius: 8, borderWidth: 2, borderColor: colors.border, minWidth: 200 },
+  nameText: { color: colors.theme === 'dark' ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 18 },
+  typeText: { color: colors.theme === 'dark' ? '#D1FAE5' : colors.textSecondary, fontSize: 12, marginBottom: 8 },
+  healthBarContainer: { height: 10, backgroundColor: colors.theme === 'dark' ? '#374151' : colors.border, borderRadius: 5, overflow: 'hidden', width: '100%' },
   healthBar: { height: '100%' },
-  hpText: { color: '#FFF', fontSize: 12, textAlign: 'right', marginTop: 4 },
+  hpText: { color: colors.theme === 'dark' ? '#FFF' : colors.textSecondary, fontSize: 12, textAlign: 'right', marginTop: 4 },
   spritePlaceholderEnemy: { 
     width: 120, 
     height: 120, 
@@ -514,19 +517,19 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  logBox: { backgroundColor: 'rgba(0,0,0,0.7)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#374151', flex: 1, marginVertical: 16 },
-  logText: { color: '#9CA3AF', fontSize: 13, marginVertical: 4 },
-  logTextLatest: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  controlPanel: { backgroundColor: '#1F2937', padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  logBox: { backgroundColor: colors.theme === 'dark' ? 'rgba(0,0,0,0.7)' : colors.inputBg, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border, flex: 1, marginVertical: 16 },
+  logText: { color: colors.textSecondary, fontSize: 13, marginVertical: 4 },
+  logTextLatest: { color: colors.text, fontSize: 16, fontWeight: 'bold' },
+  controlPanel: { backgroundColor: colors.theme === 'dark' ? '#1F2937' : colors.cardBg, padding: 16, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderTopColor: colors.border },
   actionRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  actionBtn: { flex: 1, backgroundColor: '#1D4ED8', padding: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', elevation: 3 },
+  actionBtn: { flex: 1, backgroundColor: colors.primary, padding: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', elevation: 3 },
   btnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#1E3A8A', width: '100%', borderRadius: 16, padding: 24, borderWidth: 2, borderColor: '#60A5FA', alignItems: 'center' },
-  modalTitle: { color: '#FBBF24', fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
-  modalDesc: { color: '#FFF', fontSize: 14, textAlign: 'center', marginBottom: 16 },
+  modalContent: { backgroundColor: colors.cardBg, width: '100%', borderRadius: 16, padding: 24, borderWidth: 2, borderColor: colors.border, alignItems: 'center' },
+  modalTitle: { color: colors.theme === 'dark' ? '#FBBF24' : colors.primary, fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  modalDesc: { color: colors.text, fontSize: 14, textAlign: 'center', marginBottom: 16 },
   submitBtn: { backgroundColor: '#059669', width: '100%', padding: 16, borderRadius: 8, alignItems: 'center' },
-  switchCardBtn: { backgroundColor: '#1E293B', padding: 15, borderRadius: 8, borderWidth: 1, borderColor: '#334155' }
+  switchCardBtn: { backgroundColor: colors.inputBg, padding: 15, borderRadius: 8, borderWidth: 1, borderColor: colors.border }
 });
 
 export default GameSurvival;

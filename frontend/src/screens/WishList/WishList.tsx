@@ -1,21 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Heart } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
-
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
-};
 
 type Book = {
   book_id: string;
@@ -33,6 +27,8 @@ type Book = {
 
 export default function Wishlist() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [favouriteBooks, setFavouriteBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +36,6 @@ export default function Wishlist() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        console.error('No token found');
         setLoading(false);
         return;
       }
@@ -91,125 +86,162 @@ export default function Wishlist() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={[Colors.bg, '#19A7CE']} style={styles.gradient}>
-        <View style={styles.header}>
+    <SafeAreaView style={styles.outer_container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        {/* ── Gradient Header ────────────────────────────────── */}
+        <View style={styles.headerContainer}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color={Colors.inactive} />
+            <ArrowLeft size={22} color="#F6F1F1" />
           </Pressable>
-          <Text style={styles.headerTitle}>Wishlist</Text>
+          <View style={styles.headerTextWrapper}>
+            <Text style={styles.headerTitle}>Wishlist</Text>
+            <Text style={styles.subtitleText}>
+              {favouriteBooks.length > 0
+                ? `${favouriteBooks.length} favourite ${favouriteBooks.length === 1 ? 'book' : 'books'}`
+                : 'Your saved books'}
+            </Text>
+          </View>
+          <View style={{ width: 38 }} />
         </View>
 
-        {favouriteBooks.length > 0 ? (
-          <FlatList
-            data={favouriteBooks}
-            renderItem={renderBookCard}
-            keyExtractor={(item) => item.book_id.toString()}
-            contentContainerStyle={styles.booksList}
-            numColumns={2}
-            columnWrapperStyle={styles.bookRow}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No favourite books yet</Text>
-              </View>
-            }
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No favourite books yet</Text>
-          </View>
-        )}
+        {/* ── Content container ───────────────────────────────── */}
+        <View style={styles.container}>
+          {favouriteBooks.length > 0 ? (
+            <FlatList
+              data={favouriteBooks}
+              renderItem={renderBookCard}
+              keyExtractor={(item) => item.book_id.toString()}
+              contentContainerStyle={styles.booksList}
+              numColumns={2}
+              columnWrapperStyle={styles.bookRow}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Heart color={colors.secondary} size={72} />
+              <Text style={styles.emptyTitle}>No Favourites Yet</Text>
+              <Text style={styles.emptySubtext}>
+                Tap the heart icon on any book to save it here
+              </Text>
+            </View>
+          )}
+        </View>
       </LinearGradient>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: Colors.bg,
-  },
-  header: {
+
+  // ── Header ─────────────────────────────────────────────────────
+  headerContainer: {
+    padding: 20,
+    paddingTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: Colors.bg,
   },
   backButton: {
     padding: 8,
-    backgroundColor: Colors.active,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.inactive,
-    marginLeft: 10,
+    color: '#F6F1F1',
+    textAlign: 'center',
+    marginBottom: 2,
   },
+  subtitleText: {
+    fontSize: 13,
+    color: '#F6F1F1',
+    textAlign: 'center',
+    opacity: 0.85,
+  },
+
+  // ── Main container ─────────────────────────────────────────────
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+
+  // ── Book grid ──────────────────────────────────────────────────
   booksList: {
-    padding: 15,
-    paddingTop: 0, // Adjust padding to account for header
+    padding: 16,
   },
   bookRow: {
     justifyContent: 'space-between',
+    gap: 12,
   },
   bookCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 15,
-    padding: 15,
+    flex: 1,
+    maxWidth: '48%',
+    backgroundColor: colors.cardBg,
+    borderRadius: 14,
+    marginBottom: 14,
+    overflow: 'hidden',
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: Colors.active,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   bookCover: {
     width: '100%',
-    height: 200,
+    height: 190,
     resizeMode: 'cover',
-    borderRadius: 8,
   },
   bookInfo: {
-    paddingTop: 10,
+    padding: 12,
   },
   bookTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: Colors.bg,
-    marginBottom: 5,
+    color: colors.text,
+    marginBottom: 4,
   },
   bookAuthor: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: colors.textSecondary,
   },
+
+  // ── Empty state ────────────────────────────────────────────────
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 40,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginTop: 20,
+  },
+  emptySubtext: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

@@ -15,7 +15,7 @@ const UserDetailSchema = new mongoose.Schema(
     otpExpiry: Date,
     books_rented: [{
       book_id: { type: Number },
-      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+      status: { type: String, enum: ['pending', 'approved', 'rejected', 'returned'], default: 'pending' },
       requested_at: { type: Date, default: Date.now }
     }],
     favouriteBooks: [{ type: Number, ref: 'Book' }],

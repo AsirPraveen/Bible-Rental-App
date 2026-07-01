@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
@@ -14,6 +15,8 @@ const CARD_WIDTH = (width - 48) / COLUMN_COUNT;
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const GameCardLibrary = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [activeTab, setActiveTab] = useState<'heroes' | 'villains'>('heroes');
   const [allCards, setAllCards] = useState<any[]>([]);
   const [ownedBaseCardIds, setOwnedBaseCardIds] = useState<string[]>([]);
@@ -118,7 +121,7 @@ const GameCardLibrary = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#1e1b4b', '#0f172a']} style={styles.mainContainer}>
+      <LinearGradient colors={colors.linearGradient} style={styles.mainContainer}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -213,8 +216,8 @@ const GameCardLibrary = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#1e1b4b', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#1e1b4b' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   mainContainer: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -228,7 +231,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: colors.inputBg,
     borderRadius: 12,
     padding: 4
   },
@@ -241,8 +244,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8
   },
-  activeTab: { backgroundColor: '#4338CA' },
-  tabText: { color: '#94a3b8', fontWeight: 'bold' },
+  activeTab: { backgroundColor: colors.primary },
+  tabText: { color: colors.textSecondary, fontWeight: 'bold' },
   activeTabText: { color: '#FFF' },
   
   scrollContent: { padding: 16, paddingBottom: 40 },
@@ -259,7 +262,7 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     flex: 1,
-    backgroundColor: '#1e293b',
+    backgroundColor: colors.cardBg,
   },
   cardLocked: {
     opacity: 0.8,
@@ -312,11 +315,13 @@ const styles = StyleSheet.create({
     padding: 20
   },
   modalContent: {
-    backgroundColor: '#1e293b',
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     width: '100%',
     maxHeight: '85%',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border
   },
   modalImage: { width: '100%', height: 250 },
   modalImageOverlay: { ...StyleSheet.absoluteFillObject, height: 250 },
@@ -330,22 +335,22 @@ const styles = StyleSheet.create({
     padding: 4
   },
   modalBody: { padding: 20 },
-  modalName: { color: '#FFF', fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  modalName: { color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
   modalMeta: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   modalRarity: { fontWeight: 'bold', fontSize: 14 },
-  modalClass: { color: '#94a3b8', fontSize: 14 },
+  modalClass: { color: colors.textSecondary, fontSize: 14 },
   
-  statsRow: { flexDirection: 'row', gap: 20, marginBottom: 20, backgroundColor: 'rgba(0,0,0,0.2)', padding: 12, borderRadius: 12 },
+  statsRow: { flexDirection: 'row', gap: 20, marginBottom: 20, backgroundColor: colors.inputBg, padding: 12, borderRadius: 12 },
   statBox: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statVal: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  statVal: { color: colors.text, fontSize: 16, fontWeight: 'bold' },
   
-  modalLoreTitle: { color: '#93C5FD', fontWeight: 'bold', fontSize: 16, marginBottom: 8 },
-  modalLoreText: { color: '#CBD5E1', fontSize: 14, lineHeight: 20, marginBottom: 20 },
+  modalLoreTitle: { color: colors.theme === 'dark' ? '#93C5FD' : colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 8 },
+  modalLoreText: { color: colors.text, fontSize: 14, lineHeight: 20, marginBottom: 20 },
   
-  modalVerseTitle: { color: '#A78BFA', fontWeight: 'bold', fontSize: 16, marginBottom: 8 },
-  verseCard: { backgroundColor: 'rgba(167, 139, 250, 0.1)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(167, 139, 250, 0.2)' },
-  verseText: { color: '#FFF', fontSize: 14, fontStyle: 'italic', lineHeight: 22, marginBottom: 8 },
-  verseRef: { color: '#A78BFA', fontSize: 12, fontWeight: 'bold', textAlign: 'right' }
+  modalVerseTitle: { color: colors.theme === 'dark' ? '#A78BFA' : colors.tint, fontWeight: 'bold', fontSize: 16, marginBottom: 8 },
+  verseCard: { backgroundColor: colors.inputBg, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+  verseText: { color: colors.text, fontSize: 14, fontStyle: 'italic', lineHeight: 22, marginBottom: 8 },
+  verseRef: { color: colors.theme === 'dark' ? '#A78BFA' : colors.tint, fontSize: 12, fontWeight: 'bold', textAlign: 'right' }
 });
 
 export default GameCardLibrary;

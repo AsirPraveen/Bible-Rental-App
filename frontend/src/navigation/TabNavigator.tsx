@@ -11,6 +11,7 @@ import HomeComponent from "../screens/HomeScreen/HomeScreen";
 import StuffComponent from "../screens/StuffComponent/StuffComponent";
 import NotificationScreen from "../screens/NotificationScreen/NotificationScreen";
 import UserProfileScreen from "../screens/UserProfileScreen/UserProfileScreen";
+import { useTheme } from "../context/ThemeContext";
 
 import type LottieView from "lottie-react-native";
 
@@ -21,9 +22,9 @@ const HomeTabsNavigation = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-    headerShown: false,
-    tabBarHideOnKeyboard: false,  // 👈 prevents collapsing after keyboard dismiss
-  }}
+        headerShown: false,
+        tabBarHideOnKeyboard: false,  // 👈 prevents collapsing after keyboard dismiss
+      }}
       tabBar={(props) => <AnimatedTabBar {...props} />}
     >
       <Tab.Screen
@@ -92,6 +93,7 @@ const HomeTabsNavigation = () => {
 
 const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, descriptors }: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
+  const { colors } = useTheme();
   const reducer = (state: any, action: any) => [...state, { x: action.x, index: action.index }];
   const [layout, dispatch] = useReducer(reducer, []);
 
@@ -122,7 +124,7 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
   }));
 
   return (
-    <View style={[styles.tabBar, { height: 60 + bottom }]}>
+    <View style={[styles.tabBar, { height: 60 + bottom, backgroundColor: colors.background }]}>
       {/* background highlight bubble */}
       <AnimatedSvg
         width={110}
@@ -131,7 +133,7 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
         style={[styles.activeBackground, animatedStyles]}
       >
         <Path
-          fill="#19A7CE"
+          fill={colors.downGradient}
           d="M20 0H0c11.046 0 20 8.953 20 20v5c0 19.33 15.67 35 35 35s35-15.67 35-35v-5c0-11.045 8.954-20 20-20H20z"
         />
       </AnimatedSvg>
@@ -158,6 +160,8 @@ const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, des
 
 const TabBarComponent = ({ active, options, onLayout, onPress }: any) => {
   const ref = useRef<LottieView>(null);
+  const { colors } = useTheme();
+
   useEffect(() => {
     if (active && ref.current) {
       ref.current.play();
@@ -174,12 +178,12 @@ const TabBarComponent = ({ active, options, onLayout, onPress }: any) => {
 
   return (
     <Pressable onPress={onPress} onLayout={onLayout} style={styles.component}>
-      <Animated.View style={[styles.componentCircle, animatedComponentCircleStyles]} />
+      <Animated.View style={[styles.componentCircle, animatedComponentCircleStyles, { backgroundColor: colors.background }]} />
       <Animated.View style={[styles.iconContainer, animatedIconContainerStyles]}>
         {options.tabBarIcon ? (
           options.tabBarIcon({ ref })
         ) : (
-          <Ionicons name="help-circle-outline" size={24} color="#fff" />
+          <Ionicons name="help-circle-outline" size={24} color={colors.background} />
         )}
       </Animated.View>
     </Pressable>

@@ -1,16 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const bookController = require('../controllers/bookController');
+const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 
+// Public
 router.get('/books', bookController.getAllBooks);
-router.post('/add-book', bookController.addBook);
-router.get('/book-analytics', bookController.getBookAnalytics);
-router.post('/submit-rent-request', bookController.submitRentRequest);
-router.get('/pending-rent-requests', bookController.getPendingRentRequests);
-router.post('/approve-rent-request', bookController.approveRentRequest);
-router.post('/reject-rent-request', bookController.rejectRentRequest);
-router.post('/return-book', bookController.returnBook);
-router.get('/request-history', bookController.getRequestHistory);
-router.post('/toggle-favourite', bookController.toggleFavourite);
+
+// Authenticated users
+router.post('/submit-rent-request', auth, bookController.submitRentRequest);
+router.post('/toggle-favourite', auth, bookController.toggleFavourite);
+router.post('/return-book', auth, bookController.returnBook);
+
+// Admin only
+router.post('/add-book', adminAuth, bookController.addBook);
+router.get('/book-analytics', adminAuth, bookController.getBookAnalytics);
+router.get('/pending-rent-requests', adminAuth, bookController.getPendingRentRequests);
+router.post('/approve-rent-request', adminAuth, bookController.approveRentRequest);
+router.post('/reject-rent-request', adminAuth, bookController.rejectRentRequest);
+router.get('/request-history', adminAuth, bookController.getRequestHistory);
 
 module.exports = router;

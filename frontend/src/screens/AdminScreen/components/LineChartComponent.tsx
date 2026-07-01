@@ -14,7 +14,11 @@ const Colors = {
   accent: '#667eea',
 };
 
-const LineChartComponent = ({ data }) => {
+interface LineChartComponentProps {
+  data: Array<{ book_name: string; rent_count?: number }>;
+}
+
+const LineChartComponent = ({ data }: LineChartComponentProps) => {
   const [animatedValue] = useState(new Animated.Value(0));
 
   useEffect(() => {

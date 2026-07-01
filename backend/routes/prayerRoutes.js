@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const prayerController = require('../controllers/prayerController');
+const auth = require('../middleware/auth');
 
-// Define specific routes
-router.post('/prayer-requests', prayerController.createPrayerRequest);
+// Public — anyone can view prayer requests
 router.get('/prayer-requests', prayerController.getAllPrayerRequests);
-router.put('/prayer-requests/:id/pray', prayerController.incrementPrayedCount);
+
+// Authenticated users only
+router.post('/prayer-requests', auth, prayerController.createPrayerRequest);
+router.put('/prayer-requests/:id/pray', auth, prayerController.incrementPrayedCount);
 
 module.exports = router;

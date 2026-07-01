@@ -5,6 +5,7 @@ import { BookOpen, CheckCircle, Circle, Plus, Trash2, X, Shuffle, List, Gem, Tro
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useTheme } from '../../context/ThemeContext';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
@@ -134,6 +135,8 @@ const generateMixedReadingPlan = (days, scope = ['Old Testament', 'New Testament
 };
 
 const ReadingPlannerComponent = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [activePlans, setActivePlans] = useState([]);
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
   const [showPlanTypeModal, setShowPlanTypeModal] = useState(false);
@@ -342,7 +345,7 @@ const ReadingPlannerComponent = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.headerContainer}>
           <View style={styles.headerTop}>
             <Text style={styles.headerText}>Reading Plans</Text>
@@ -433,7 +436,7 @@ const ReadingPlannerComponent = () => {
                               {dayPlan.completed ? (
                                 <CheckCircle color="#4CAF50" size={24} />
                               ) : (
-                                <Circle color="#146C94" size={24} />
+                                <Circle color={colors.tint} size={24} />
                               )}
                             </TouchableOpacity>
                             <View style={styles.dayTextContainer}>
@@ -494,7 +497,7 @@ const ReadingPlannerComponent = () => {
                   onPress={() => setShowReadingModal(false)}
                   style={styles.closeButton}
                 >
-                  <X color="#146C94" size={24} />
+                  <X color={colors.tint} size={24} />
                 </TouchableOpacity>
               </View>
 
@@ -739,14 +742,14 @@ const ReadingPlannerComponent = () => {
             <View style={styles.historyModalContainer}>
               <View style={styles.historyHeader}>
                 <View style={styles.historyTitleRow}>
-                  <History color="#146C94" size={24} />
+                  <History color={colors.tint} size={24} />
                   <Text style={styles.historyTitle}>Finished Journeys</Text>
                 </View>
                 <TouchableOpacity 
                   onPress={() => setShowHistoryModal(false)}
                   style={styles.historyCloseBtn}
                 >
-                  <X color="#146C94" size={20} />
+                  <X color={colors.tint} size={20} />
                 </TouchableOpacity>
               </View>
 
@@ -826,11 +829,11 @@ const ReadingPlannerComponent = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -895,12 +898,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   planCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -917,12 +920,12 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
   },
   planDays: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   deleteButton: {
     padding: 8,
@@ -932,7 +935,7 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 10,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.border,
     borderRadius: 5,
     overflow: 'hidden',
     marginBottom: 8,
@@ -944,7 +947,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 14,
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: '600',
     textAlign: 'right',
   },
@@ -952,15 +955,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   dayItem: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#F8F9FA',
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderLeftWidth: 4,
-    borderLeftColor: '#19A7CE',
+    borderLeftColor: colors.secondary,
   },
   dayItemCompleted: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.theme === 'dark' ? 'rgba(76, 175, 80, 0.15)' : '#E8F5E9',
     borderLeftColor: '#4CAF50',
   },
   dayInfo: {
@@ -977,22 +980,22 @@ const styles = StyleSheet.create({
   dayNumber: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
   },
   readingText: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   showMoreButton: {
-    backgroundColor: '#AFD3E2',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#AFD3E2',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
   },
   showMoreText: {
-    color: '#146C94',
+    color: colors.tint,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1022,7 +1025,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     padding: 24,
     width: '100%',
@@ -1031,18 +1034,18 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textAlign: 'center',
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },
   durationButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     borderRadius: 12,
     padding: 18,
     marginBottom: 12,
@@ -1056,27 +1059,27 @@ const styles = StyleSheet.create({
   },
   durationSubtext: {
     fontSize: 12,
-    color: '#AFD3E2',
+    color: colors.theme === 'dark' ? colors.textSecondary : '#AFD3E2',
   },
   scopeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#F8F9FA',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   scopeButtonActive: {
-    borderColor: '#146C94',
-    backgroundColor: '#E3F2FD',
+    borderColor: colors.tint,
+    backgroundColor: colors.theme === 'dark' ? colors.border : '#E3F2FD',
   },
   scopeIconContainer: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -1087,15 +1090,15 @@ const styles = StyleSheet.create({
   scopeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 2,
   },
   scopeDescription: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
   },
   planTypeButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     borderRadius: 12,
     padding: 18,
     marginBottom: 12,
@@ -1122,11 +1125,11 @@ const styles = StyleSheet.create({
   },
   planTypeDescription: {
     fontSize: 13,
-    color: '#AFD3E2',
+    color: colors.theme === 'dark' ? colors.textSecondary : '#AFD3E2',
     lineHeight: 18,
   },
   cancelButton: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.border,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -1134,11 +1137,11 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   historyModalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 25,
     width: '98%',
     maxHeight: '90%',
@@ -1156,7 +1159,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.border,
   },
   historyTitleRow: {
     flexDirection: 'row',
@@ -1166,10 +1169,10 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   historyCloseBtn: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: colors.theme === 'dark' ? colors.border : '#F0F9FF',
     padding: 6,
     borderRadius: 15,
   },
@@ -1184,24 +1187,24 @@ const styles = StyleSheet.create({
   emptyHistoryText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginTop: 20,
     textAlign: 'center',
   },
   emptyHistorySub: {
     fontSize: 14,
-    color: '#888',
+    color: colors.textSecondary,
     marginTop: 10,
     textAlign: 'center',
     lineHeight: 20,
   },
   historyPlanCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1227,7 +1230,7 @@ const styles = StyleSheet.create({
   historyPlanName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   historyDateRow: {
     flexDirection: 'row',
@@ -1237,14 +1240,14 @@ const styles = StyleSheet.create({
   },
   historyPlanDetail: {
     fontSize: 11,
-    color: '#888',
+    color: colors.textSecondary,
   },
   historyDeleteAction: {
     padding: 8,
   },
   historyCardDivider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.border,
     marginVertical: 12,
   },
   historyCardBottom: {
@@ -1258,14 +1261,14 @@ const styles = StyleSheet.create({
   historyViewText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
     textDecorationLine: 'underline',
   },
   historyExpandedSection: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F8F9FA',
+    borderTopColor: colors.border,
   },
   historyDaysRow: {
     flexDirection: 'row',
@@ -1274,21 +1277,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#F0F9FF',
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 10,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#E3F2FD',
+    borderColor: colors.border,
   },
   historyDayBadgeText: {
     fontSize: 11,
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: '600',
   },
   readingModalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
@@ -1301,7 +1304,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border,
   },
   readingModalTitleContainer: {
     flex: 1,
@@ -1309,12 +1312,12 @@ const styles = StyleSheet.create({
   readingModalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
   },
   readingModalSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   closeButton: {
     padding: 4,
@@ -1329,7 +1332,7 @@ const styles = StyleSheet.create({
   testamentTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 12,
   },
   chaptersGrid: {
@@ -1338,33 +1341,33 @@ const styles = StyleSheet.create({
     marginHorizontal: -6,
   },
   chapterCard: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#F8F9FA',
     borderRadius: 10,
     padding: 12,
     margin: 6,
     minWidth: '28%',
     alignItems: 'center',
     borderLeftWidth: 3,
-    borderLeftColor: '#19A7CE',
+    borderLeftColor: colors.secondary,
   },
   chapterBookName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
     textAlign: 'center',
   },
   chapterNumber: {
     fontSize: 11,
-    color: '#666',
+    color: colors.textSecondary,
   },
   readingModalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: colors.border,
   },
   markCompleteButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',

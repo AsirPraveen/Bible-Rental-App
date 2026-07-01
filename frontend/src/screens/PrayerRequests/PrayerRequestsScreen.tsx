@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, HandHeart, PlusCircle } from 'lucide-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import AddPrayerRequestModal from './AddPrayerRequestModal';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PrayerRequestsScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+  const { isGuest } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -88,9 +93,15 @@ export default function PrayerRequestsScreen() {
         <View style={styles.footer}>
           <TouchableOpacity 
             style={[styles.prayButton, hasPrayed ? styles.prayButtonActive : styles.prayButtonInactive]} 
-            onPress={() => handlePray(item._id)}
+            onPress={() => {
+              if (isGuest) {
+                Alert.alert('Login Required', 'Please login to pray for requests.');
+                return;
+              }
+              handlePray(item._id);
+            }}
           >
-            <Heart color={hasPrayed ? "#fff" : "#146C94"} size={16} fill={hasPrayed ? "#fff" : "transparent"} />
+            <Heart color={hasPrayed ? "#fff" : colors.primary} size={16} fill={hasPrayed ? "#fff" : "transparent"} />
             <Text style={[styles.prayText, hasPrayed ? styles.prayTextActive : styles.prayTextInactive]}>
               {hasPrayed ? 'Praying' : 'Pray'} ({prayCount})
             </Text>
@@ -102,13 +113,19 @@ export default function PrayerRequestsScreen() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.headerContainer}>
           <View style={styles.headerTop}>
             <Text style={styles.headerText}>Prayer Requests</Text>
             <TouchableOpacity 
               style={styles.headerIconBtn}
-              onPress={() => setModalVisible(true)}
+              onPress={() => {
+                if (isGuest) {
+                  Alert.alert('Login Required', 'Please login to post a prayer request.');
+                  return;
+                }
+                setModalVisible(true);
+              }}
             >
               <PlusCircle color="#F6F1F1" size={28} />
             </TouchableOpacity>
@@ -128,7 +145,7 @@ export default function PrayerRequestsScreen() {
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={
                   <View style={styles.emptyState}>
-                    <HandHeart color="#F6F1F1" size={80} />
+                    <HandHeart color={colors.secondary} size={80} />
                     <Text style={styles.emptyStateText}>No Prayer Requests</Text>
                     <Text style={styles.emptyStateSubtext}>Be the first to share a request.</Text>
                   </View>
@@ -149,11 +166,11 @@ export default function PrayerRequestsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -186,7 +203,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -199,12 +216,12 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F6F1F1',
+    color: colors.text,
     marginTop: 20,
   },
   emptyStateSubtext: {
     fontSize: 16,
-    color: '#F6F1F1',
+    color: colors.textSecondary,
     opacity: 0.8,
     marginTop: 8,
     textAlign: 'center',
@@ -218,7 +235,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -231,8 +248,8 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
   },
   ownCard: {
-    borderLeftColor: '#19A7CE',
-    backgroundColor: '#FAFDFF',
+    borderLeftColor: colors.secondary,
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#FAFDFF',
   },
   header: {
     flexDirection: 'row',
@@ -246,7 +263,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ownBadge: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -259,16 +276,16 @@ const styles = StyleSheet.create({
   },
   author: {
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     fontSize: 15,
   },
   date: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 12,
   },
   content: {
     fontSize: 16,
-    color: '#444',
+    color: colors.text,
     marginBottom: 16,
     lineHeight: 22,
   },
@@ -286,12 +303,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   prayButtonInactive: {
-    backgroundColor: '#fff',
-    borderColor: '#146C94',
+    backgroundColor: colors.cardBg,
+    borderColor: colors.primary,
   },
   prayButtonActive: {
-    backgroundColor: '#146C94',
-    borderColor: '#146C94',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   prayText: {},
   prayTextActive: {
@@ -300,13 +317,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   prayTextInactive: {
-    color: '#146C94',
+    color: colors.primary,
     fontWeight: 'bold',
     fontSize: 14,
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 40,
-    color: '#888',
+    color: colors.textSecondary,
   },
 });

@@ -3,10 +3,13 @@ import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ActivityInd
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function AddPrayerRequestModal({ visible, onClose, onSuccess, currentUserId }: any) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [requestText, setRequestText] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -46,6 +49,7 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
           <TextInput
             style={styles.input}
             placeholder="What would you like prayer for?"
+            placeholderTextColor={colors.textSecondary}
             multiline
             numberOfLines={5}
             value={requestText}
@@ -58,8 +62,8 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
             <Switch
               value={isAnonymous}
               onValueChange={setIsAnonymous}
-              trackColor={{ false: '#ccc', true: '#19A7CE' }}
-              thumbColor={isAnonymous ? '#146C94' : '#f4f3f4'}
+              trackColor={{ false: colors.border, true: colors.secondary }}
+              thumbColor={isAnonymous ? colors.tint : colors.textSecondary}
             />
           </View>
 
@@ -82,7 +86,7 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -91,7 +95,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: '90%',
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 24,
     elevation: 5,
@@ -103,17 +107,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 16,
     textAlign: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.inputBg,
+    color: colors.text,
     minHeight: 120,
     marginBottom: 16,
   },
@@ -125,7 +130,7 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 16,
-    color: '#555',
+    color: colors.text,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -137,11 +142,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
     alignItems: 'center',
   },
   cancelText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -149,7 +154,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#146C94',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

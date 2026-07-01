@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, SafeAreaView, Platform, StatusBar } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, SafeAreaView, Platform, StatusBar, Animated } from 'react-native';
 import { Button } from 'react-native-paper';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,12 +16,16 @@ import _tamilBibleData from '../../assets/offline-bible/tamil_bible.json';
 const tamilBibleData = _tamilBibleData as any[];
 import _bookTranslations from '../../assets/offline-bible/book_translations.json';
 const bookTranslations = _bookTranslations as any;
+import * as Speech from 'expo-speech';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? ''; 
 const STABILITY_API_URL = Constants.expoConfig?.extra?.stabilityApiUrl ?? '';
 
 const BibleComponent = () => {
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors);
+
   // State for Dropdowns
   const [language, setLanguage] = useState('Tamil');
   const [availableLanguages, setAvailableLanguages] = useState<{label: string, value: string}[]>([]);
@@ -52,6 +57,12 @@ const BibleComponent = () => {
   const [compareVerseData, setCompareVerseData] = useState<{text: string} | null>(null);
   const [openCompareLanguage, setOpenCompareLanguage] = useState(false);
   
+  // Custom Dictionary Modal State
+  const [isDictModalVisible, setIsDictModalVisible] = useState(false);
+  const [dictWord, setDictWord] = useState('');
+  const [dictMeaning, setDictMeaning] = useState('');
+  const [dictSource, setDictSource] = useState('');
+  
   // Generate Image State
   const [verseImage, setVerseImage] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -61,6 +72,7 @@ const BibleComponent = () => {
   const [userToken, setUserToken] = useState<string | null>(null);
   const [underlinedWordIndices, setUnderlinedWordIndices] = useState<number[]>([]);
   const [verseFontSize, setVerseFontSize] = useState<number>(18);
+  const [isImageGenEnabled, setIsImageGenEnabled] = useState(true);
   
   // Copied state
   const [isCopied, setIsCopied] = useState(false);
@@ -72,6 +84,24 @@ const BibleComponent = () => {
   const scrollPositionRef = useRef(0);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ──────────────── TTS Audio Player State ────────────────
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [autoPlayNext, setAutoPlayNext] = useState(true);
+  const [speechRate, setSpeechRate] = useState(0.9); // TTS speed: 0.5 slow → 1.5 fast
+  const speechRateRef = useRef(0.9); // stable ref for inside speakVerse callback
+  const isSpeakingRef = useRef(false);
+  const playRequestRef = useRef(false); // tracks if we want speech to continue
+  const currentVerseIndexRef = useRef(0);
+  const autoPlayPendingRef = useRef(false); // signals next chapter should auto-start
+  const playerBarAnim = useRef(new Animated.Value(100)).current;
+  // stable ref so handleVerseSelect can call speakVerse before it's declared
+  const speakVerseRef = useRef<((verses: {verseNumber: number; text: string}[], index: number) => void) | null>(null);
+  // stores real Y position of each verse row measured via onLayout
+  const verseLayoutsRef = useRef<number[]>([]);
+  const scrollViewHeightRef = useRef(400); // visible height of the reader card
+
   // Initialize Data (Token, Credits, Languages, Saved Progress)
   useEffect(() => {
     const initialize = async () => {
@@ -81,7 +111,18 @@ const BibleComponent = () => {
           setUserToken(token);
           fetchUserData(token);
         } else {
-          Alert.alert('Error', 'No user token found. Please log in again.');
+          // Guest mode — Bible works without a token, just no image credits
+          console.log('[Bible] Guest mode — skipping user data fetch');
+        }
+
+        // Fetch App Settings
+        try {
+          const settingsRes = await axios.get(`${API_URL}/api/app-settings`);
+          if (settingsRes.data.status === 'Success') {
+            setIsImageGenEnabled(settingsRes.data.data.isImageGenEnabled !== false);
+          }
+        } catch (settingsError) {
+          console.log('Error fetching settings, defaulting to enabled:', settingsError);
         }
 
         // Fetch Languages
@@ -89,6 +130,15 @@ const BibleComponent = () => {
           const langRes = await axios.get(`${API_URL}/api/bible/languages`);
           if (langRes.data.status === 'Ok') {
             const langs = langRes.data.data.map((l:any) => ({ label: l === 'Tamil' ? 'Tamil (Offline)' : l, value: l }));
+            langs.sort((a: any, b: any) => {
+              const valA = a.value;
+              const valB = b.value;
+              if (valA === 'Tamil') return -1;
+              if (valB === 'Tamil') return 1;
+              if (valA === 'English') return -1;
+              if (valB === 'English') return 1;
+              return valA.localeCompare(valB);
+            });
             setAvailableLanguages(langs);
           }
         } catch (langError) {
@@ -188,7 +238,12 @@ const BibleComponent = () => {
             }
           }
         });
-        const booksData = Array.from(booksMap.values()).sort((a: any, b: any) => a.value - b.value);
+        const booksData = Array.from(booksMap.values())
+          .sort((a: any, b: any) => a.value - b.value)
+          .map((b: any) => ({
+            ...b,
+            containerStyle: b.value === 38 ? { borderBottomWidth: 2, borderBottomColor: colors.secondary, paddingBottom: 8, marginBottom: 4 } : undefined
+          }));
         setBooks(booksData);
         return;
       }
@@ -201,7 +256,8 @@ const BibleComponent = () => {
             return {
               label: localizedName || b.bookName,
               value: b.bookNumber,
-              chapterCount: b.chapterCount
+              chapterCount: b.chapterCount,
+              containerStyle: b.bookNumber === 38 ? { borderBottomWidth: 2, borderBottomColor: colors.secondary, paddingBottom: 8, marginBottom: 4 } : undefined
             };
           });
           setBooks(booksData);
@@ -308,13 +364,26 @@ const BibleComponent = () => {
     }, 500);
   };
 
-  const handleVerseSelect = (verse: any) => {
+  const handleVerseSelect = (verse: any, index: number) => {
     const bookName = books.find((b: any) => b.value === selectedBookNumber)?.label || '';
-    setVerseImage(null); // Reset previous image
+    setVerseImage(null);
     setSelectedVerse({
       ...verse,
       citation: `${bookName} ${selectedChapter}:${verse.verseNumber}`
     });
+
+    // Always update current verse index when selected
+    currentVerseIndexRef.current = index;
+    setCurrentVerseIndex(index);
+
+    // Only start TTS if audio mode (showPlayer) is toggled ON
+    if (showPlayer) {
+      Speech.stop();
+      playRequestRef.current = true;
+      setIsPlaying(true);
+      speakVerseRef.current?.(chapterVerses, index);
+    }
+    // Otherwise, just highlight the verse (selectedVerse is already set above)
   };
 
   const handleVerseLongPress = (verse: any) => {
@@ -556,7 +625,11 @@ const BibleComponent = () => {
         language
       });
       if (res.data.status === 'Ok') {
-        Alert.alert(`Meaning of "${word}"`, res.data.data.meaning);
+        const { meaning, source } = res.data.data;
+        setDictWord(word);
+        setDictMeaning(meaning);
+        setDictSource(source);
+        setIsDictModalVisible(true);
       } else {
         Alert.alert('Error', res.data.message || 'Failed to fetch meaning.');
       }
@@ -579,6 +652,174 @@ const BibleComponent = () => {
     setSelectedVerse(null);
   };
 
+  // ──────────────── TTS Functions ────────────────
+
+  // Keep ref synced with state
+  useEffect(() => {
+    currentVerseIndexRef.current = currentVerseIndex;
+  }, [currentVerseIndex]);
+
+  const stopReading = useCallback(() => {
+    playRequestRef.current = false;
+    Speech.stop();
+    setIsPlaying(false);
+    isSpeakingRef.current = false;
+  }, []);
+
+  // Stop speech when chapter/book changes (but preserve autoPlayPending)
+  useEffect(() => {
+    // Don't clear autoPlayPendingRef here — it's consumed by the verses effect below
+    playRequestRef.current = false;
+    Speech.stop();
+    setIsPlaying(false);
+    isSpeakingRef.current = false;
+    setCurrentVerseIndex(0);
+    currentVerseIndexRef.current = 0;
+    verseLayoutsRef.current = []; // clear stale layout measurements
+  }, [selectedBookNumber, selectedChapter]);
+
+  // Auto-start playback when new chapter verses load (after auto-play advance)
+  useEffect(() => {
+    if (autoPlayPendingRef.current && chapterVerses.length > 0 && !isPlaying) {
+      autoPlayPendingRef.current = false;
+      playRequestRef.current = true;
+      setIsPlaying(true);
+      setTimeout(() => speakVerse(chapterVerses, 0), 300);
+    }
+  }, [chapterVerses]);
+
+  const speakVerse = useCallback((verses: {verseNumber: number; text: string}[], index: number) => {
+    if (!playRequestRef.current) return;
+    if (index >= verses.length) {
+      // Chapter finished
+      setIsPlaying(false);
+      isSpeakingRef.current = false;
+      if (autoPlayNext) {
+        // Signal that the next chapter should auto-play once it loads
+        autoPlayPendingRef.current = true;
+        setSelectedChapter(prev => {
+          const currentBook = books.find((b: any) => b.value === selectedBookNumber);
+          if (currentBook && prev < currentBook.chapterCount) {
+            scrollPositionRef.current = 0;
+            return prev + 1;
+          }
+          autoPlayPendingRef.current = false; // no next chapter available
+          return prev;
+        });
+      }
+      return;
+    }
+    setCurrentVerseIndex(index);
+    currentVerseIndexRef.current = index;
+    // Auto-scroll: center the speaking verse in the visible reader area
+    if (scrollViewRef.current && verseLayoutsRef.current[index] !== undefined) {
+      const verseY = verseLayoutsRef.current[index];
+      const verseApproxHeight = 60;
+      const scrollY = Math.max(0, verseY - scrollViewHeightRef.current / 2 + verseApproxHeight / 2);
+      scrollViewRef.current.scrollTo({ y: scrollY, animated: true });
+    }
+    const verseText = verses[index].text;
+    Speech.speak(verseText, {
+      language: language === 'Tamil' ? 'ta-IN' : 'en-US',
+      rate: speechRateRef.current,
+      pitch: 1.0,
+      onStart: () => { isSpeakingRef.current = true; },
+      onDone: () => {
+        isSpeakingRef.current = false;
+        if (playRequestRef.current) {
+          speakVerse(verses, currentVerseIndexRef.current + 1);
+        }
+      },
+      onStopped: () => { isSpeakingRef.current = false; },
+      onError: () => {
+        isSpeakingRef.current = false;
+        if (playRequestRef.current) {
+          speakVerse(verses, currentVerseIndexRef.current + 1);
+        }
+      },
+    });
+  }, [language, autoPlayNext, books, selectedBookNumber]);
+
+  // Keep speakVerseRef in sync so handleVerseSelect can call it before declaration
+  useEffect(() => {
+    speakVerseRef.current = speakVerse;
+  }, [speakVerse]);
+
+  const handlePlayPause = useCallback(() => {
+    if (chapterVerses.length === 0) return;
+    if (isPlaying) {
+      // Pause
+      playRequestRef.current = false;
+      Speech.stop();
+      setIsPlaying(false);
+    } else {
+      // Play from current verse
+      setShowPlayer(true);
+      Animated.spring(playerBarAnim, { toValue: 0, useNativeDriver: true }).start();
+      playRequestRef.current = true;
+      setIsPlaying(true);
+      speakVerse(chapterVerses, currentVerseIndexRef.current);
+    }
+  }, [isPlaying, chapterVerses, speakVerse, playerBarAnim]);
+
+  const handlePrevChapter = useCallback(() => {
+    stopReading();
+    setSelectedChapter(prev => {
+      if (prev > 1) {
+        scrollPositionRef.current = 0;
+        return prev - 1;
+      }
+      return prev;
+    });
+    setCurrentVerseIndex(0);
+  }, [stopReading]);
+
+  const handleNextChapter = useCallback(() => {
+    stopReading();
+    setSelectedChapter(prev => {
+      const currentBook = books.find((b: any) => b.value === selectedBookNumber);
+      if (currentBook && prev < currentBook.chapterCount) {
+        scrollPositionRef.current = 0;
+        return prev + 1;
+      }
+      return prev;
+    });
+    setCurrentVerseIndex(0);
+  }, [stopReading, books, selectedBookNumber]);
+
+  const handleClosePlayer = useCallback(() => {
+    stopReading();
+    Animated.timing(playerBarAnim, { toValue: 100, duration: 250, useNativeDriver: true }).start(() => {
+      setShowPlayer(false);
+    });
+  }, [stopReading, playerBarAnim]);
+
+  const toggleAutoPlay = useCallback(() => {
+    setAutoPlayNext(prev => !prev);
+  }, []);
+
+  const SPEED_OPTIONS = [
+    { label: '0.5×', value: 0.5 },
+    { label: '0.75×', value: 0.75 },
+    { label: '1×', value: 1.0 },
+    { label: '1.25×', value: 1.25 },
+    { label: '1.5×', value: 1.5 },
+  ];
+
+  const handleSpeedChange = useCallback((rate: number) => {
+    speechRateRef.current = rate;
+    setSpeechRate(rate);
+    // If currently playing, restart current verse at new speed
+    if (playRequestRef.current && isSpeakingRef.current) {
+      Speech.stop();
+      setTimeout(() => {
+        if (playRequestRef.current) {
+          speakVerse(chapterVerses, currentVerseIndexRef.current);
+        }
+      }, 100);
+    }
+  }, [chapterVerses, speakVerse]);
+
   if (loading && !chapterVerses.length) {
     return <LoadingScreen message="Loading Bible..." />;
   }
@@ -590,19 +831,43 @@ const BibleComponent = () => {
     statusBarTranslucent: false,
   };
 
+  const currentBook = books.find((b: any) => b.value === selectedBookNumber);
+  const totalVerses = chapterVerses.length;
+  const progressPercent = totalVerses > 0 ? ((currentVerseIndex + 1) / totalVerses) * 100 : 0;
+
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           
           <View style={styles.headerRow}>
+            {/* 🔊 Audio Mode Toggle — Top Left */}
+            <TouchableOpacity
+              onPress={() => {
+                if (showPlayer) {
+                  // Toggling OFF — stop any active playback and hide player
+                  stopReading();
+                  Animated.timing(playerBarAnim, { toValue: 100, duration: 250, useNativeDriver: true }).start(() => {
+                    setShowPlayer(false);
+                  });
+                } else {
+                  // Toggling ON — show player bar (paused), wait for verse tap to play
+                  setShowPlayer(true);
+                  Animated.spring(playerBarAnim, { toValue: 0, useNativeDriver: true }).start();
+                }
+              }}
+              style={styles.headerPlayBtn}
+            >
+              <Icon name={showPlayer ? 'headphones' : 'headphones-off'} size={34} color={colors.textLight} />
+            </TouchableOpacity>
+
             <Text style={styles.headerText}>Bible Reader</Text>
             <View style={styles.zoomControls}>
               <TouchableOpacity onPress={handleZoomOut} style={styles.zoomButton}>
-                <Icon name="minus-circle-outline" size={24} color="#F6F1F1" />
+                <Icon name="minus-circle-outline" size={24} color={colors.textLight} />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleZoomIn} style={styles.zoomButton}>
-                <Icon name="plus-circle-outline" size={24} color="#F6F1F1" />
+                <Icon name="plus-circle-outline" size={24} color={colors.textLight} />
               </TouchableOpacity>
             </View>
           </View>
@@ -675,7 +940,10 @@ const BibleComponent = () => {
           </View>
 
           {/* Verses Scroll Reader */}
-          <View style={styles.readerCard}>
+          <View
+            style={styles.readerCard}
+            onLayout={(e) => { scrollViewHeightRef.current = e.nativeEvent.layout.height; }}
+          >
             <ScrollView 
               ref={scrollViewRef}
               showsVerticalScrollIndicator={false}
@@ -685,7 +953,7 @@ const BibleComponent = () => {
             >
               {loading && chapterVerses.length > 0 && (
                 <View style={{ padding: 10 }}>
-                  <ActivityIndicator size="small" color="#146C94" />
+                  <ActivityIndicator size="small" color={colors.tint} />
                 </View>
               )}
               
@@ -701,14 +969,18 @@ const BibleComponent = () => {
                       img.verseNumber === verse.verseNumber
                     );
 
+                    const isSpeaking = isPlaying && currentVerseIndex === index;
+
                     return (
                       <TouchableOpacity 
-                        key={index} 
-                        onPress={() => handleVerseSelect(verse)}
+                        key={`${selectedBookNumber}_${selectedChapter}_${index}`} 
+                        onPress={() => handleVerseSelect(verse, index)}
                         onLongPress={() => handleVerseLongPress(verse)}
+                        onLayout={(e) => { verseLayoutsRef.current[index] = e.nativeEvent.layout.y; }}
                         style={[
                           styles.verseRow,
-                          isSelected && styles.selectedVerseRow
+                          isSelected && styles.selectedVerseRow,
+                          isSpeaking && styles.speakingVerseRow,
                         ]}
                       >
                         <Text style={styles.verseNumberText}>{verse.verseNumber}</Text>
@@ -724,7 +996,7 @@ const BibleComponent = () => {
                             style={{ marginLeft: 6, alignSelf: 'flex-start', marginTop: 2, padding: 4 }}
                             onPress={() => openSavedImage(verse)}
                           >
-                            <Icon name="image-outline" size={20} color="#19A7CE" />
+                            <Icon name="image-outline" size={20} color={colors.secondary} />
                           </TouchableOpacity>
                         )}
                       </TouchableOpacity>
@@ -736,6 +1008,82 @@ const BibleComponent = () => {
               </TouchableOpacity>
             </ScrollView>
           </View>
+
+          {/* ──────── TTS Audio Player Bar ──────── */}
+          {showPlayer && (
+            <Animated.View
+              style={[
+                styles.playerBar,
+                { transform: [{ translateY: playerBarAnim }] },
+              ]}
+            >
+              {/* Progress bar */}
+              <View style={styles.playerProgressBg}>
+                <View style={[styles.playerProgressFill, { width: `${progressPercent}%` as any }]} />
+              </View>
+
+              {/* Verse label */}
+              <Text style={styles.playerVerseLabel} numberOfLines={1}>
+                {currentBook?.label || ''} {selectedChapter}:{chapterVerses[currentVerseIndex]?.verseNumber || 1}
+                {'  '}
+                <Text style={styles.playerVerseCount}>
+                  ({currentVerseIndex + 1}/{totalVerses})
+                </Text>
+              </Text>
+
+              {/* Controls Row */}
+              <View style={styles.playerControls}>
+                {/* Prev Chapter */}
+                <TouchableOpacity onPress={handlePrevChapter} style={styles.playerBtn}>
+                  <Icon name="skip-previous" size={28} color={theme === 'light' ? '#fff' : colors.text} />
+                </TouchableOpacity>
+
+                {/* Play / Pause */}
+                <TouchableOpacity onPress={handlePlayPause} style={styles.playerPlayBtn}>
+                  <Icon name={isPlaying ? 'pause' : 'play'} size={32} color={theme === 'light' ? '#146C94' : colors.textLight} />
+                </TouchableOpacity>
+
+                {/* Next Chapter */}
+                <TouchableOpacity onPress={handleNextChapter} style={styles.playerBtn}>
+                  <Icon name="skip-next" size={28} color={theme === 'light' ? '#fff' : colors.text} />
+                </TouchableOpacity>
+
+                {/* Auto-play toggle */}
+                <TouchableOpacity onPress={toggleAutoPlay} style={[styles.playerBtn, styles.autoPlayBtn]}>
+                  <Icon
+                    name={autoPlayNext ? 'repeat' : 'repeat-off'}
+                    size={22}
+                    color={autoPlayNext ? '#FFD700' : (theme === 'light' ? 'rgba(255,255,255,0.5)' : colors.textSecondary)}
+                  />
+                </TouchableOpacity>
+
+                {/* Close */}
+                <TouchableOpacity onPress={handleClosePlayer} style={styles.playerBtn}>
+                  <Icon name="close" size={22} color={theme === 'light' ? 'rgba(255,255,255,0.7)' : colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Speed Control Row */}
+              <View style={styles.speedRow}>
+                <Icon name="speedometer" size={14} color="rgba(255,255,255,0.6)" style={{ marginRight: 6 }} />
+                {SPEED_OPTIONS.map(opt => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.speedBtn,
+                      speechRate === opt.value && styles.speedBtnActive,
+                    ]}
+                    onPress={() => handleSpeedChange(opt.value)}
+                  >
+                    <Text style={[
+                      styles.speedBtnText,
+                      speechRate === opt.value && styles.speedBtnTextActive,
+                    ]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+          )}
         </View>
 
         {/* Verse Action Modal */}
@@ -750,7 +1098,7 @@ const BibleComponent = () => {
             <View style={styles.actionModalContainer}>
               {loadingMeaning && (
                 <View style={styles.meaningLoader}>
-                  <ActivityIndicator size="small" color="#146C94" />
+                  <ActivityIndicator size="small" color={colors.tint} />
                   <Text style={styles.meaningLoaderText}>Looking up meaning...</Text>
                 </View>
               )}
@@ -767,7 +1115,7 @@ const BibleComponent = () => {
                           key={index} 
                           style={[
                             styles.modalVerseWord,
-                            isUnderlined && { textDecorationLine: 'underline', color: '#146C94', fontWeight: 'bold' }
+                            isUnderlined && { textDecorationLine: 'underline', color: colors.tint, fontWeight: 'bold' }
                           ]}
                           onPress={() => toggleWordUnderline(index)}
                           onLongPress={() => handleWordLongPress(word)}
@@ -780,16 +1128,18 @@ const BibleComponent = () => {
                   </View>
                   
                   <View style={styles.buttonContainer}>
-                    <Button
-                      mode="contained"
-                      onPress={handleGenerateImage}
-                      loading={isGeneratingImage}
-                      style={[styles.actionButton, styles.generateButton]}
-                      labelStyle={styles.buttonText}
-                      disabled={imageGenerationCredits <= 0 || isGeneratingImage}
-                    >
-                      Generate Image ({imageGenerationCredits} left)
-                    </Button>
+                    {isImageGenEnabled && (
+                      <Button
+                        mode="contained"
+                        onPress={handleGenerateImage}
+                        loading={isGeneratingImage}
+                        style={[styles.actionButton, styles.generateButton]}
+                        labelStyle={styles.buttonText}
+                        disabled={imageGenerationCredits <= 0 || isGeneratingImage}
+                      >
+                        Generate Image ({imageGenerationCredits} left)
+                      </Button>
+                    )}
                     <Button
                       mode="contained"
                       onPress={handleCompare}
@@ -895,6 +1245,43 @@ const BibleComponent = () => {
           </View>
         </Modal>
 
+        {/* Custom Dictionary Modal */}
+        <Modal
+          visible={isDictModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setIsDictModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalDismissArea} 
+              activeOpacity={1} 
+              onPress={() => setIsDictModalVisible(false)} 
+            />
+            <View style={styles.dictModalContainer}>
+              {/* Blue AI Tag in the top-right corner */}
+              {dictSource === 'ai' && (
+                <View style={styles.aiTag}>
+                  <Text style={styles.aiTagText}>AI</Text>
+                </View>
+              )}
+
+              <Text style={styles.dictModalTitle}>Meaning of "{dictWord}"</Text>
+              
+              <ScrollView style={styles.dictModalScroll} showsVerticalScrollIndicator={true}>
+                <Text style={styles.dictModalText}>{dictMeaning}</Text>
+              </ScrollView>
+
+              <TouchableOpacity 
+                style={styles.dictCloseButton} 
+                onPress={() => setIsDictModalVisible(false)}
+              >
+                <Text style={styles.dictCloseButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {/* Full-Screen Image Modal */}
         <Modal
           visible={isFullScreen}
@@ -926,11 +1313,11 @@ const BibleComponent = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },  
   gradient: {
     flex: 1,
@@ -946,10 +1333,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     position: 'relative',
   },
+  headerPlayBtn: {
+    position: 'absolute',
+    left: 0,
+    padding: 2,
+    zIndex: 10,
+  },
   headerText: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#F6F1F1',
+    color: colors.textLight,
     textAlign: 'center',
   },
   zoomControls: {
@@ -961,6 +1354,71 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     padding: 4,
   },
+  // ─── Player Bar ───
+  playerBar: {
+    backgroundColor: colors.theme === 'light' ? 'rgba(14, 55, 80, 0.97)' : colors.surface,
+    borderRadius: 18,
+    padding: 12,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 12,
+  },
+  playerProgressBg: {
+    height: 3,
+    backgroundColor: colors.theme === 'light' ? 'rgba(255,255,255,0.2)' : colors.border,
+    borderRadius: 3,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  playerProgressFill: {
+    height: 3,
+    backgroundColor: colors.secondary,
+    borderRadius: 3,
+  },
+  playerVerseLabel: {
+    fontSize: 12,
+    color: colors.theme === 'light' ? 'rgba(255,255,255,0.85)' : colors.text,
+    textAlign: 'center',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  playerVerseCount: {
+    fontSize: 11,
+    color: colors.theme === 'light' ? 'rgba(255,255,255,0.5)' : colors.textSecondary,
+    fontWeight: 'normal',
+  },
+  playerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  playerBtn: {
+    padding: 8,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  autoPlayBtn: {
+    marginLeft: 4,
+  },
+  playerPlayBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.theme === 'light' ? '#fff' : colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   dropdownContainer: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -968,17 +1426,17 @@ const styles = StyleSheet.create({
     elevation: 5000, // Ensure dropdown flows over flatlist
   },
   dropdown: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.inputBg,
     borderRadius: 8,
     borderWidth: 0,
     minHeight: 45,
   },
   dropdownText: {
     fontSize: 14,
-    color: '#146C94',
+    color: colors.text,
   },
   dropdownMenu: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.inputBg,
     borderRadius: 8,
     borderWidth: 0,
     maxHeight: 250,
@@ -986,12 +1444,12 @@ const styles = StyleSheet.create({
     zIndex: 4000,
   },
   modalTitle: {
-    color: '#146C94',
+    color: colors.primary,
     fontWeight: 'bold'
   },
   readerCard: {
     flex: 1,
-    backgroundColor: '#FAF9F6', 
+    backgroundColor: colors.cardBg, 
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -1010,12 +1468,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   selectedVerseRow: {
-    backgroundColor: '#DDEEFE', // Light blue highlight
+    backgroundColor: colors.theme === 'light' ? '#DDEEFE' : '#2A3C4D',
+  },
+  speakingVerseRow: {
+    backgroundColor: colors.theme === 'light' ? 'rgba(25, 167, 206, 0.12)' : 'rgba(56, 189, 248, 0.15)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.secondary,
   },
   verseNumberText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginRight: 8,
     marginTop: 2,
   },
@@ -1023,16 +1486,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     lineHeight: 28,
-    color: '#333',
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   selectedVerseText: {
-    color: '#003366',
+    color: colors.theme === 'light' ? '#003366' : colors.tint,
     textDecorationLine: 'underline',
   },
   placeholder: {
     fontSize: 16,
-    color: '#999',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 50,
   },
@@ -1048,7 +1511,7 @@ const styles = StyleSheet.create({
     top: 0, bottom: 0, left: 0, right: 0
   },
   actionModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     width: '85%',
     borderRadius: 12,
     padding: 20,
@@ -1062,7 +1525,7 @@ const styles = StyleSheet.create({
   modalCitation: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 10,
     textAlign: 'center',
   },
@@ -1074,12 +1537,12 @@ const styles = StyleSheet.create({
   },
   modalVerseWord: {
     fontSize: 16,
-    color: '#444',
+    color: colors.text,
     lineHeight: 28,
   },
   meaningLoader: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.theme === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(26, 34, 41, 0.9)',
     zIndex: 100,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1087,7 +1550,7 @@ const styles = StyleSheet.create({
   },
   meaningLoaderText: {
     marginTop: 10,
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
   },
   buttonContainer: {
@@ -1100,21 +1563,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   generateButton: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
   },
   compareButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
   },
   copyButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     marginTop: 5,
   },
   disabledButton: {
-    backgroundColor: '#A9A9A9',
+    backgroundColor: colors.theme === 'light' ? '#A9A9A9' : '#475569',
   },
   buttonText: {
     fontSize: 14,
-    color: '#F6F1F1',
+    color: colors.textLight,
     fontWeight: 'bold',
   },
   thumbnailContainer: {
@@ -1126,11 +1589,11 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   thumbnailHint: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 5,
     fontStyle: 'italic',
   },
@@ -1141,7 +1604,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   compareModalContainer: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '75%',
@@ -1153,13 +1616,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border,
     marginBottom: 15,
   },
   compareModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   compareCloseButton: {
     padding: 5,
@@ -1167,7 +1630,7 @@ const styles = StyleSheet.create({
   compareCloseButtonText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   compareScrollContainer: {
     paddingHorizontal: 20,
@@ -1175,7 +1638,7 @@ const styles = StyleSheet.create({
   compareCitationText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -1185,11 +1648,11 @@ const styles = StyleSheet.create({
   compareVersionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   compareTextContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 8,
     padding: 15,
     shadowColor: '#000',
@@ -1201,23 +1664,23 @@ const styles = StyleSheet.create({
   compareVerseText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#333',
+    color: colors.text,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#146C94',
+    color: colors.tint,
   },
   // Full screen Modal
   fullScreenContainer: {
     flex: 1,
-    backgroundColor: '#1C2526',
+    backgroundColor: colors.theme === 'light' ? '#1C2526' : '#090D0F',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1241,11 +1704,98 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   fullScreenDownloadButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
     borderRadius: 8,
     paddingVertical: 8,
     marginTop: 20,
     width: '80%',
+  },
+  // ── TTS Speed Row ──
+  speedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 8,
+    paddingBottom: 4,
+    gap: 6,
+  },
+  speedBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: colors.theme === 'light' ? 'rgba(255,255,255,0.12)' : colors.border,
+    borderWidth: 1,
+    borderColor: colors.theme === 'light' ? 'rgba(255,255,255,0.2)' : colors.border,
+  },
+  speedBtnActive: {
+    backgroundColor: colors.theme === 'light' ? '#fff' : colors.secondary,
+    borderColor: colors.theme === 'light' ? '#fff' : colors.secondary,
+  },
+  speedBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.theme === 'light' ? 'rgba(255,255,255,0.7)' : colors.textSecondary,
+  },
+  speedBtnTextActive: {
+    color: colors.theme === 'light' ? colors.primary : colors.textLight,
+  },
+  // Dictionary Modal styles
+  dictModalContainer: {
+    backgroundColor: colors.surface,
+    width: '85%',
+    maxHeight: '75%',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    position: 'relative',
+  },
+  aiTag: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    backgroundColor: colors.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  aiTagText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  dictModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.tint,
+    marginBottom: 15,
+    textAlign: 'center',
+    paddingRight: 35,
+  },
+  dictModalScroll: {
+    marginBottom: 15,
+  },
+  dictModalText: {
+    fontSize: 15,
+    color: colors.text,
+    lineHeight: 22,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+  },
+  dictCloseButton: {
+    backgroundColor: colors.theme === 'dark' ? colors.secondary : colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  dictCloseButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

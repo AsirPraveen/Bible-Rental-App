@@ -5,10 +5,13 @@ import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 const GameCrafting = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [inventory, setInventory] = useState<any[]>([]);
   const [talents, setTalents] = useState(0);
   const [email, setEmail] = useState('');
@@ -187,7 +190,7 @@ const GameCrafting = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#7f1d1d', '#450a0a']} style={styles.container}>
+      <LinearGradient colors={colors.linearGradient} style={styles.container}>
         
         {/* Header */}
         <View style={styles.header}>
@@ -374,8 +377,8 @@ const GameCrafting = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#450a0a', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+const getStyles = (colors: ColorsType) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#450a0a' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -432,11 +435,11 @@ const styles = StyleSheet.create({
   
   altarBox: {
      marginHorizontal: 16,
-     backgroundColor: '#1E293B',
+     backgroundColor: colors.cardBg,
      padding: 20,
      borderRadius: 16,
      borderWidth: 1,
-     borderColor: '#DC2626'
+     borderColor: colors.border
   },
   altarSlotContainer: {
      alignItems: 'center'
@@ -444,12 +447,12 @@ const styles = StyleSheet.create({
   altarSlot: {
      width: 100,
      height: 140,
-     backgroundColor: 'rgba(0,0,0,0.5)',
+     backgroundColor: colors.inputBg,
      borderRadius: 8,
      justifyContent: 'center',
      alignItems: 'center',
      borderWidth: 1,
-     borderColor: '#475569',
+     borderColor: colors.border,
      overflow: 'hidden'
   },
   slotFill: {
@@ -475,8 +478,8 @@ const styles = StyleSheet.create({
      opacity: 0.5
   },
   
-  divider: { height: 1, backgroundColor: '#7F1D1D', marginVertical: 16 },
-  sectionTitle: { color: '#FECACA', fontSize: 16, fontWeight: 'bold', marginLeft: 16, marginBottom: 12 },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 16 },
+  sectionTitle: { color: colors.theme === 'dark' ? '#FECACA' : colors.primary, fontSize: 16, fontWeight: 'bold', marginLeft: 16, marginBottom: 12 },
   
   scrollContent: {
      paddingHorizontal: 16,
@@ -484,10 +487,12 @@ const styles = StyleSheet.create({
      paddingBottom: 40,
   },
   cardItem: {
-     backgroundColor: 'rgba(0,0,0,0.4)',
+     backgroundColor: colors.cardBg,
      padding: 16,
      borderRadius: 12,
      borderLeftWidth: 4,
+     borderWidth: 1,
+     borderColor: colors.border
   },
   cardItemBase: {
      backgroundColor: 'rgba(253, 224, 71, 0.2)',
@@ -502,21 +507,21 @@ const styles = StyleSheet.create({
      borderLeftWidth: 4,
   },
   cardItemAscend: {
-    backgroundColor: 'rgba(37, 99, 235, 0.2)',
-    borderColor: '#2563EB',
-    borderWidth: 1,
-    borderLeftWidth: 4,
+     backgroundColor: 'rgba(37, 99, 235, 0.2)',
+     borderColor: '#2563EB',
+     borderWidth: 1,
+     borderLeftWidth: 4,
   },
   cardItemDisabled: {
      opacity: 0.3
   },
-  cardName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  cardName: { color: colors.text, fontSize: 18, fontWeight: 'bold' },
   statsRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 10
+     flexDirection: 'row',
+     gap: 16,
+     marginTop: 10
   },
-  statText: { color: '#FFF', fontSize: 13, fontWeight: 'bold' }
+  statText: { color: colors.text, fontSize: 13, fontWeight: 'bold' }
 });
 
 export default GameCrafting;

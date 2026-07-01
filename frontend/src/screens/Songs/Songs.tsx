@@ -7,10 +7,13 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function SongComponent() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [songs, setSongs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,12 +74,12 @@ export default function SongComponent() {
       onPress={() => navigation.navigate('SongDetails', { songId: item._id })}
     >
       <LinearGradient
-        colors={['#ffffff', '#f8fdfd']}
+        colors={colors.theme === 'dark' ? [colors.cardBg, colors.cardBg] : ['#ffffff', '#f8fdfd']}
         style={styles.songCard}
       >
         <View style={styles.songCardInner}>
           <View style={styles.songIconContainer}>
-            <MaterialCommunityIcons name="music-clef-treble" size={24} color="#146C94" />
+            <MaterialCommunityIcons name="music-clef-treble" size={24} color={colors.tint} />
           </View>
           <View style={styles.songInfo}>
             <Text style={styles.songTitle} numberOfLines={2}>
@@ -88,7 +91,7 @@ export default function SongComponent() {
               ) : null}
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#19A7CE" />
+          <Ionicons name="chevron-forward" size={20} color={colors.secondary} />
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -96,17 +99,17 @@ export default function SongComponent() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.headerBackground}>
+      <LinearGradient colors={colors.linearGradient} style={styles.headerBackground}>
         <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>Songs</Text>
           <Searchbar
             placeholder="Search lyrics or titles..."
             onChangeText={setSearchQuery}
             value={searchQuery}
-            style={styles.searchBar}
-            inputStyle={styles.searchInput}
-            iconColor="#146C94"
-            placeholderTextColor="#888"
+            style={[styles.searchBar, { backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#fff' }]}
+            inputStyle={[styles.searchInput, { color: colors.text }]}
+            iconColor={colors.tint}
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
       </LinearGradient>
@@ -151,7 +154,7 @@ export default function SongComponent() {
             refreshing={isRefreshing}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="musical-notes-outline" size={80} color="#ccc" />
+                <Ionicons name="musical-notes-outline" size={80} color={colors.border} />
                 <Text style={styles.emptyText}>No songs found</Text>
                 <Text style={styles.emptySubtext}>Try a different search or filter</Text>
               </View>
@@ -163,11 +166,11 @@ export default function SongComponent() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
   },
   headerBackground: {
     paddingBottom: 20,
@@ -187,13 +190,11 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     elevation: 4,
-    backgroundColor: '#fff',
     borderRadius: 12,
     height: 50,
   },
   searchInput: {
     fontSize: 16,
-    color: '#333',
   },
   filterSection: {
     marginTop: 12,
@@ -204,18 +205,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
     height: 34,
   },
   chipSelected: {
-    backgroundColor: '#146C94',
-    borderColor: '#146C94',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
   },
   chipTextSelected: {
     color: '#fff',
@@ -242,14 +243,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E8F1F5',
+    borderColor: colors.border,
     borderRadius: 16,
   },
   songIconContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#E6F0FA',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#E6F0FA',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
   songTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 2,
   },
   songMetaRow: {
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
     color: '#fff',
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
   },
   songSubtitle: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     flex: 1,
     fontStyle: 'italic',
   },
@@ -293,12 +294,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#888',
+    color: colors.textSecondary,
     marginTop: 8,
   },
 });

@@ -62,6 +62,7 @@ const BibleComponent = () => {
   const [dictWord, setDictWord] = useState('');
   const [dictMeaning, setDictMeaning] = useState('');
   const [dictSource, setDictSource] = useState('');
+  const [confirmWord, setConfirmWord] = useState<string | null>(null);
   
   // Generate Image State
   const [verseImage, setVerseImage] = useState<string | null>(null);
@@ -173,7 +174,6 @@ const BibleComponent = () => {
         console.error('Error during initialization:', error);
       } finally {
         setIsRestoring(false);
-        setLoading(false);
       }
     };
 
@@ -286,7 +286,9 @@ const BibleComponent = () => {
   // Fetch verses
   useEffect(() => {
     const fetchChapter = async () => {
-      if (language && selectedBookNumber !== null && selectedChapter !== null && !isRestoring) {
+      if (isRestoring) return;
+
+      if (language && selectedBookNumber !== null && selectedChapter !== null) {
         // Clear old verses while loading to show fresh state
         setLoading(true);
 
@@ -331,6 +333,8 @@ const BibleComponent = () => {
             }
           }, 100);
         }
+      } else {
+        setLoading(false);
       }
     };
     fetchChapter();
@@ -602,18 +606,7 @@ const BibleComponent = () => {
   const handleWordLongPress = (word: string) => {
     const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()"]/g, "").trim();
     if (!cleanWord) return;
-
-    Alert.alert(
-      'Dictionary Lookup',
-      `Find the biblical meaning of "${cleanWord}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Yes', 
-          onPress: () => fetchWordMeaning(cleanWord) 
-        }
-      ]
-    );
+    setConfirmWord(cleanWord);
   };
 
   const fetchWordMeaning = async (word: string) => {
@@ -1091,7 +1084,15 @@ const BibleComponent = () => {
           visible={isVerseModalVisible}
           transparent={true}
           animationType="fade"
-          onRequestClose={closeVerseModal}
+          onRequestClose={() => {
+            if (confirmWord) {
+              setConfirmWord(null);
+            } else if (isDictModalVisible) {
+              setIsDictModalVisible(false);
+            } else {
+              closeVerseModal();
+            }
+          }}
         >
           <View style={styles.modalOverlay}>
             <TouchableOpacity style={styles.modalDismissArea} activeOpacity={1} onPress={closeVerseModal} />
@@ -1176,6 +1177,73 @@ const BibleComponent = () => {
                 </>
               )}
             </View>
+
+            {/* Custom Word Confirmation Dialog inside the same native Modal window */}
+            {confirmWord && (
+              <View style={[StyleSheet.absoluteFillObject, styles.confirmOverlay]}>
+                <TouchableOpacity 
+                  style={styles.modalDismissArea} 
+                  activeOpacity={1} 
+                  onPress={() => setConfirmWord(null)} 
+                />
+                <View style={styles.confirmCard}>
+                  <Text style={styles.confirmTitle}>Dictionary Lookup</Text>
+                  <Text style={styles.confirmMessage}>
+                    Find the biblical meaning of "{confirmWord}"?
+                  </Text>
+                  <View style={styles.confirmButtons}>
+                    <TouchableOpacity 
+                      style={[styles.confirmBtn, styles.confirmBtnCancel]} 
+                      onPress={() => setConfirmWord(null)}
+                    >
+                      <Text style={styles.confirmBtnTextCancel}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.confirmBtn, styles.confirmBtnYes]} 
+                      onPress={() => {
+                        const wordToFetch = confirmWord;
+                        setConfirmWord(null);
+                        fetchWordMeaning(wordToFetch);
+                      }}
+                    >
+                      <Text style={styles.confirmBtnTextYes}>Yes</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Dictionary View (Rendered inside parent modal to bypass native Modal conflict bugs) */}
+            {isDictModalVisible && (
+              <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay]}>
+                <TouchableOpacity 
+                  style={styles.modalDismissArea} 
+                  activeOpacity={1} 
+                  onPress={() => setIsDictModalVisible(false)} 
+                />
+                <View style={styles.dictModalContainer}>
+                  {/* Blue AI Tag in the top-right corner */}
+                  {dictSource === 'ai' && (
+                    <View style={styles.aiTag}>
+                      <Text style={styles.aiTagText}>AI</Text>
+                    </View>
+                  )}
+
+                  <Text style={styles.dictModalTitle}>Meaning of "{dictWord}"</Text>
+                  
+                  <ScrollView style={styles.dictModalScroll} showsVerticalScrollIndicator={true}>
+                    <Text style={styles.dictModalText}>{dictMeaning}</Text>
+                  </ScrollView>
+
+                  <TouchableOpacity 
+                    style={styles.dictCloseButton} 
+                    onPress={() => setIsDictModalVisible(false)}
+                  >
+                    <Text style={styles.dictCloseButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         </Modal>
 
@@ -1241,43 +1309,6 @@ const BibleComponent = () => {
                   </>
                 )}
               </ScrollView>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Custom Dictionary Modal */}
-        <Modal
-          visible={isDictModalVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setIsDictModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity 
-              style={styles.modalDismissArea} 
-              activeOpacity={1} 
-              onPress={() => setIsDictModalVisible(false)} 
-            />
-            <View style={styles.dictModalContainer}>
-              {/* Blue AI Tag in the top-right corner */}
-              {dictSource === 'ai' && (
-                <View style={styles.aiTag}>
-                  <Text style={styles.aiTagText}>AI</Text>
-                </View>
-              )}
-
-              <Text style={styles.dictModalTitle}>Meaning of "{dictWord}"</Text>
-              
-              <ScrollView style={styles.dictModalScroll} showsVerticalScrollIndicator={true}>
-                <Text style={styles.dictModalText}>{dictMeaning}</Text>
-              </ScrollView>
-
-              <TouchableOpacity 
-                style={styles.dictCloseButton} 
-                onPress={() => setIsDictModalVisible(false)}
-              >
-                <Text style={styles.dictCloseButtonText}>Close</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -1796,6 +1827,72 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  confirmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2000,
+    elevation: 2000,
+  },
+  confirmCard: {
+    width: '85%',
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  confirmBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmBtnCancel: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  confirmBtnYes: {
+    backgroundColor: colors.primary,
+  },
+  confirmBtnTextCancel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  confirmBtnTextYes: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textLight,
   },
 });
 

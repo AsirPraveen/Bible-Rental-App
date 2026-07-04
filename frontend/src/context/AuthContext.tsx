@@ -2,8 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import axios from 'axios';
+import Constants from 'expo-constants';
 
-// Configure global axios interceptor to automatically attach JWT token to all outgoing requests
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+
+// Configure global axios interceptor to automatically attach JWT token and x-organization-id to all outgoing requests
 axios.interceptors.request.use(
   async (config) => {
     try {
@@ -11,8 +14,12 @@ axios.interceptors.request.use(
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      const activeOrgId = await AsyncStorage.getItem('activeOrgId');
+      if (activeOrgId && config.headers) {
+        config.headers['x-organization-id'] = activeOrgId;
+      }
     } catch (e) {
-      console.error('Failed to attach token to request headers', e);
+      console.error('Failed to attach token/org to request headers', e);
     }
     return config;
   },
@@ -46,9 +53,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setIsGuest(true);
         }
         
-        const userData = await AsyncStorage.getItem('user');
-        if (userData) {
-          setUser(JSON.parse(userData));
+        const token = await AsyncStorage.getItem('token');
+        const savedUser = await AsyncStorage.getItem('user');
+        
+        if (savedUser) {
+          setUser(JSON.parse(savedUser));
+        }
+
+        if (token) {
+          try {
+            const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
+            if (res.data.status === 'Ok') {
+              const freshUser = res.data.data;
+              setUser(freshUser);
+              await AsyncStorage.setItem('user', JSON.stringify(freshUser));
+            }
+          } catch (err) {
+            console.log('Error refreshing user session details:', err);
+          }
         }
       } catch (e) {
         console.error('Failed to load auth state', e);
@@ -66,6 +88,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('isGuest', 'false');
+      if (userData.activeOrganizationId) {
+        await AsyncStorage.setItem('activeOrgId', userData.activeOrganizationId);
+      }
     } catch (e) {
       console.error('Error during login state update', e);
     }
@@ -78,6 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('token');
       await AsyncStorage.setItem('isGuest', 'false');
+      await AsyncStorage.removeItem('activeOrgId');
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
     } catch (e) {
       console.error('Error during logout', e);
@@ -91,6 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem('isGuest', 'true');
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('token');
+      // For guest, let them choose organization inside selection screens
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
     } catch (e) {
       console.error('Error entering guest mode', e);

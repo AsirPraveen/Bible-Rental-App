@@ -19,6 +19,12 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).send({ status: 'error', message: 'Unauthorized' });
     }
 
+    const now = new Date();
+    if (!user.lastActiveAt || (now - new Date(user.lastActiveAt)) > 60000) {
+      user.lastActiveAt = now;
+      await user.save();
+    }
+
     req.user = user;
     next();
   } catch (error) {

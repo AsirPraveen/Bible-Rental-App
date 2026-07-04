@@ -49,6 +49,12 @@ import GameCardLibrary from '../screens/GameScreen/GameCardLibrary';
 import AppSettingsTab from '../screens/AdminScreen/components/AppSettingsTab';
 import ManageSongsTab from '../screens/AdminScreen/ManageSongsTab';
 import GuestSettingsTab from '../screens/AdminScreen/GuestSettingsTab';
+import OrgSelectionScreen from '../screens/OrgSelection/OrgSelectionScreen';
+import CreateOrgScreen from '../screens/CreateOrg/CreateOrgScreen';
+import OrgSettingsScreen from '../screens/OrgSettings/OrgSettingsScreen';
+import MemberManagementScreen from '../screens/MemberManagement/MemberManagementScreen';
+import SuperAdminDashboard from '../screens/SuperAdminDashboard/SuperAdminDashboard';
+import SuperAdminOrgDetail from '../screens/SuperAdminDashboard/SuperAdminOrgDetail';
 
 const Stack = createStackNavigator();
 
@@ -73,6 +79,41 @@ const StackNavigation = () => {
       <Stack.Screen
         name="Home"
         component={DrawerNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MainApp"
+        component={DrawerNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="OrgSelection"
+        component={OrgSelectionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CreateOrg"
+        component={CreateOrgScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="OrgSettings"
+        component={OrgSettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MemberManagement"
+        component={MemberManagementScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SuperAdmin"
+        component={SuperAdminDashboard}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SuperAdminOrgDetail"
+        component={SuperAdminOrgDetail}
         options={{ headerShown: false }}
       />
       <Stack.Screen

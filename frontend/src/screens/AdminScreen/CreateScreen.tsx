@@ -3,9 +3,13 @@ import { View, StyleSheet, TouchableOpacity, Text, Image, Platform, StatusBar, S
 import { useNavigation } from '@react-navigation/native';
 import { SquarePen, BookPlus, BarChart3, ShieldAlert, Map, Music, Eye } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CreateScreen() {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
+
+  const isSuperAdmin = user?.globalRole === 'SuperAdmin';
 
   const cards = [
     {
@@ -22,6 +26,7 @@ export default function CreateScreen() {
       title: 'Manage Maps',
       icon: <Map color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
+      hide: !isSuperAdmin,
     },
     {
       title: 'Manage Songs',
@@ -32,18 +37,21 @@ export default function CreateScreen() {
       title: 'App Analytics',
       icon: <BarChart3 color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
+      hide: !isSuperAdmin,
     },
     {
       title: 'Moderation',
       icon: <ShieldAlert color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
+      hide: !isSuperAdmin,
     },
     {
       title: 'Guest Settings',
       icon: <Eye color="#146C94" size={32} />,
       bgColor: '#AFD3E2',
+      hide: !isSuperAdmin,
     }
-  ];
+  ].filter(card => !card.hide);
 
   return (
     <SafeAreaView style={styles.outer_container}>

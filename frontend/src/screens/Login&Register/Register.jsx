@@ -16,16 +16,12 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import Error from 'react-native-vector-icons/MaterialIcons';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
-import { RadioButton } from 'react-native-paper';
 import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
-const SECRET_TEXT = Constants.expoConfig.extra.secretText;
-// console.log('secretText:', SECRET_TEXT); // Removed for production security
-
 function RegisterPage() {
   const navigation = useNavigation();
   const { colors } = useTheme();
@@ -35,43 +31,22 @@ function RegisterPage() {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [userType, setUserType] = useState('User');
-  const [secretText, setSecretText] = useState('');
-  const [showSecretText, setShowSecretText] = useState(false); // New state for secret text visibility
   const [loading, setLoading] = useState(false);
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [mobileError, setMobileError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [secretError, setSecretError] = useState('');
 
   const validateName = (name) => name.length > 1;
   const validateEmail = (email) => /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email);
   const validateMobile = (mobile) => /[6-9][0-9]{9}/.test(mobile);
   const validatePassword = (password) => /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/.test(password);
-  const validateSecret = (secretText) => (userType === 'Admin' && SECRET_TEXT) ? secretText === SECRET_TEXT : true;
-
-  useEffect(() => {
-    // Reset or set secret error based on userType and SECRET_TEXT availability
-    if (!SECRET_TEXT) {
-      setSecretError('Secret text configuration is missing in app config');
-    } else if (userType !== 'Admin') {
-      setSecretError('');
-    } else if (!secretText) {
-      setSecretError('Secret text is required for Admin');
-    } else if (!validateSecret(secretText)) {
-      setSecretError('Secret text is invalid');
-    } else {
-      setSecretError('');
-    }
-  }, [userType, secretText, SECRET_TEXT]);
 
   const handleSubmit = () => {
     setNameError('');
     setEmailError('');
     setMobileError('');
     setPasswordError('');
-    setSecretError('');
 
     if (!name) setNameError('Name is required');
     else if (!validateName(name)) setNameError('Name must be more than 1 character');
@@ -81,10 +56,8 @@ function RegisterPage() {
     else if (!validateMobile(mobile)) setMobileError('Mobile must start with 6-9 and be 10 digits');
     if (!password) setPasswordError('Password is required');
     else if (!validatePassword(password)) setPasswordError('Password must include uppercase, lowercase, number, and be at least 6 characters');
-    if (userType === 'Admin' && !secretText) setSecretError('Secret text is required for Admin');
-    else if (userType === 'Admin' && SECRET_TEXT && !validateSecret(secretText)) setSecretError('Secret text is invalid');
 
-    if (!name || !email || !mobile || !password || (userType === 'Admin' && !secretText) || nameError || emailError || mobileError || passwordError || secretError) {
+    if (!name || !email || !mobile || !password || nameError || emailError || mobileError || passwordError) {
       Toast.show({
         type: 'error',
         text1: 'Error!!',
@@ -95,7 +68,7 @@ function RegisterPage() {
     }
 
     setLoading(true);
-    const userData = { name, email, mobile, password, userType, secretText };
+    const userData = { name, email, mobile, password };
     axios
       .post(`${API_URL}/api/auth/register`, userData)
       .then(res => {
@@ -134,59 +107,7 @@ function RegisterPage() {
         <View style={styles.loginContainer}>
           <Text style={styles.text_header}>Register !!!</Text>
 
-          <View style={styles.radioButton_div}>
-            <Text style={styles.radioButton_title}>Register as</Text>
-            <View style={styles.radioButton_inner_div}>
-              <Text style={styles.radioButton_text}>User</Text>
-              <RadioButton
-                value="User"
-                status={userType === 'User' ? 'checked' : 'unchecked'}
-                onPress={() => setUserType('User')}
-                color={colors.tint}
-                uncheckedColor={colors.textSecondary}
-              />
-            </View>
-            <View style={styles.radioButton_inner_div}>
-              <Text style={styles.radioButton_text}>Admin</Text>
-              <RadioButton
-                value="Admin"
-                status={userType === 'Admin' ? 'checked' : 'unchecked'}
-                onPress={() => setUserType('Admin')}
-                color={colors.tint}
-                uncheckedColor={colors.textSecondary}
-              />
-            </View>
-          </View>
 
-          {userType === 'Admin' && (
-            <View style={styles.action}>
-              <FontAwesome name="user-secret" color={colors.tint} style={styles.smallIcon} />
-              <TextInput
-                placeholder="Secret Text"
-                placeholderTextColor={colors.textSecondary}
-                style={styles.textInput}
-                value={secretText}
-                onChangeText={(text) => {
-                  setSecretText(text);
-                  if (userType === 'Admin' && SECRET_TEXT && !validateSecret(text)) {
-                    setSecretError('Secret text is invalid');
-                  } else {
-                    setSecretError('');
-                  }
-                }}
-                secureTextEntry={!showSecretText}
-              />
-              <TouchableOpacity onPress={() => setShowSecretText(!showSecretText)}>
-                <Feather
-                  name={showSecretText ? 'eye' : 'eye-off'}
-                  style={{ marginRight: -10 }}
-                  color={secretError ? 'red' : colors.tint}
-                  size={23}
-                />
-              </TouchableOpacity>
-            </View>
-          )}
-          {secretError ? <Text style={styles.errorText}>{secretError}</Text> : null}
 
           <View style={styles.action}>
             <FontAwesome name="user-o" color={colors.tint} style={styles.smallIcon} />

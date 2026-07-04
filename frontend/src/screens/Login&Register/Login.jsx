@@ -198,19 +198,35 @@ function LoginPage() {
           navigation.navigate('GoogleSetPassword', { name, email, image: photo, googleId });
         } else {
           const token = res.data.data;
-          // Use the name from the database (user may have customized it), not the Google profile
           const dbName = res.data.userData?.name || name;
-          await login({ email, name: dbName }, token);
-          await AsyncStorage.setItem('userType', res.data.userType);
+          const activeOrgId = res.data.activeOrganizationId;
+          const userType = res.data.userType;
+
+          await login({ 
+            email, 
+            name: dbName, 
+            globalRole: res.data.globalRole 
+          }, token);
+          await AsyncStorage.setItem('userType', userType);
+          if (activeOrgId) {
+            await AsyncStorage.setItem('activeOrgId', activeOrgId);
+          }
 
           const pushToken = await AsyncStorage.getItem('expoPushToken');
           if (pushToken) syncPushTokenWithBackend(pushToken);
 
           Alert.alert('Welcome!', `Signed in as ${dbName || email}`);
-          if (res.data.userType === 'Admin') {
-            navigation.replace('AdminScreen');
+          
+          if (res.data.globalRole === 'SuperAdmin') {
+            navigation.replace('SuperAdmin');
+          } else if (activeOrgId) {
+            if (userType === 'Admin') {
+              navigation.replace('AdminScreen');
+            } else {
+              navigation.replace('MainApp');
+            }
           } else {
-            navigation.replace('Home');
+            navigation.replace('OrgSelection');
           }
         }
       } else {
@@ -250,15 +266,32 @@ function LoginPage() {
         if (res.data.status === 'ok') {
           Alert.alert('Success', 'Logged in successfully!');
           const token = res.data.data;
-          login({ email: emailOrPhone }, token);
-          AsyncStorage.setItem('userType', res.data.userType);
+          const activeOrgId = res.data.activeOrganizationId;
+          const userType = res.data.userType;
+
+          login({ 
+            email: emailOrPhone, 
+            globalRole: res.data.globalRole 
+          }, token);
+          AsyncStorage.setItem('userType', userType);
+          if (activeOrgId) {
+            AsyncStorage.setItem('activeOrgId', activeOrgId);
+          }
+
           AsyncStorage.getItem('expoPushToken').then(pt => {
             if (pt) syncPushTokenWithBackend(pt);
           });
-          if (res.data.userType === 'Admin') {
-            navigation.replace('AdminScreen');
+
+          if (res.data.globalRole === 'SuperAdmin') {
+            navigation.replace('SuperAdmin');
+          } else if (activeOrgId) {
+            if (userType === 'Admin') {
+              navigation.replace('AdminScreen');
+            } else {
+              navigation.replace('MainApp');
+            }
           } else {
-            navigation.replace('Home');
+            navigation.replace('OrgSelection');
           }
         } else {
           Alert.alert('Error', res.data.error || 'Invalid credentials!!!');
@@ -288,7 +321,7 @@ function LoginPage() {
       }
 
       await continueAsGuest();
-      navigation.replace('Home');
+      navigation.replace('OrgSelection');
     } catch (err) {
       console.error('Guest login verification error:', err);
       Alert.alert('Error', 'Failed to verify guest access. Please check your internet connection.');

@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const songController = require('../controllers/songController');
 const adminAuth = require('../middleware/adminAuth');
+const orgScope = require('../middleware/orgScope');
 
-// Public — anyone can view songs
-router.get('/songs', songController.getSongs);
-router.get('/songs-metadata', songController.getSongsMetadata);
-router.get('/songs/:id', songController.getSongById);
+// Public
+router.get('/songs', orgScope, songController.getSongs);
+router.get('/songs-metadata', orgScope, songController.getSongsMetadata);
+router.get('/songs/:id', orgScope, songController.getSongById);
 
 // Admin CRUD
 router.post('/songs', adminAuth, songController.createSong);

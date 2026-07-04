@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const requestHistorySchema = new mongoose.Schema({
+  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   userName: { type: String, required: true },
   userEmail: { type: String, required: true },
   book_id: { type: Number, required: true },

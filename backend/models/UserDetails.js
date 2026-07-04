@@ -9,7 +9,28 @@ const UserDetailSchema = new mongoose.Schema(
     image: String,
     gender: String,
     profession: String,
+
+    // === MULTI-TENANT ROLE SYSTEM ===
+    // Global platform role (only 'SuperAdmin' or null for regular users)
+    globalRole: { type: String, enum: ['SuperAdmin', null], default: null },
+
+    // Organization memberships — a user can belong to multiple orgs
+    memberships: [{
+      organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+      role: { type: String, enum: ['Admin', 'User'], default: 'User' },
+      joinedAt: { type: Date, default: Date.now },
+      isActive: { type: Boolean, default: true }
+    }],
+
+    // Currently active organization context
+    activeOrganizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', default: null },
+
+    // Pending join requests (orgs the user has requested to join)
+    pendingJoinRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Organization' }],
+
+    // Legacy field kept for backward compatibility during migration
     userType: String,
+
     secretText: String,
     otp: String,
     otpExpiry: Date,
@@ -26,13 +47,12 @@ const UserDetailSchema = new mongoose.Schema(
     talents: { type: Number, default: 0 },
     cardInventory: [{ 
       cardId: { type: mongoose.Schema.Types.ObjectId, ref: 'Card' },
-      equippedArmor: [{ type: String }], // E.g., 'Shield of Faith', 'Belt of Truth'
-      refinementLevel: { type: Number, default: 0 } // +10% stats per level
+      equippedArmor: [{ type: String }],
+      refinementLevel: { type: Number, default: 0 }
     }],
-    activeDeck: [{ type: mongoose.Schema.Types.ObjectId }], // References unique instance IDs in cardInventory
-    activeEventCard: { type: mongoose.Schema.Types.ObjectId, default: null }, // References unique instance ID in cardInventory
-    // New Advanced Mechanics
-    armorInventory: [{ type: String }], // 'Shield of Faith', 'Sword of the Spirit', etc.
+    activeDeck: [{ type: mongoose.Schema.Types.ObjectId }],
+    activeEventCard: { type: mongoose.Schema.Types.ObjectId, default: null },
+    armorInventory: [{ type: String }],
     fruitsTree: {
       patience: { level: { type: Number, default: 0 }, unlocked: { type: Boolean, default: false } },
       love: { level: { type: Number, default: 0 }, unlocked: { type: Boolean, default: false } },
@@ -44,18 +64,18 @@ const UserDetailSchema = new mongoose.Schema(
       gentleness: { level: { type: Number, default: 0 }, unlocked: { type: Boolean, default: false } },
       selfControl: { level: { type: Number, default: 0 }, unlocked: { type: Boolean, default: false } },
     },
-    cardStudyArea: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Card' }], // Cards passively gaining XP from reading
-    completedLevels: [{ type: Number }], // Array of level IDs the user has beaten
+    cardStudyArea: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Card' }],
+    completedLevels: [{ type: Number }],
     lastLoginDate: { type: Date },
-    manna: { type: Number, default: 0 }, // Premium currency
-    unlockedLore: [{ type: String }], // Names of cards whose lore is unlocked
-    claimedLoreRewards: [{ type: String }], // Names of cards whose rewards have been claimed
+    lastActiveAt: { type: Date },
+    manna: { type: Number, default: 0 },
+    unlockedLore: [{ type: String }],
+    claimedLoreRewards: [{ type: String }],
     resetPasswordExpires: Date,
     expoPushToken: {
       type: String,
       default: null
     },
-    // Treasures in Heaven (Bible Reading Progress)
     treasuresInHeaven: { type: Number, default: 0 },
     readingProgress: { type: Object, default: {} },
     notificationSettings: {
@@ -80,4 +100,9 @@ const UserDetailSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+// Indexes for multi-tenant queries
+UserDetailSchema.index({ 'memberships.organization': 1 });
+UserDetailSchema.index({ activeOrganizationId: 1 });
+
 module.exports = mongoose.model("UserInfo", UserDetailSchema);

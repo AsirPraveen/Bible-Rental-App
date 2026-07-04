@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const pendingRentRequestSchema = new mongoose.Schema({
+  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   userEmail: { type: String, required: true },
   book_id: { type: Number, required: true },
   book_name: { type: String, required: true },

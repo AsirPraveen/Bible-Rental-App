@@ -4,11 +4,11 @@ const RequestHistory = require('../models/RequestHistory');
 const EmailTemplate = require('../models/EmailTemplate');
 const nodemailer = require('nodemailer');
 const { bookApprovalTemplate, bookRejectionTemplate } = require('../config/emailTemplate');
-const { notifyAdmins, notifyUserById } = require('../utils/notificationService');
+const { notifyOrgAdmins, notifyUserById } = require('../utils/notificationService');
 
 exports.getAllBooks = async (req, res) => {
   try {
-    const books = await Book.find({});
+    const books = await Book.find({ organization: req.orgId });
     res.send({ status: "Ok", data: books });
   } catch (error) {
     res.send({ status: "error", data: error });
@@ -31,10 +31,10 @@ exports.addBook = async (req, res) => {
   } = req.body;
 
   try {
-    // Check if book ID already exists
-    const existingBook = await Book.findOne({ book_id });
+    // Check if book ID already exists in this organization
+    const existingBook = await Book.findOne({ book_id, organization: req.orgId });
     if (existingBook) {
-      return res.status(400).send({ status: "error", data: "Book ID already exists" });
+      return res.status(400).send({ status: "error", data: "Book ID already exists in this organization" });
     }
 
     // Validate required fields
@@ -57,6 +57,7 @@ exports.addBook = async (req, res) => {
 
     // Create new book
     await Book.create({
+      organization: req.orgId,
       book_name: book_name.trim(),
       author_name: author_name.trim(),
       pages: Number(pages),
@@ -83,11 +84,12 @@ exports.addBook = async (req, res) => {
 
 exports.getBookAnalytics = async (req, res) => {
   try {
-    const totalBooks = await Book.countDocuments();
+    const totalBooks = await Book.countDocuments({ organization: req.orgId });
     const rentedBooks = await Book.aggregate([
+      { $match: { organization: req.orgId } },
       { $group: { _id: null, totalRented: { $sum: "$rent_count" } } }
     ]);
-    const popularBooks = await Book.find().sort({ rent_count: -1 }).limit(5);
+    const popularBooks = await Book.find({ organization: req.orgId }).sort({ rent_count: -1 }).limit(5);
     res.send({
       status: "Ok",
       data: {
@@ -102,16 +104,16 @@ exports.getBookAnalytics = async (req, res) => {
 };
 
 exports.submitRentRequest = async (req, res) => {
-  const { userEmail, book_id, book_name } = req.body;
+  const { userEmail, book_id } = req.body;
   try {
-    const book = await Book.findOne({ book_id });
+    const book = await Book.findOne({ book_id, organization: req.orgId });
     if (!book || !book.available) {
       return res.status(400).send({ status: "error", data: "Book is not available" });
     }
 
-    const user = await User.findOne({ email: userEmail });
+    const user = await User.findOne({ email: userEmail, 'memberships.organization': req.orgId });
     if (!user) {
-      return res.status(404).send({ status: "error", data: "User not found" });
+      return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
     // Check if the user already has a pending request for this book
@@ -128,8 +130,9 @@ exports.submitRentRequest = async (req, res) => {
       { $push: { books_rented: { book_id, status: 'pending', requested_at: new Date() } } }
     );
 
-    // Notify Admins of new request
-    await notifyAdmins(
+    // Notify Admins of this specific organization of new request
+    await notifyOrgAdmins(
+        req.orgId,
         'New Book Rental Request 📚',
         `User ${user.name || userEmail} has requested to rent "${book.book_name}".`,
         { bookId: book_id, type: 'rental_request' }
@@ -143,17 +146,21 @@ exports.submitRentRequest = async (req, res) => {
 
 exports.getPendingRentRequests = async (req, res) => {
   try {
-    const users = await User.find({ 'books_rented.status': 'pending' });
+    // Only fetch users that are members of this organization and have pending requests
+    const users = await User.find({ 
+      'books_rented.status': 'pending',
+      'memberships.organization': req.orgId
+    });
     
     // Extract all unique book_ids from pending requests
     const bookIds = users.flatMap(user =>
       user.books_rented
         .filter(request => request.status === 'pending')
         .map(request => request.book_id)
-    ).filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
+    ).filter((id, index, self) => self.indexOf(id) === index);
 
-    // Fetch all books in one query
-    const books = await Book.find({ book_id: { $in: bookIds } });
+    // Fetch all books for this organization in one query
+    const books = await Book.find({ book_id: { $in: bookIds }, organization: req.orgId });
     const bookMap = new Map(books.map(book => [book.book_id, book.book_name]));
 
     // Map users to pending requests with correct book names
@@ -177,12 +184,13 @@ exports.getPendingRentRequests = async (req, res) => {
     res.status(500).send({ status: "error", data: error.message });
   }
 };
+
 exports.approveRentRequest = async (req, res) => {
   const { userEmail, book_id } = req.body;
   try {
-    const user = await User.findOne({ email: userEmail });
+    const user = await User.findOne({ email: userEmail, 'memberships.organization': req.orgId });
     if (!user) {
-      return res.status(404).send({ status: "error", data: "User not found" });
+      return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
     // Find the specific pending request by book_id and status
@@ -193,15 +201,15 @@ exports.approveRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Request not found or already processed" });
     }
 
-    const book = await Book.findOne({ book_id });
+    const book = await Book.findOne({ book_id, organization: req.orgId });
     if (!book) {
-      return res.status(404).send({ status: "error", data: "Book not found" });
+      return res.status(404).send({ status: "error", data: "Book not found in this organization" });
     }
 
     // Update the book availability and ownership
     const newAvailableCount = Math.max((book.available_count || 1) - 1, 0);
     await Book.updateOne(
-      { book_id },
+      { book_id, organization: req.orgId },
       { 
         $set: { 
           available: newAvailableCount > 0, 
@@ -224,6 +232,7 @@ exports.approveRentRequest = async (req, res) => {
 
     // Save to request history
     await RequestHistory.create({
+      organization: req.orgId,
       userName: user.name,
       userEmail,
       book_id,
@@ -232,14 +241,13 @@ exports.approveRentRequest = async (req, res) => {
       status: 'approved',
     });
 
-    // Send Approval Email
+    // Send Approval Email (try loading org specific template or global)
     try {
-      const template = await EmailTemplate.findOne({ templateId: 'book_approval' });
+      const template = await EmailTemplate.findOne({ templateId: 'book_approval', organization: req.orgId });
       if (template) {
         let subject = template.subject;
         let body = template.body;
 
-        // Replace placeholders (case-insensitive)
         body = body.replace(/{{userName}}/gi, user.name || 'User');
         body = body.replace(/{{bookName}}/gi, book.book_name);
 
@@ -261,7 +269,6 @@ exports.approveRentRequest = async (req, res) => {
       }
     } catch (emailError) {
       console.error('Error sending approval email:', emailError);
-      // We don't fail the approval if email fails, but we log it
     }
 
     // Notify User of approval
@@ -282,9 +289,9 @@ exports.approveRentRequest = async (req, res) => {
 exports.rejectRentRequest = async (req, res) => {
   const { userEmail, book_id } = req.body;
   try {
-    const user = await User.findOne({ email: userEmail });
+    const user = await User.findOne({ email: userEmail, 'memberships.organization': req.orgId });
     if (!user) {
-      return res.status(404).send({ status: "error", data: "User not found" });
+      return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
     const request = user.books_rented.find(
@@ -294,9 +301,9 @@ exports.rejectRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Request not found or already processed" });
     }
 
-    const book = await Book.findOne({ book_id });
+    const book = await Book.findOne({ book_id, organization: req.orgId });
     if (!book) {
-      return res.status(404).send({ status: "error", data: "Book not found" });
+      return res.status(404).send({ status: "error", data: "Book not found in this organization" });
     }
 
     await User.updateOne(
@@ -306,6 +313,7 @@ exports.rejectRentRequest = async (req, res) => {
 
     // Save to request history
     await RequestHistory.create({
+      organization: req.orgId,
       userEmail,
       book_id,
       book_name: book.book_name,
@@ -314,12 +322,11 @@ exports.rejectRentRequest = async (req, res) => {
 
     // Send Rejection Email
     try {
-      const template = await EmailTemplate.findOne({ templateId: 'book_rejection' });
+      const template = await EmailTemplate.findOne({ templateId: 'book_rejection', organization: req.orgId });
       if (template) {
         let subject = template.subject;
         let body = template.body;
 
-        // Replace placeholders (case-insensitive)
         body = body.replace(/{{userName}}/gi, user.name || 'User');
         body = body.replace(/{{bookName}}/gi, book.book_name);
 
@@ -358,10 +365,9 @@ exports.rejectRentRequest = async (req, res) => {
   }
 };
 
-// New endpoint to fetch request history
 exports.getRequestHistory = async (req, res) => {
   try {
-    const history = await RequestHistory.find().sort({ processed_at: -1 });
+    const history = await RequestHistory.find({ organization: req.orgId }).sort({ processed_at: -1 });
     res.send({ status: "Ok", data: history });
   } catch (error) {
     res.send({ status: "error", data: error });
@@ -370,8 +376,6 @@ exports.getRequestHistory = async (req, res) => {
 
 exports.returnBook = async (req, res) => {
   const { book_id, userEmail } = req.body;
-  
-  // Use userEmail if provided (e.g. by admin), otherwise fall back to authenticated user's email
   const targetEmail = userEmail || (req.user ? req.user.email : null);
   
   if (!targetEmail) {
@@ -379,9 +383,9 @@ exports.returnBook = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email: targetEmail });
+    const user = await User.findOne({ email: targetEmail, 'memberships.organization': req.orgId });
     if (!user) {
-      return res.status(404).send({ status: "error", data: "User not found" });
+      return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
     // Find an active approved rental request for this book
@@ -392,20 +396,20 @@ exports.returnBook = async (req, res) => {
       return res.status(400).send({ status: "error", data: "No active approved rental found for this book" });
     }
 
-    const book = await Book.findOne({ book_id });
+    const book = await Book.findOne({ book_id, organization: req.orgId });
     if (!book) {
-      return res.status(404).send({ status: "error", data: "Book not found" });
+      return res.status(404).send({ status: "error", data: "Book not found in this organization" });
     }
 
     // Update book availability and increment available_count
     const newAvailableCount = (book.available_count || 0) + 1;
     await Book.updateOne(
-      { book_id },
+      { book_id, organization: req.orgId },
       { 
         $set: { 
           available: true, 
           available_count: newAvailableCount,
-          owned_by: null, // Clear single owner field for backwards compatibility
+          owned_by: null,
           rent_from: null
         } 
       }
@@ -420,8 +424,9 @@ exports.returnBook = async (req, res) => {
       }
     );
 
-    // Notify Admins of return
-    await notifyAdmins(
+    // Notify Admins of this specific organization of return
+    await notifyOrgAdmins(
+        req.orgId,
         'Book Returned 📚',
         `The book "${book.book_name}" has been returned by ${user.name || targetEmail} and is now available for others.`,
         { bookId: book_id, type: 'rental_return' }
@@ -435,46 +440,40 @@ exports.returnBook = async (req, res) => {
 
 exports.toggleFavourite = async (req, res) => {
   const { userEmail, book_id } = req.body;
-  console.log('Toggle favourite called with:', { userEmail, book_id });
   try {
-    // Verify token and fetch user
-    const user = await User.findOne({ email: userEmail });
-    console.log("user",user);
+    const user = await User.findOne({ email: userEmail, 'memberships.organization': req.orgId });
     if (!user) {
-      return res.status(404).send({ status: "error", data: "User not found" });
+      return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
-    const book = await Book.findOne({ book_id });
+    const book = await Book.findOne({ book_id, organization: req.orgId });
     if (!book) {
-      return res.status(404).send({ status: "error", data: "Book not found" });
+      return res.status(404).send({ status: "error", data: "Book not found in this organization" });
     }
 
-    // Check if the book is already in favouriteBooks
     const isFavourite = user.favouriteBooks.includes(book_id);
     
     if (isFavourite) {
-      // Remove book from favouriteBooks and decrement likes
       await User.updateOne(
         { email: userEmail },
         { $pull: { favouriteBooks: book_id } }
       );
       
       await Book.updateOne(
-        { book_id: book_id },
-        { $inc: { likes: -1 } } // Decrement likes by 1
+        { book_id: book_id, organization: req.orgId },
+        { $inc: { likes: -1 } }
       );
       
       res.send({ status: "Ok", data: "Book removed from wishlist" });
     } else {
-      // Add book to favouriteBooks and increment likes
       await User.updateOne(
         { email: userEmail },
-        { $addToSet: { favouriteBooks: book_id } } // $addToSet prevents duplicates
+        { $addToSet: { favouriteBooks: book_id } }
       );
       
       await Book.updateOne(
-        { book_id: book_id },
-        { $inc: { likes: 1 } } // Increment likes by 1
+        { book_id: book_id, organization: req.orgId },
+        { $inc: { likes: 1 } }
       );
       
       res.send({ status: "Ok", data: "Book added to wishlist" });

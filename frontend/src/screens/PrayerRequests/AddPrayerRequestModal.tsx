@@ -12,6 +12,7 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
   const styles = getStyles(colors);
   const [requestText, setRequestText] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [visibility, setVisibility] = useState<'org' | 'public'>('org');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -19,17 +20,19 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
 
     try {
       setLoading(true);
-      const userId = currentUserId || '67c13da8f8d68d19dcaec1a4'; // keep fallback just in case
+      const userId = currentUserId || '67c13da8f8d68d19dcaec1a4';
       
       const res = await axios.post(`${BASE_URL}/api/prayer-requests`, {
         user: userId,
         requestText,
-        isAnonymous
+        isAnonymous,
+        visibility
       });
 
       if (res.data.status === 'Success') {
         setRequestText('');
         setIsAnonymous(false);
+        setVisibility('org');
         onSuccess();
         onClose();
       }
@@ -64,6 +67,16 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
               onValueChange={setIsAnonymous}
               trackColor={{ false: colors.border, true: colors.secondary }}
               thumbColor={isAnonymous ? colors.tint : colors.textSecondary}
+            />
+          </View>
+
+          <View style={styles.toggleContainer}>
+            <Text style={styles.toggleLabel}>Make Request Public</Text>
+            <Switch
+              value={visibility === 'public'}
+              onValueChange={(val) => setVisibility(val ? 'public' : 'org')}
+              trackColor={{ false: colors.border, true: colors.secondary }}
+              thumbColor={visibility === 'public' ? colors.tint : colors.textSecondary}
             />
           </View>
 

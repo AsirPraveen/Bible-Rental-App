@@ -1,12 +1,8 @@
 require('dotenv').config();
 const User = require('../models/UserDetails');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.updateUser = async (req, res) => {
   const { name, mobile, gender, profession, image } = req.body;
-  console.log(req.body);
   try {
     const userData = req.user;
 
@@ -26,7 +22,7 @@ exports.updateUser = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const data = await User.find({});
+    const data = await User.find({ 'memberships.organization': req.orgId });
     res.send({ status: "Ok", data });
   } catch (error) {
     res.send({ error });
@@ -37,14 +33,21 @@ exports.deleteUser = async (req, res) => {
   const { id } = req.body;
   
   try {
-    await User.deleteOne({ _id: id });
-    res.send({ status: "Ok", data: "User Deleted" });
+    // Pull organization membership instead of deleting the user's global account
+    await User.updateOne(
+      { _id: id },
+      { 
+        $pull: { memberships: { organization: req.orgId } },
+        $set: { activeOrganizationId: null } // Reset active org context if it was this one
+      }
+    );
+    res.send({ status: "Ok", data: "User removed from this organization" });
   } catch (error) {
     res.send({ error });
   }
 };
 
-// New function to get user credits
+// Get user credits
 exports.getUserCredits = async (req, res) => {
   try {
     res.send({ 
@@ -57,12 +60,11 @@ exports.getUserCredits = async (req, res) => {
   }
 };
 
-// New function to deduct credit
+// Deduct credit
 exports.deductCredit = async (req, res) => {
   try {
     const userData = req.user;
 
-    // Check if user has credits
     if (userData.image_generation_credits_available <= 0) {
       return res.status(400).send({ 
         status: "error", 
@@ -70,7 +72,6 @@ exports.deductCredit = async (req, res) => {
       });
     }
 
-    // Deduct one credit
     userData.image_generation_credits_available -= 1;
     await userData.save();
 
@@ -85,15 +86,15 @@ exports.deductCredit = async (req, res) => {
   }
 };
 
-// New function to add credits (admin function)
+// Add credits (admin function)
 exports.addCredits = async (req, res) => {
   const { userId, creditsToAdd } = req.body;
   
   try {
-    const userData = await User.findById(userId);
+    const userData = await User.findOne({ _id: userId, 'memberships.organization': req.orgId });
 
     if (!userData) {
-      return res.status(404).send({ status: "error", data: "User not found" });
+      return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
     userData.image_generation_credits_available += creditsToAdd;
@@ -110,18 +111,19 @@ exports.addCredits = async (req, res) => {
   }
 };
 
-// New function to reset credits for all users (admin function)
+// Reset credits for all users in this organization (admin function)
 exports.resetAllCredits = async (req, res) => {
   const { creditsAmount = 5 } = req.body;
   
   try {
-    await User.updateMany({}, { 
-      image_generation_credits_available: creditsAmount 
-    });
+    await User.updateMany(
+      { 'memberships.organization': req.orgId }, 
+      { image_generation_credits_available: creditsAmount }
+    );
 
     res.send({ 
       status: "Ok", 
-      data: `All users' credits reset to ${creditsAmount}` 
+      data: `All users' credits in this organization reset to ${creditsAmount}` 
     });
   } catch (error) {
     console.error('Error resetting credits:', error);
@@ -129,7 +131,7 @@ exports.resetAllCredits = async (req, res) => {
   }
 };
 
-// New function to search users (admin function)
+// Search users in this organization (admin function)
 exports.searchUsers = async (req, res) => {
   const { query } = req.query;
   if (!query || query.length < 2) {
@@ -138,6 +140,7 @@ exports.searchUsers = async (req, res) => {
 
   try {
     const users = await User.find({
+      'memberships.organization': req.orgId,
       $or: [
         { name: { $regex: query, $options: 'i' } },
         { email: { $regex: query, $options: 'i' } }

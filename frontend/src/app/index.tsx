@@ -18,6 +18,7 @@ Notifications.setNotificationHandler({
 });
 
 import { AuthProvider } from '../context/AuthContext';
+import { OrganizationProvider } from '../context/OrganizationContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { CustomAlert, initializeGlobalAlerts } from '../components/CustomAlert';
 
@@ -72,6 +73,11 @@ const BLUE_STATUS_BAR_SCREENS = [
   'Guest Settings',
   'QuestionDetails',
   'SongDetails',
+  'OrgSelection',
+  'CreateOrg',
+  'OrgSettings',
+  'MemberManagement',
+  'SuperAdmin',
 ];
 
 function ThemedStatusBar() {
@@ -134,19 +140,21 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <ThemeProvider>
-          <SafeAreaProvider style={{ flex: 1 }}>
-            <ThemedStatusBar />
-            <NavigationContainer
-              ref={navigationRef}
-              onReady={notifyRouteListeners}
-              onStateChange={notifyRouteListeners}
-            >
-              <StackNavigation/>
-            </NavigationContainer>
-            <CustomAlert />
-          </SafeAreaProvider>
-        </ThemeProvider>
+        <OrganizationProvider>
+          <ThemeProvider>
+            <SafeAreaProvider style={{ flex: 1 }}>
+              <ThemedStatusBar />
+              <NavigationContainer
+                ref={navigationRef}
+                onReady={notifyRouteListeners}
+                onStateChange={notifyRouteListeners}
+              >
+                <StackNavigation/>
+              </NavigationContainer>
+              <CustomAlert />
+            </SafeAreaProvider>
+          </ThemeProvider>
+        </OrganizationProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

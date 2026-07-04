@@ -4,16 +4,18 @@ const { notifyUserById } = require('../utils/notificationService');
 // Create a new prayer request
 exports.createPrayerRequest = async (req, res) => {
   try {
-    const { user, requestText, isAnonymous } = req.body;
+    const { user, requestText, isAnonymous, visibility } = req.body;
     
     if (!user || !requestText) {
       return res.status(400).json({ status: "Error", data: 'User ID and Request text are required.' });
     }
 
     const newRequest = new PrayerRequest({
+      organization: req.orgId,
       user,
       requestText,
-      isAnonymous
+      isAnonymous,
+      visibility: visibility || 'org'
     });
 
     await newRequest.save();
@@ -27,8 +29,13 @@ exports.createPrayerRequest = async (req, res) => {
 // Get all prayer requests (latest first)
 exports.getAllPrayerRequests = async (req, res) => {
   try {
-    const requests = await PrayerRequest.find()
-      .populate('user', 'name profilePic') // only populate specific fields
+    const requests = await PrayerRequest.find({
+      $or: [
+        { organization: req.orgId },
+        { visibility: 'public' }
+      ]
+    })
+      .populate('user', 'name profilePic')
       .sort({ createdAt: -1 });
 
     // Handle anonymity: remove user object if anonymous
@@ -57,9 +64,12 @@ exports.incrementPrayedCount = async (req, res) => {
       return res.status(400).json({ status: "Error", data: 'User ID is required' });
     }
 
-    const request = await PrayerRequest.findById(id);
+    const request = await PrayerRequest.findOne({
+      _id: id,
+      $or: [{ organization: req.orgId }, { visibility: 'public' }]
+    });
     if (!request) {
-      return res.status(404).json({ status: "Error", data: 'Prayer request not found' });
+      return res.status(404).json({ status: "Error", data: 'Prayer request not found or inaccessible' });
     }
 
     // Check if user has already prayed

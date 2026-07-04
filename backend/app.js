@@ -24,6 +24,8 @@ const appSettingsRoutes = require('./routes/appSettingsRoutes');
 const songRoutes = require('./routes/songRoutes');
 const messageNoteRoutes = require('./routes/messageNoteRoutes');
 const standaloneReminderRoutes = require('./routes/standaloneReminderRoutes');
+const organizationRoutes = require('./routes/organizationRoutes');
+const superAdminRoutes = require('./routes/superAdminRoutes');
 
 const cron = require('node-cron');
 const { notifyUserById } = require('./utils/notificationService');
@@ -66,6 +68,8 @@ app.use('/api', appSettingsRoutes);
 app.use('/api', songRoutes); // Songs
 app.use('/api/notes', messageNoteRoutes);
 app.use('/api/reminders', standaloneReminderRoutes);
+app.use('/api/organizations', organizationRoutes);
+app.use('/api/superadmin', superAdminRoutes);
 
 /**
  * DYNAMIC DAILY BIBLE READING REMINDER

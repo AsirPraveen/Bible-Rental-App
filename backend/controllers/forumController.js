@@ -4,16 +4,18 @@ const { notifyUserById } = require('../utils/notificationService');
 // Create a new question
 exports.createQuestion = async (req, res) => {
   try {
-    const { user, questionText, isAnonymous } = req.body;
+    const { user, questionText, isAnonymous, visibility } = req.body;
     
     if (!user || !questionText) {
       return res.status(400).json({ status: "Error", data: 'User ID and Question text are required.' });
     }
 
     const newQuestion = new ForumQuestion({
+      organization: req.orgId,
       user,
       questionText,
-      isAnonymous
+      isAnonymous,
+      visibility: visibility || 'org'
     });
 
     await newQuestion.save();
@@ -27,7 +29,12 @@ exports.createQuestion = async (req, res) => {
 // Get all questions
 exports.getAllQuestions = async (req, res) => {
   try {
-    const questions = await ForumQuestion.find()
+    const questions = await ForumQuestion.find({
+      $or: [
+        { organization: req.orgId },
+        { visibility: 'public' }
+      ]
+    })
       .populate('user', 'name profilePic')
       .populate('answers.user', 'name profilePic')
       .sort({ createdAt: -1 });
@@ -57,10 +64,13 @@ exports.addAnswer = async (req, res) => {
       return res.status(400).json({ status: "Error", data: 'User ID and Answer text are required.' });
     }
 
-    const question = await ForumQuestion.findById(questionId);
+    const question = await ForumQuestion.findOne({
+      _id: questionId,
+      $or: [{ organization: req.orgId }, { visibility: 'public' }]
+    });
     
     if (!question) {
-       return res.status(404).json({ status: "Error", data: 'Question not found' });
+       return res.status(404).json({ status: "Error", data: 'Question not found or inaccessible' });
     }
 
     question.answers.push({ user, answerText });
@@ -77,7 +87,6 @@ exports.addAnswer = async (req, res) => {
         );
     }
     
-    // To return the populated answer
     const populatedQuestion = await ForumQuestion.findById(questionId)
         .populate('user', 'name profilePic')
         .populate('answers.user', 'name profilePic');

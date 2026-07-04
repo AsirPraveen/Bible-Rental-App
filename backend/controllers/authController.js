@@ -4,13 +4,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/UserDetails');
 const Book = require('../models/Book');
+const Organization = require('../models/Organization');
 const nodemailer = require('nodemailer');
 const { resetPasswordTemplate } = require('../config/emailTemplate');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
-  const { name, email, mobile, password, userType, secretText } = req.body;
+  const { name, email, mobile, password } = req.body;
   try {
     console.log("inside register", req.body);
     const oldUser = await User.findOne({ email });
@@ -18,16 +19,18 @@ exports.register = async (req, res) => {
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({
+    const newUser = await User.create({
       name,
       email,
       mobile,
       password: encryptedPassword,
-      userType,
-      secretText
+      userType: 'User', // default to standard User type
+      globalRole: email.toLowerCase() === 'superadmin@youthroom.com' ? 'SuperAdmin' : null, // Auto seed superadmin
+      memberships: [],
+      activeOrganizationId: null
     });
-    console.log("*************")
-    res.send({ status: "ok", data: "User Created" });
+
+    res.send({ status: "ok", data: "User Created", user: newUser });
   } catch (error) {
     res.send({ status: "error", data: error });
   }
@@ -38,11 +41,9 @@ exports.login = async (req, res) => {
   console.log("inside login", req.body);
 
   try {
-    const isPhone = /^[6-9][0-9]{9}$/.test(emailOrPhone); // tightened regex
+    const isPhone = /^[6-9][0-9]{9}$/.test(emailOrPhone);
     const query = isPhone ? { mobile: emailOrPhone } : { email: emailOrPhone };
-    const oldUser = await User.findOne(query);
-
-    console.log("oldUser:", oldUser);
+    const oldUser = await User.findOne(query).populate('memberships.organization');
 
     if (!oldUser) {
       console.log("User not found!");
@@ -50,15 +51,29 @@ exports.login = async (req, res) => {
     }
 
     const passwordMatch = await bcrypt.compare(password, oldUser.password);
-    console.log("Password match?", passwordMatch);
-
     if (passwordMatch) {
+      oldUser.lastActiveAt = new Date();
+      await oldUser.save();
       const token = jwt.sign({ email: oldUser.email }, JWT_SECRET, { expiresIn: '30d' });
-      console.log("Token generated:", token);
+      
+      // Determine user role for the active org
+      let activeOrgRole = 'User';
+      if (oldUser.activeOrganizationId) {
+        const activeMembership = oldUser.memberships.find(
+          m => m.organization._id.toString() === oldUser.activeOrganizationId.toString()
+        );
+        if (activeMembership) {
+          activeOrgRole = activeMembership.role;
+        }
+      }
+
       return res.status(201).send({
         status: "ok",
         data: token,
-        userType: oldUser.userType
+        userType: oldUser.globalRole === 'SuperAdmin' ? 'SuperAdmin' : activeOrgRole,
+        globalRole: oldUser.globalRole,
+        activeOrganizationId: oldUser.activeOrganizationId,
+        memberships: oldUser.memberships
       });
     }
 
@@ -71,7 +86,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
 exports.getUserData = async (req, res) => {
   const { token } = req.body;
 
@@ -81,8 +95,13 @@ exports.getUserData = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    // Use .lean() to get a plain JS object that we can modify
-    const user = await User.findOne({ email: decoded.email }).lean();
+    
+    // Update active timestamp
+    await User.updateOne({ email: decoded.email }, { $set: { lastActiveAt: new Date() } });
+
+    const user = await User.findOne({ email: decoded.email })
+      .populate('memberships.organization')
+      .lean();
 
     if (!user) {
       return res.status(404).send({ status: "error", message: "User not found" });
@@ -117,7 +136,6 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.json({ error: 'No account found with this email address.' });
 
-    // Generate & save OTP before attempting email (so we know it's ready)
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
@@ -140,7 +158,6 @@ exports.forgotPassword = async (req, res) => {
       tls: { rejectUnauthorized: false },
     });
 
-    // ── Verify SMTP connection BEFORE trying to send ──────────────────────────
     try {
       await transporter.verify();
       console.log('SMTP connection verified OK');
@@ -158,7 +175,6 @@ exports.forgotPassword = async (req, res) => {
         error: `Cannot reach email server (${verifyErr.code || verifyErr.message}). Check server internet connection.`,
       });
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
     await transporter.sendMail({
       from: `"Bible Rental App" <${emailUser}>`,
@@ -183,7 +199,6 @@ exports.verifyOtp = async (req, res) => {
     if (!user || user.otp !== otp || Date.now() > user.otpExpiry) {
       return res.status(400).json({ status: 'error', data: 'Invalid or expired OTP' });
     }
-    // Mark OTP as verified by setting a short-lived reset window
     user.otp = undefined;
     user.otpExpiry = undefined;
     user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min window to reset
@@ -201,7 +216,6 @@ exports.resetPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ status: 'error', data: "User doesn't exist" });
 
-    // Ensure user went through OTP verification (has a valid reset window)
     if (!user.resetPasswordExpires || Date.now() > user.resetPasswordExpires) {
       return res.status(400).json({ status: 'error', data: 'Password reset session expired. Please request a new OTP.' });
     }
@@ -239,8 +253,6 @@ exports.updatePushToken = async (req, res) => {
   }
 };
 
-// Google Sign-In: check if user exists — do NOT create new users here
-// (deferred to googleSetPassword to prevent orphan accounts)
 exports.googleLogin = async (req, res) => {
   const { googleId, email, name, photoUrl } = req.body;
   try {
@@ -248,28 +260,38 @@ exports.googleLogin = async (req, res) => {
       return res.status(400).json({ error: 'Missing required Google credentials' });
     }
 
-    // Try to find existing user by email
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email }).populate('memberships.organization');
 
     if (!user) {
-      // New user — DON'T create yet. Let them set a password first.
       console.log('New Google user detected (not created yet):', email);
       return res.status(200).json({
         status: 'ok',
         isNewUser: true,
-        // No token — they need to set a password first
       });
     }
 
-    // Existing user — log them in
     console.log('Existing Google user logged in:', email);
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+    
+    let activeOrgRole = 'User';
+    if (user.activeOrganizationId) {
+      const activeMembership = user.memberships.find(
+        m => m.organization._id.toString() === user.activeOrganizationId.toString()
+      );
+      if (activeMembership) {
+        activeOrgRole = activeMembership.role;
+      }
+    }
+
     return res.status(200).json({
       status: 'ok',
       data: token,
-      userType: user.userType,
+      userType: user.globalRole === 'SuperAdmin' ? 'SuperAdmin' : activeOrgRole,
+      globalRole: user.globalRole,
       isNewUser: false,
-      userData: { name: user.name, email: user.email, image: user.image }
+      userData: { name: user.name, email: user.email, image: user.image },
+      activeOrganizationId: user.activeOrganizationId,
+      memberships: user.memberships
     });
   } catch (error) {
     console.error('Google login error:', error);
@@ -277,7 +299,6 @@ exports.googleLogin = async (req, res) => {
   }
 };
 
-// Create account + set password for a new Google user (or update existing)
 exports.googleSetPassword = async (req, res) => {
   const { email, newPassword, name, googleId, image } = req.body;
   try {
@@ -288,20 +309,19 @@ exports.googleSetPassword = async (req, res) => {
     let user = await User.findOne({ email });
 
     if (!user) {
-      // Create the user now (deferred from googleLogin)
       user = await User.create({
         name: name || email.split('@')[0],
         email,
         mobile: '',
         password: await bcrypt.hash(newPassword, 10),
         userType: 'User',
+        globalRole: email.toLowerCase() === 'superadmin@youthroom.com' ? 'SuperAdmin' : null,
         image: image || '',
         secretText: '',
         googleId: googleId || '',
       });
       console.log('Google user created with password:', email);
     } else {
-      // User already exists (edge case: they came back) — just update password
       user.password = await bcrypt.hash(newPassword, 10);
       await user.save();
       console.log('Google user password updated:', email);
@@ -312,7 +332,7 @@ exports.googleSetPassword = async (req, res) => {
       status: 'ok',
       message: 'Account created successfully',
       data: token,
-      userType: user.userType,
+      userType: 'User',
       userData: { name: user.name, email: user.email, image: user.image }
     });
   } catch (error) {
@@ -320,4 +340,3 @@ exports.googleSetPassword = async (req, res) => {
     res.status(500).json({ error: error.message || 'Failed to create account' });
   }
 };
-

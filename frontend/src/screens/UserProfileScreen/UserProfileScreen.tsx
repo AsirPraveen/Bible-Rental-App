@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, Switch, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useOrg } from '../../context/OrganizationContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -104,8 +105,10 @@ const GuestProfileScreen = () => {
 //  Main UserProfileScreen — routes to Guest or Authenticated profile
 // ═══════════════════════════════════════════════════════════════════
 const UserProfileScreen = () => {
-  const { isGuest } = useAuth();
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { isGuest, user } = useAuth();
+  const { activeOrg, orgRole, memberships, switchOrg } = useOrg();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const navigation = useNavigation<any>();
   const { theme, colors, toggleTheme } = useTheme();
   const styles = getStyles(colors);
 
@@ -318,10 +321,106 @@ const UserProfileScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
-        {/* Header */}
+        {/* Header with Switch Workspace Dropdown */}
         <View style={styles.header}>
+          <View style={{ width: 60 }} />
           <Text style={styles.headerText}>Your Profile</Text>
+          <View style={{ width: 60, alignItems: 'flex-end' }}>
+            {!isGuest && (
+              <TouchableOpacity 
+                onPress={() => setShowDropdown(true)}
+                activeOpacity={0.7}
+                style={{
+                  padding: 6,
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                }}
+              >
+                <MaterialCommunityIcons name="swap-horizontal" size={20} color={colors.textLight} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
+
+        {/* Switch Organization Dropdown Modal */}
+        <Modal
+          visible={showDropdown}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowDropdown(false)}
+        >
+          <TouchableOpacity 
+            style={styles.dropdownOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDropdown(false)}
+          >
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.dropdownTitle}>Switch Workspace</Text>
+              
+              {memberships.map((item: any) => {
+                const org = item.organization;
+                const isCurrent = org._id === activeOrg?._id;
+                
+                return (
+                  <TouchableOpacity
+                    key={org._id}
+                    style={[styles.dropdownItem, isCurrent && styles.dropdownItemActive]}
+                    onPress={async () => {
+                      setShowDropdown(false);
+                      if (isCurrent) return;
+                      
+                      const success = await switchOrg(org._id);
+                      if (success) {
+                        if (item.role === 'Admin') {
+                          navigation.replace('AdminScreen');
+                        } else {
+                          // Already on User View, but let's reload stack to refresh all contents
+                          navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'MainApp' }]
+                          });
+                        }
+                      } else {
+                        Alert.alert('Error', 'Failed to switch organization.');
+                      }
+                    }}
+                  >
+                    <MaterialCommunityIcons 
+                      name="office-building" 
+                      size={20} 
+                      color={isCurrent ? colors.primary : '#666'} 
+                      style={{ marginRight: 10 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.dropdownItemText, isCurrent && { color: colors.primary }]}>
+                        {org.name}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
+                        Role: {item.role}
+                      </Text>
+                    </View>
+                    {isCurrent && (
+                      <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity
+                style={[styles.dropdownItem, { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 12 }]}
+                onPress={() => {
+                  setShowDropdown(false);
+                  navigation.navigate('OrgSelection');
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                <Text style={[styles.dropdownItemText, { color: colors.primary }]}>
+                  Add Workspace
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
@@ -438,6 +537,54 @@ const UserProfileScreen = () => {
                   </LinearGradient>
                 </TouchableOpacity>
 
+                {/* === Organization & SaaS Controls === */}
+                {!isGuest && (
+                  <View style={styles.orgControlsContainer}>
+
+                    {orgRole === 'Admin' && (
+                      <>
+                        <TouchableOpacity
+                          style={styles.orgControlBtn}
+                          onPress={() => navigation.navigate('AdminScreen')}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="book-outline" size={20} color={colors.tint} style={{ marginRight: 10 }} />
+                          <Text style={styles.orgControlBtnText}>Book Rental Dashboard</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.orgControlBtn}
+                          onPress={() => navigation.navigate('OrgSettings')}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="settings-outline" size={20} color={colors.tint} style={{ marginRight: 10 }} />
+                          <Text style={styles.orgControlBtnText}>Organization Settings</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.orgControlBtn}
+                          onPress={() => navigation.navigate('MemberManagement')}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="people-outline" size={20} color={colors.tint} style={{ marginRight: 10 }} />
+                          <Text style={styles.orgControlBtnText}>Manage Members</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {userData?.globalRole === 'SuperAdmin' && (
+                      <TouchableOpacity
+                        style={[styles.orgControlBtn, { borderColor: '#FFD700', borderWidth: 1 }]}
+                        onPress={() => navigation.navigate('SuperAdmin')}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="shield-checkmark-outline" size={20} color="#FFD700" style={{ marginRight: 10 }} />
+                        <Text style={[styles.orgControlBtnText, { color: '#FFD700' }]}>SuperAdmin Panel</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
                 <View style={styles.rentedBooksContainer}>
                   <Text style={styles.label}>Books Rented</Text>
                   {userData?.books_rented?.length > 0 ? (
@@ -496,7 +643,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -698,6 +845,75 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.border,
     paddingBottom: 15,
     marginBottom: 15,
+  },
+  orgControlsContainer: {
+    width: '100%',
+    marginVertical: 10,
+    gap: 12,
+  },
+  orgControlBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    height: 48,
+  },
+  orgControlBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: Platform.OS === 'android' ? 60 : 80,
+    paddingRight: 20,
+  },
+  dropdownContainer: {
+    width: 250,
+    backgroundColor: colors.cardBg,
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  dropdownTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingBottom: 6,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  dropdownItemActive: {
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#E6F0FA',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  dropdownItemTextActive: {
+    color: colors.primary,
   },
 });
 

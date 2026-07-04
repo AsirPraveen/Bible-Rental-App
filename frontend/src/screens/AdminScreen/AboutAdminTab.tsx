@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useOrg } from '../../context/OrganizationContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -23,6 +24,8 @@ type RootStackParamList = {
 
 const AboutAdminTab = () => {
   const navigation = useNavigation<any>();
+  const { memberships, activeOrg, switchOrg } = useOrg();
+  const [showDropdown, setShowDropdown] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
@@ -263,10 +266,103 @@ const AboutAdminTab = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
-        {/* Header with Logout Button */}
+        {/* Header with Switch Workspace Dropdown */}
         <View style={styles.header}>
+          <View style={{ width: 60 }} />
           <Text style={styles.headerText}>Admin Profile</Text>
+          <View style={{ width: 60, alignItems: 'flex-end' }}>
+            <TouchableOpacity 
+              onPress={() => setShowDropdown(true)}
+              activeOpacity={0.7}
+              style={{
+                padding: 6,
+                borderRadius: 8,
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              <MaterialCommunityIcons name="swap-horizontal" size={20} color="#F6F1F1" />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Switch Organization Dropdown Modal */}
+        <Modal
+          visible={showDropdown}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowDropdown(false)}
+        >
+          <TouchableOpacity 
+            style={styles.dropdownOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDropdown(false)}
+          >
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.dropdownTitle}>Switch Workspace</Text>
+              
+              {memberships.map((item: any) => {
+                const org = item.organization;
+                const isCurrent = org._id === activeOrg?._id;
+                
+                return (
+                  <TouchableOpacity
+                    key={org._id}
+                    style={[styles.dropdownItem, isCurrent && styles.dropdownItemActive]}
+                    onPress={async () => {
+                      setShowDropdown(false);
+                      if (isCurrent) return;
+                      
+                      const success = await switchOrg(org._id);
+                      if (success) {
+                        if (item.role === 'Admin') {
+                          navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'AdminScreen' }]
+                          });
+                        } else {
+                          navigation.replace('MainApp');
+                        }
+                      } else {
+                        Alert.alert('Error', 'Failed to switch organization.');
+                      }
+                    }}
+                  >
+                    <MaterialCommunityIcons 
+                      name="office-building" 
+                      size={20} 
+                      color={isCurrent ? '#146C94' : '#666'} 
+                      style={{ marginRight: 10 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.dropdownItemText, isCurrent && styles.dropdownItemTextActive]}>
+                        {org.name}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
+                        Role: {item.role}
+                      </Text>
+                    </View>
+                    {isCurrent && (
+                      <Ionicons name="checkmark-circle" size={18} color="#146C94" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity
+                style={[styles.dropdownItem, { borderTopWidth: 1, borderTopColor: '#F0F0F0', marginTop: 8, paddingTop: 12 }]}
+                onPress={() => {
+                  setShowDropdown(false);
+                  navigation.navigate('OrgSelection');
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#146C94" style={{ marginRight: 10 }} />
+                <Text style={[styles.dropdownItemText, { color: '#146C94' }]}>
+                  Add Workspace
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
@@ -383,22 +479,41 @@ const AboutAdminTab = () => {
                 </TouchableOpacity>
 
                 {!isEditing && (
-                  <TouchableOpacity
-                    style={[styles.editButton, { marginTop: 12 }]}
-                    onPress={() => navigation.navigate('AppSettings')}
-                  >
-                    <LinearGradient
-                      colors={['#146C94', '#19A7CE']}
-                      style={styles.buttonGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
+                  <>
+                    <TouchableOpacity
+                      style={[styles.editButton, { marginTop: 12 }]}
+                      onPress={() => navigation.navigate('AppSettings')}
                     >
-                      <View style={styles.btnRow}>
-                        <MaterialCommunityIcons name="cog" size={20} color="#fff" />
-                        <Text style={styles.buttonText}>App Configuration</Text>
-                      </View>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                      <LinearGradient
+                        colors={['#146C94', '#19A7CE']}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <View style={styles.btnRow}>
+                          <MaterialCommunityIcons name="cog" size={20} color="#fff" />
+                          <Text style={styles.buttonText}>App Configuration</Text>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.editButton, { marginTop: 12 }]}
+                      onPress={() => navigation.navigate('MemberManagement')}
+                    >
+                      <LinearGradient
+                        colors={['#146C94', '#19A7CE']}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <View style={styles.btnRow}>
+                          <MaterialCommunityIcons name="account-group" size={20} color="#fff" />
+                          <Text style={styles.buttonText}>Manage Members</Text>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </>
                 )}
               </View>
 
@@ -419,7 +534,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -577,6 +692,54 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
+    color: '#146C94',
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: Platform.OS === 'android' ? 60 : 80,
+    paddingRight: 20,
+  },
+  dropdownContainer: {
+    width: 250,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  dropdownTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    paddingBottom: 6,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  dropdownItemActive: {
+    backgroundColor: '#E6F0FA',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  dropdownItemTextActive: {
     color: '#146C94',
   },
 });

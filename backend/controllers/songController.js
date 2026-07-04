@@ -5,16 +5,19 @@ exports.getSongs = async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    let query = {};
+    let query = { organization: req.orgId };
     if (search) {
-      query = {
-        $or: [
-          { titleTamil: { $regex: search, $options: 'i' } },
-          { titleEnglish: { $regex: search, $options: 'i' } },
-          { lyricsTamil: { $regex: search, $options: 'i' } },
-          { lyricsEnglish: { $regex: search, $options: 'i' } }
-        ]
-      };
+      query.$and = [
+        { organization: req.orgId },
+        {
+          $or: [
+            { titleTamil: { $regex: search, $options: 'i' } },
+            { titleEnglish: { $regex: search, $options: 'i' } },
+            { lyricsTamil: { $regex: search, $options: 'i' } },
+            { lyricsEnglish: { $regex: search, $options: 'i' } }
+          ]
+        }
+      ];
     }
 
     if (topic && topic !== 'All') {
@@ -36,9 +39,9 @@ exports.getSongs = async (req, res) => {
 exports.getSongById = async (req, res) => {
   const { id } = req.params;
   try {
-    const song = await Song.findById(id);
+    const song = await Song.findOne({ _id: id, organization: req.orgId });
     if (!song) {
-      return res.status(404).json({ status: "error", data: "Song not found" });
+      return res.status(404).json({ status: "error", data: "Song not found in this organization" });
     }
     res.status(200).json({ status: "Ok", data: song });
   } catch (err) {
@@ -48,7 +51,7 @@ exports.getSongById = async (req, res) => {
 
 exports.getSongsMetadata = async (req, res) => {
   try {
-    const topics = await Song.distinct('topics');
+    const topics = await Song.distinct('topics', { organization: req.orgId });
     res.status(200).json({ status: "Ok", data: { topics } });
   } catch (err) {
     res.status(500).json({ status: "error", data: err.message });
@@ -60,6 +63,7 @@ exports.createSong = async (req, res) => {
   try {
     const { titleTamil, titleEnglish, lyricsTamil, lyricsEnglish, topics, author, youtubeLink } = req.body;
     const song = new Song({
+      organization: req.orgId,
       titleTamil,
       titleEnglish,
       lyricsTamil,
@@ -79,9 +83,9 @@ exports.updateSong = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    const song = await Song.findByIdAndUpdate(id, updateData, { new: true });
+    const song = await Song.findOneAndUpdate({ _id: id, organization: req.orgId }, updateData, { new: true });
     if (!song) {
-        return res.status(404).json({ status: "error", data: "Song not found" });
+        return res.status(404).json({ status: "error", data: "Song not found in this organization" });
     }
     res.status(200).json({ status: "Ok", data: song });
   } catch (err) {
@@ -92,9 +96,9 @@ exports.updateSong = async (req, res) => {
 exports.deleteSong = async (req, res) => {
   try {
     const { id } = req.params;
-    const song = await Song.findByIdAndDelete(id);
+    const song = await Song.findOneAndDelete({ _id: id, organization: req.orgId });
     if (!song) {
-        return res.status(404).json({ status: "error", data: "Song not found" });
+        return res.status(404).json({ status: "error", data: "Song not found in this organization" });
     }
     res.status(200).json({ status: "Ok", data: "Song deleted" });
   } catch (err) {

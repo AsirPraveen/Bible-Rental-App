@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Animated } from 'react-native';
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from '../../context/AuthContext';
+import { useOrg } from '../../context/OrganizationContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
@@ -132,6 +133,7 @@ const TopBookCardSkeleton = () => {
 const HomeView = () => {
   const navigation = useNavigation<any>();
   const { logout } = useAuth();
+  const { activeOrg } = useOrg();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -312,7 +314,7 @@ const HomeView = () => {
         <View style={styles.stickyHeader}>
           <View style={styles.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={styles.logo}>{APP_NAME}</Text>
+              <Text style={styles.logo}>{activeOrg ? activeOrg.name : APP_NAME}</Text>
               {isGameEnabled && (
                 <Pressable onPress={() => isGameEnabled && navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
                   <Ionicons name="game-controller" size={28} color={colors.theme === 'dark' ? colors.tint : "#F6F1F1"} />

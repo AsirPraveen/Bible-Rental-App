@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const bookSchema = new mongoose.Schema({
+  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   book_name: { type: String, required: true },
   author_name: { type: String, required: true },
   pages: { type: Number, required: true },
@@ -19,5 +20,4 @@ const bookSchema = new mongoose.Schema({
   likes: { type: Number, default: 0 }
 }, { timestamps: true });
 
-// Explicitly specify collection name
 module.exports = mongoose.model('Book', bookSchema, 'Bible Books');

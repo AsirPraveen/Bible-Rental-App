@@ -5,16 +5,14 @@ const ForumQuestion = require('../models/ForumQuestion');
 // PRAYER REQUEST MODERATION
 // ===================================
 
-// GET: Fetch all prayer requests stripped of user identities
+// GET: Fetch all prayer requests for this organization stripped of user identities
 exports.getPrayerRequestsForModeration = async (req, res) => {
   try {
-    // We populate 'user' to get the name for moderation display.
-    const requests = await PrayerRequest.find()
+    const requests = await PrayerRequest.find({ organization: req.orgId })
       .populate('user', 'name')
       .sort({ createdAt: -1 })
       .select('requestText createdAt prayedCount user isAnonymous');
     
-    // Map to ensure we always have a name field, even if anonymous
     const sanitizedRequests = requests.map(req => ({
       ...req.toObject(),
       userName: req.isAnonymous ? 'Anonymous' : (req.user?.name || 'Unknown User')
@@ -31,9 +29,9 @@ exports.getPrayerRequestsForModeration = async (req, res) => {
 exports.deletePrayerRequest = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await PrayerRequest.findByIdAndDelete(id);
+    const deleted = await PrayerRequest.findOneAndDelete({ _id: id, organization: req.orgId });
     
-    if (!deleted) return res.status(404).json({ error: 'Prayer request not found' });
+    if (!deleted) return res.status(404).json({ error: 'Prayer request not found in this organization' });
     
     return res.status(200).json({ status: "ok", message: "Prayer request deleted successfully" });
   } catch (error) {
@@ -46,17 +44,15 @@ exports.deletePrayerRequest = async (req, res) => {
 // FORUM MODERATION
 // ===================================
 
-// GET: Fetch all forum questions stripped of user identities
+// GET: Fetch all forum questions for this organization stripped of user identities
 exports.getForumQuestionsForModeration = async (req, res) => {
   try {
-    // We populate 'user' to get the name for moderation display.
-    const questions = await ForumQuestion.find()
+    const questions = await ForumQuestion.find({ organization: req.orgId })
       .populate('user', 'name')
       .populate('answers.user', 'name')
       .sort({ createdAt: -1 })
       .select('questionText createdAt answers user isAnonymous');
     
-    // Map to include user names for both the question and answers
     const sanitizedQuestions = questions.map(q => ({
       _id: q._id,
       questionText: q.questionText,
@@ -82,9 +78,9 @@ exports.getForumQuestionsForModeration = async (req, res) => {
 exports.deleteForumQuestion = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await ForumQuestion.findByIdAndDelete(id);
+    const deleted = await ForumQuestion.findOneAndDelete({ _id: id, organization: req.orgId });
     
-    if (!deleted) return res.status(404).json({ error: 'Forum question not found' });
+    if (!deleted) return res.status(404).json({ error: 'Forum question not found in this organization' });
     
     return res.status(200).json({ status: "ok", message: "Forum question deleted successfully" });
   } catch (error) {

@@ -1,12 +1,24 @@
-const AppSettings = require('../models/AppSettings');
+const Organization = require('../models/Organization');
 
 const getAppSettings = async (req, res) => {
   try {
-    let settings = await AppSettings.findOne();
-    if (!settings) {
-      settings = await AppSettings.create({ isGameEnabled: true, isImageGenEnabled: true, isGuestLoginEnabled: true });
+    const org = await Organization.findById(req.orgId);
+    if (!org) {
+      return res.status(404).json({ status: 'Error', message: 'Organization not found' });
     }
-    res.status(200).json({ status: 'Success', data: settings });
+
+    res.status(200).json({ 
+      status: 'Success', 
+      data: {
+        _id: org._id,
+        isGameEnabled: org.features.game,
+        isImageGenEnabled: org.features.imageGeneration,
+        isGuestLoginEnabled: org.isPublic,
+        guestAccess: org.guestAccess,
+        createdAt: org.createdAt,
+        updatedAt: org.updatedAt
+      } 
+    });
   } catch (error) {
     res.status(500).json({ status: 'Error', message: error.message });
   }
@@ -15,29 +27,38 @@ const getAppSettings = async (req, res) => {
 const updateAppSettings = async (req, res) => {
   try {
     const { isGameEnabled, isImageGenEnabled, isGuestLoginEnabled, guestAccess } = req.body;
-    let settings = await AppSettings.findOne();
-    if (!settings) {
-      settings = new AppSettings();
+    const org = await Organization.findById(req.orgId);
+    if (!org) {
+      return res.status(404).json({ status: 'Error', message: 'Organization not found' });
     }
+
     if (isGameEnabled !== undefined) {
-      settings.isGameEnabled = isGameEnabled;
+      org.features.game = isGameEnabled;
     }
     if (isImageGenEnabled !== undefined) {
-      settings.isImageGenEnabled = isImageGenEnabled;
+      org.features.imageGeneration = isImageGenEnabled;
     }
     if (isGuestLoginEnabled !== undefined) {
-      settings.isGuestLoginEnabled = isGuestLoginEnabled;
+      org.isPublic = isGuestLoginEnabled;
     }
     if (guestAccess && typeof guestAccess === 'object') {
-      // Merge only the provided keys into existing guestAccess
-      for (const [key, value] of Object.entries(guestAccess)) {
-        if (settings.guestAccess[key] !== undefined) {
-          settings.guestAccess[key] = value;
-        }
-      }
+      org.guestAccess = { ...org.guestAccess, ...guestAccess };
     }
-    await settings.save();
-    res.status(200).json({ status: 'Success', data: settings });
+
+    await org.save();
+
+    res.status(200).json({ 
+      status: 'Success', 
+      data: {
+        _id: org._id,
+        isGameEnabled: org.features.game,
+        isImageGenEnabled: org.features.imageGeneration,
+        isGuestLoginEnabled: org.isPublic,
+        guestAccess: org.guestAccess,
+        createdAt: org.createdAt,
+        updatedAt: org.updatedAt
+      } 
+    });
   } catch (error) {
     res.status(500).json({ status: 'Error', message: error.message });
   }

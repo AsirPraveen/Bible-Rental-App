@@ -14,19 +14,26 @@ export default function OnboardingComponent({ navigation }) {
       const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
       const userType = await AsyncStorage.getItem('userType');
       const token = await AsyncStorage.getItem('token');
+      const activeOrgId = await AsyncStorage.getItem('activeOrgId');
 
       // Double-check login status when "Get Started" is pressed
       if (isLoggedIn === 'true' && token) {
-        // User is logged in, navigate to appropriate screen
-        if (userType === 'Admin') {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'AdminScreen' }],
-          });
+        if (activeOrgId) {
+          if (userType === 'Admin') {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'AdminScreen' }],
+            });
+          } else {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainApp' }],
+            });
+          }
         } else {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Home' }],
+            routes: [{ name: 'OrgSelection' }],
           });
         }
       } else {

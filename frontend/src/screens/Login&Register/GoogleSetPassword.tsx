@@ -79,7 +79,7 @@ const GoogleSetPassword = () => {
         Alert.alert(
           '🎉 Welcome!',
           `Account created! Welcome, ${displayName.trim() || 'friend'}!`,
-          [{ text: 'Let\'s Go!', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }) }]
+          [{ text: 'Let\'s Go!', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'OrgSelection' }] }) }]
         );
       } else {
         Alert.alert('Error', res.data.error || 'Failed to create account');

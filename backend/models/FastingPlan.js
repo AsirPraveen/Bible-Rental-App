@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const fastingPlanSchema = new mongoose.Schema({
+  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'UserInfo',

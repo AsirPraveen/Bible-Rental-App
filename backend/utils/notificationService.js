@@ -61,25 +61,53 @@ const notifyUserById = async (userId, settingField, title, body, data = {}) => {
 };
 
 /**
- * Helper to notify all Admins.
+ * Helper to notify Admins of a specific organization.
+ * @param {string} orgId - Organization ID.
  * @param {string} title - The notification title.
  * @param {string} body - The notification body.
  * @param {Object} data - Additional data to send.
  */
-const notifyAdmins = async (title, body, data = {}) => {
+const notifyOrgAdmins = async (orgId, title, body, data = {}) => {
   try {
-    const admins = await User.find({ userType: 'Admin', expoPushToken: { $ne: null } }).select('expoPushToken');
+    if (!orgId) return;
+    const admins = await User.find({
+      'memberships': {
+        $elemMatch: { organization: orgId, role: 'Admin', isActive: true }
+      },
+      expoPushToken: { $ne: null }
+    }).select('expoPushToken');
     const tokens = admins.map(a => a.expoPushToken);
     if (tokens.length > 0) {
       await sendPushNotification(tokens, title, body, data);
     }
   } catch (err) {
-    console.error('Failed to notify admins:', err);
+    console.error(`Failed to notify org admins for org ${orgId}:`, err);
+  }
+};
+
+/**
+ * Legacy Helper to notify all Admins globally (fallback).
+ */
+const notifyAdmins = async (title, body, data = {}) => {
+  try {
+    const admins = await User.find({
+      'memberships': {
+        $elemMatch: { role: 'Admin', isActive: true }
+      },
+      expoPushToken: { $ne: null }
+    }).select('expoPushToken');
+    const tokens = admins.map(a => a.expoPushToken);
+    if (tokens.length > 0) {
+      await sendPushNotification(tokens, title, body, data);
+    }
+  } catch (err) {
+    console.error('Failed to notify global admins:', err);
   }
 };
 
 module.exports = {
   sendPushNotification,
   notifyUserById,
+  notifyOrgAdmins,
   notifyAdmins
 };

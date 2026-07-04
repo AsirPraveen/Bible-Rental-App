@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const forumController = require('../controllers/forumController');
 const auth = require('../middleware/auth');
+const orgScope = require('../middleware/orgScope');
 
-// Public — anyone can view questions
-router.get('/forum/questions', forumController.getAllQuestions);
+// Public
+router.get('/forum/questions', orgScope, forumController.getAllQuestions);
 
 // Authenticated users only
-router.post('/forum/questions', auth, forumController.createQuestion);
-router.post('/forum/questions/:questionId/answers', auth, forumController.addAnswer);
+router.post('/forum/questions', auth, orgScope, forumController.createQuestion);
+router.post('/forum/questions/:questionId/answers', auth, orgScope, forumController.addAnswer);
 
 module.exports = router;

@@ -3,12 +3,13 @@ const router = express.Router();
 const postController = require('../controllers/postController');
 const auth = require('../middleware/auth');
 const adminAuth = require('../middleware/adminAuth');
+const orgScope = require('../middleware/orgScope');
 
-// Public — users and guests can view posts
-router.get('/posts', postController.getAllPosts);
+// Public
+router.get('/posts', orgScope, postController.getAllPosts);
 
 // Authenticated users
-router.put('/posts/:postId/likes', auth, postController.toggleLike);
+router.put('/posts/:postId/likes', auth, orgScope, postController.toggleLike);
 
 // Admin only
 router.post('/posts', adminAuth, postController.createPost);

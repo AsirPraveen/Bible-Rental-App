@@ -10,6 +10,7 @@ exports.createFastingPlan = async (req, res) => {
     }
 
     const newFast = new FastingPlan({
+      organization: req.orgId,
       user,
       startDate,
       endDate,
@@ -26,11 +27,11 @@ exports.createFastingPlan = async (req, res) => {
   }
 };
 
-// Get fasting plans for a specific user
+// Get fasting plans for a specific user within this organization
 exports.getUserFastingPlans = async (req, res) => {
   try {
     const { userId } = req.params;
-    const plans = await FastingPlan.find({ user: userId }).sort({ createdAt: -1 });
+    const plans = await FastingPlan.find({ user: userId, organization: req.orgId }).sort({ createdAt: -1 });
     
     return res.status(200).json({ status: "Success", data: plans });
   } catch (error) {
@@ -39,7 +40,7 @@ exports.getUserFastingPlans = async (req, res) => {
   }
 };
 
-// Update fast status (e.g. to Complete or Broken)
+// Update fast status
 exports.updateFastingStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -49,8 +50,8 @@ exports.updateFastingStatus = async (req, res) => {
         return res.status(400).json({ status: "Error", data: 'Invalid status' });
     }
 
-    const plan = await FastingPlan.findByIdAndUpdate(
-      id,
+    const plan = await FastingPlan.findOneAndUpdate(
+      { _id: id, organization: req.orgId },
       { status },
       { new: true }
     );

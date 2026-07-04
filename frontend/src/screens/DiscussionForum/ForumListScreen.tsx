@@ -47,6 +47,7 @@ export default function ForumListScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [visibility, setVisibility] = useState<'org' | 'public'>('org');
   const [submitLoading, setSubmitLoading] = useState(false);
 
   // Search & sort
@@ -115,7 +116,6 @@ export default function ForumListScreen() {
     if (sortMode === 'mostReplies') {
       return [...filtered].sort((a, b) => (b.answers?.length || 0) - (a.answers?.length || 0));
     }
-    // 'newest' is the default API order (already sorted by createdAt desc)
     return filtered;
   }, [questions, searchQuery, sortMode]);
 
@@ -128,12 +128,14 @@ export default function ForumListScreen() {
       const res = await axios.post(`${BASE_URL}/api/forum/questions`, {
         user: userIdToUse,
         questionText: newQuestion,
-        isAnonymous
+        isAnonymous,
+        visibility
       });
 
       if (res.data.status === 'Success') {
         setNewQuestion('');
         setIsAnonymous(false);
+        setVisibility('org');
         setModalVisible(false);
         fetchQuestions();
       }
@@ -352,6 +354,16 @@ export default function ForumListScreen() {
                   onValueChange={setIsAnonymous}
                   trackColor={{ false: colors.border, true: colors.secondary }}
                   thumbColor={isAnonymous ? colors.tint : colors.textSecondary}
+                />
+              </View>
+
+              <View style={styles.toggleContainer}>
+                <Text style={styles.toggleLabel}>Make Question Public</Text>
+                <Switch
+                  value={visibility === 'public'}
+                  onValueChange={(val) => setVisibility(val ? 'public' : 'org')}
+                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  thumbColor={visibility === 'public' ? colors.tint : colors.textSecondary}
                 />
               </View>
 

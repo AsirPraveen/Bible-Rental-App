@@ -2,13 +2,14 @@ const Post = require('../models/Post');
 const User = require('../models/UserDetails');
 
 exports.createPost = async (req, res) => {
-  const { title, description, date, time, imageUrl, audienceType, targetUsers, showInNotification } = req.body;
+  const { title, description, date, time, imageUrl, audienceType, targetUsers, showInNotification, visibility } = req.body;
   try {
     if (!title || !description) {
       return res.status(400).send({ status: "error", data: "Title and description are required" });
     }
 
     const post = await Post.create({
+      organization: req.orgId,
       title,
       description,
       date: date || null,
@@ -17,18 +18,19 @@ exports.createPost = async (req, res) => {
       audienceType: audienceType || 'all',
       targetUsers: targetUsers || [],
       showInNotification: showInNotification || false,
+      visibility: visibility || 'org',
       likes: 0,
     });
 
-    // Handle Push Notifications (Always triggered as requested)
+    // Handle Push Notifications scoped to the organization
     try {
-      let query = {};
+      let targetQuery = { 'memberships.organization': req.orgId };
       if (audienceType === 'specific' && targetUsers && targetUsers.length > 0) {
-        query = { email: { $in: targetUsers } };
+        targetQuery.email = { $in: targetUsers };
       }
 
       const usersWithTokens = await User.find({ 
-        ...query, 
+        ...targetQuery, 
         expoPushToken: { $exists: true, $ne: null } 
       }).select('expoPushToken');
 
@@ -37,7 +39,6 @@ exports.createPost = async (req, res) => {
       if (tokens.length > 0) {
         const axios = require('axios');
         const chunks = [];
-        // Expo allows max 100 per request
         for (let i = 0; i < tokens.length; i += 100) {
           chunks.push(tokens.slice(i, i + 100));
         }
@@ -54,9 +55,7 @@ exports.createPost = async (req, res) => {
       }
     } catch (pushError) {
       console.error('Error sending push notifications:', pushError);
-      // We continue anyway as the post was created
     }
-
 
     res.send({ status: "Ok", data: post });
   } catch (error) {
@@ -68,15 +67,25 @@ exports.createPost = async (req, res) => {
 exports.getAllPosts = async (req, res) => {
   const { userEmail } = req.query;
   try {
-    let query = { showInNotification: true };
+    // Show posts belonging to this organization OR cross-org public posts
+    let query = {
+      $or: [
+        { organization: req.orgId },
+        { visibility: 'public' }
+      ],
+      showInNotification: true
+    };
     
     if (userEmail) {
-      query.$or = [
-        { audienceType: 'all' },
-        { targetUsers: userEmail }
+      query.$and = [
+        {
+          $or: [
+            { audienceType: 'all' },
+            { targetUsers: userEmail }
+          ]
+        }
       ];
     } else {
-      // If no userEmail, only show 'all' audience posts
       query.audienceType = 'all';
     }
 
@@ -90,15 +99,18 @@ exports.getAllPosts = async (req, res) => {
 
 exports.updatePostLikes = async (req, res) => {
   const { postId } = req.params;
-  const { increment } = req.body; // true to increment, false to decrement
+  const { increment } = req.body;
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findOne({
+      _id: postId,
+      $or: [{ organization: req.orgId }, { visibility: 'public' }]
+    });
     if (!post) {
-      return res.status(404).send({ status: "error", data: "Post not found" });
+      return res.status(404).send({ status: "error", data: "Post not found or inaccessible" });
     }
 
-    post.likes = increment ? post.likes + 1 : Math.max(post.likes - 1, 0); // Prevent negative likes
+    post.likes = increment ? post.likes + 1 : Math.max(post.likes - 1, 0);
     await post.save();
 
     res.send({ status: "Ok", data: post });
@@ -110,40 +122,32 @@ exports.updatePostLikes = async (req, res) => {
 
 exports.toggleLike = async (req, res) => {
   const { postId } = req.params;
-  const userEmail = req.body.userEmail; // Assuming token is sent in the request body
-  console.log("User Email:", userEmail, "Post ID:", postId);
+  const userEmail = req.body.userEmail;
   try {
-    // Verify user
-    const user = await User.findOne({ email: userEmail });
-    console.log("User:", user);
+    const user = await User.findOne({ email: userEmail, 'memberships.organization': req.orgId });
     if (!user) {
-      return res.status(404).send({ status: "error", data: "User not found" });
+      return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
-    // Find the post
-    const post = await Post.findById(postId);
+    const post = await Post.findOne({
+      _id: postId,
+      $or: [{ organization: req.orgId }, { visibility: 'public' }]
+    });
     if (!post) {
-      return res.status(404).send({ status: "error", data: "Post not found" });
+      return res.status(404).send({ status: "error", data: "Post not found or inaccessible" });
     }
 
-    // Check if user has already liked the post
     const hasLiked = post.likedBy.includes(userEmail);
-    let newLikes = post.likes;
-    console.log("Has Liked:", hasLiked, newLikes);
     if (hasLiked) {
-      // Unlike: Remove user from likedBy and decrement likes
       await Post.findByIdAndUpdate(postId, {
         $pull: { likedBy: userEmail },
         $inc: { likes: -1 },
       });
-      newLikes -= 1;
     } else {
-      // Like: Add user to likedBy and increment likes
       await Post.findByIdAndUpdate(postId, {
         $push: { likedBy: userEmail },
         $inc: { likes: 1 },
       });
-      newLikes += 1;
     }
 
     res.send({ status: "Ok", data: await Post.findById(postId) });
@@ -155,7 +159,7 @@ exports.toggleLike = async (req, res) => {
 
 exports.adminGetAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 });
+    const posts = await Post.find({ organization: req.orgId }).sort({ createdAt: -1 });
     res.send({ status: "Ok", data: posts });
   } catch (error) {
     console.error('Error fetching admin posts:', error);
@@ -166,7 +170,7 @@ exports.adminGetAllPosts = async (req, res) => {
 exports.deletePost = async (req, res) => {
   const { postId } = req.params;
   try {
-    const post = await Post.findByIdAndDelete(postId);
+    const post = await Post.findOneAndDelete({ _id: postId, organization: req.orgId });
     if (!post) {
       return res.status(404).send({ status: "error", data: "Post not found" });
     }

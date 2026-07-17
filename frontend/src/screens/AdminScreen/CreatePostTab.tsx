@@ -6,21 +6,61 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Updated to compatible version
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
 const uploadPresentPosts = Constants.expoConfig?.extra?.uploadPresentPosts ?? '';
 
 const CreatePostTab = () => {
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState<Date | null>(null); // Store date as Date object
   const [time, setTime] = useState<Date | null>(null); // Store time as Date object
   const [imageUri, setImageUri] = useState<string | null>(null); // Store local image URI temporarily
   const [imageUrl, setImageUrl] = useState<string | null>(null); // Store Cloudinary URL
+  const [imagePublicId, setImagePublicId] = useState('');
+  const tempUploadedImages = React.useRef<string[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false); // Control date picker visibility
   const [showTimePicker, setShowTimePicker] = useState(false); // Control time picker visibility
   const [isUploading, setIsUploading] = useState(false); // Track upload status for loader
+
+  const deleteImageFromCloudinary = async (publicId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      await axios.post(`${API_URL}/api/cloudinary/delete`, {
+        token,
+        publicId
+      });
+    } catch (err) {
+      console.log('Error deleting image from Cloudinary:', err);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    const pubId = imagePublicId;
+    setImageUri(null);
+    setImageUrl(null);
+    setImagePublicId('');
+    if (pubId) {
+      tempUploadedImages.current = tempUploadedImages.current.filter(id => id !== pubId);
+      await deleteImageFromCloudinary(pubId);
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (tempUploadedImages.current.length > 0) {
+        tempUploadedImages.current.forEach(async (id) => {
+          await deleteImageFromCloudinary(id);
+        });
+      }
+    };
+  }, []);
   
   // Targeting fields
   const [audienceType, setAudienceType] = useState<'all' | 'specific'>('all');
@@ -135,6 +175,12 @@ const CreatePostTab = () => {
   const uploadImage = async (uri: string) => {
     setIsUploading(true);
     try {
+      const oldPublicId = imagePublicId;
+      if (oldPublicId) {
+        tempUploadedImages.current = tempUploadedImages.current.filter(id => id !== oldPublicId);
+        await deleteImageFromCloudinary(oldPublicId);
+      }
+
       const fileExtension = uri.split('.').pop()?.toLowerCase();
       const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
 
@@ -156,7 +202,10 @@ const CreatePostTab = () => {
       );
 
       if (response.data && response.data.secure_url) {
+        const newPubId = response.data.public_id;
+        tempUploadedImages.current.push(newPubId);
         setImageUrl(response.data.secure_url);
+        setImagePublicId(newPubId);
         Alert.alert('Success', 'Image uploaded successfully!');
       } else {
         throw new Error('Upload failed');
@@ -235,6 +284,8 @@ const CreatePostTab = () => {
       setTime(null);
       setImageUri(null);
       setImageUrl(null);
+      setImagePublicId('');
+      tempUploadedImages.current = [];
       setAudienceType('all');
       setSelectedUsers([]);
       setShowInNotification(false);
@@ -272,7 +323,8 @@ const CreatePostTab = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
             <View style={styles.headerRow}>
@@ -456,6 +508,13 @@ const CreatePostTab = () => {
               {imageUri && (
                 <View style={styles.imageContainer}>
                   <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="contain" />
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={handleRemoveImage}
+                    disabled={isUploading}
+                  >
+                    <Ionicons name="close-circle" size={28} color="#FF5252" />
+                  </TouchableOpacity>
                   {isUploading && <ActivityIndicator size="large" color="#146C94" style={styles.loader} />}
                 </View>
               )}
@@ -482,7 +541,8 @@ const CreatePostTab = () => {
         onRequestClose={() => setIsManageModalVisible(false)}
       >
         <SafeAreaView style={styles.modalFullContainer}>
-          <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.modalGradient}>
+          <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+          <LinearGradient colors={colors.linearGradient} style={styles.modalGradient}>
             <View style={styles.modalHeader}>
               <IconButton 
                 icon="close" 
@@ -561,11 +621,11 @@ const CreatePostTab = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -590,7 +650,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -602,50 +662,58 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   descriptionInput: {
     height: 100,
     textAlignVertical: 'top',
   },
   dateInput: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
     paddingVertical: 10,
     justifyContent: 'center',
   },
   dateText: {
-    color: '#333',
+    color: colors.text,
   },
   imagePickerButton: {
-    borderColor: '#146C94',
+    borderColor: colors.tint,
     borderRadius: 8,
     marginBottom: 16,
   },
   imagePickerText: {
     fontSize: 16,
-    color: '#146C94',
+    color: colors.tint,
   },
   imageContainer: {
     position: 'relative',
     marginBottom: 16,
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    zIndex: 10,
   },
   previewImage: {
     width: '100%',
@@ -659,7 +727,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -25 }, { translateY: -25 }],
   },
   postButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.tint,
     borderRadius: 8,
     paddingVertical: 8,
   },
@@ -674,7 +742,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
@@ -685,7 +753,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   modalButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.tint,
     borderRadius: 8,
     paddingVertical: 8,
     marginTop: 20,
@@ -693,7 +761,7 @@ const styles = StyleSheet.create({
   audienceContainer: {
     flexDirection: 'row',
     marginBottom: 16,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderRadius: 8,
     padding: 4,
   },
@@ -704,10 +772,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   audienceButtonActive: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.tint,
   },
   audienceButtonText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   audienceButtonTextActive: {
@@ -718,13 +786,13 @@ const styles = StyleSheet.create({
   },
   subLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   searchResultsContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
     borderRadius: 8,
     marginBottom: 16,
     maxHeight: 150,
@@ -732,11 +800,11 @@ const styles = StyleSheet.create({
   searchResultItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F6F1F1',
+    borderBottomColor: colors.border,
   },
   searchResultText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.text,
   },
   chipsContainer: {
     flexDirection: 'row',
@@ -745,23 +813,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   chip: {
-    backgroundColor: '#E6F0FA',
+    backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.15)' : '#E6F0FA',
   },
   chipText: {
-    color: '#146C94',
+    color: colors.tint,
     fontSize: 12,
   },
   notificationToggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     padding: 12,
     borderRadius: 8,
   },
   modalFullContainer: {
     flex: 1,
-    backgroundColor: '#146C94',
+    backgroundColor: colors.background,
   },
   modalGradient: {
     flex: 1,
@@ -783,7 +851,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   postManageCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -801,18 +869,18 @@ const styles = StyleSheet.create({
   postManageTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 4,
   },
   postManageDate: {
     fontSize: 12,
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: '600',
     marginBottom: 4,
   },
   postManageDescription: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 8,
     lineHeight: 18,
   },
@@ -821,10 +889,10 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
   },
   targetUsersList: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     padding: 8,
     borderRadius: 6,
     marginBottom: 8,
@@ -832,12 +900,12 @@ const styles = StyleSheet.create({
   targetUsersLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 2,
   },
   targetUsersText: {
     fontSize: 11,
-    color: '#666',
+    color: colors.textSecondary,
   },
   badgeRow: {
     flexDirection: 'row',

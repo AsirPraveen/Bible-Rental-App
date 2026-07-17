@@ -30,27 +30,32 @@ export default function StuffComponent() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [guestAccess, setGuestAccess] = useState<Record<string, boolean>>({});
+  const [features, setFeatures] = useState<Record<string, boolean>>({});
 
-  // Fetch guest settings once on mount (only matters for guests)
+  // Fetch settings on mount (features for all, guestAccess for guests)
   useEffect(() => {
-    if (!isGuest) return;
-    const fetchGuestSettings = async () => {
+    const fetchSettings = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/app-settings`);
-        if (res.data.status === 'Success' && res.data.data.guestAccess) {
-          setGuestAccess(res.data.data.guestAccess);
+        if (res.data.status === 'Success') {
+          if (res.data.data.features) {
+            setFeatures(res.data.data.features);
+          }
+          if (res.data.data.guestAccess) {
+            setGuestAccess(res.data.data.guestAccess);
+          }
         }
       } catch (err) {
-        console.log('Error fetching guest settings:', err);
+        console.log('Error fetching settings in StuffComponent:', err);
       }
     };
-    fetchGuestSettings();
+    fetchSettings();
   }, [isGuest]);
 
   const iconColor = colors.tint;
   const cardBg = colors.theme === 'dark' ? colors.surface : '#AFD3E2';
 
-  const cards = [
+  let cards = [
     {
       title: 'Bible',
       icon: <Book color={iconColor} size={32} />,
@@ -115,10 +120,29 @@ export default function StuffComponent() {
     },
   ];
 
+  if (isGuest) {
+    const mapsIndex = cards.findIndex(c => c.title === 'HistoricalMaps');
+    const songsIndex = cards.findIndex(c => c.title === 'Songs');
+    if (mapsIndex !== -1 && songsIndex !== -1) {
+      const temp = cards[songsIndex];
+      cards[songsIndex] = cards[mapsIndex];
+      cards[mapsIndex] = temp;
+    }
+  }
+
   const handleCardPress = (card: any) => {
-    const guestKey = GUEST_KEY_MAP[card.title];
-    // If guest and this feature is disabled, show login prompt
-    if (isGuest && guestKey && guestAccess[guestKey] === false) {
+    // Check if the feature is disabled (freezed) by the admin
+    const isEnabled = features[card.title] !== false;
+    if (!isEnabled) {
+      Alert.alert(
+        'Feature Freezed',
+        'Admin has freezed this feature.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (isLocked(card.title)) {
       Alert.alert(
         '🔒 Sign In Required',
         `"${card.title}" requires an account. Sign in to access this feature.`,
@@ -137,13 +161,31 @@ export default function StuffComponent() {
     if (!isGuest) return false;
     const guestKey = GUEST_KEY_MAP[title];
     if (!guestKey) return false;
-    return guestAccess[guestKey] === false;
+
+    // Only Bible and HistoricalMaps are global guest features configured by the SuperAdmin
+    if (guestKey === 'Bible' || guestKey === 'HistoricalMaps') {
+      return guestAccess[guestKey] === false;
+    }
+
+    // All other features are organization-scoped or user-scoped, so they are always locked for guests
+    return true;
   };
 
   return (
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
-        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {isGuest && (
+          <View style={styles.guestBanner}>
+            <Text style={styles.guestBannerText}>Guest Mode</Text>
+          </View>
+        )}
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.scrollContent,
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.grid}>
             {cards.map((card, index) => {
               const locked = isLocked(card.title);
@@ -215,6 +257,8 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     overflow: 'hidden',
+    borderWidth: colors.theme === 'dark' ? 1.5 : 0,
+    borderColor: colors.theme === 'dark' ? colors.secondary : 'transparent',
   },
   lockedCard: {
     // subtle visual difference for locked cards
@@ -234,12 +278,12 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   newBadge: {
     position: 'absolute',
     top: 0,
-    left: 0,
+    right: 0,
     backgroundColor: '#FF6B6B',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderTopLeftRadius: 16,
-    borderBottomRightRadius: 12,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 12,
     zIndex: 1,
   },
   newBadgeText: {
@@ -284,5 +328,29 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     fontSize: 8,
     fontWeight: 'bold',
     letterSpacing: 0.5,
+  },
+  guestBanner: {
+    position: 'absolute',
+    top: 25,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderColor: '#146C94',
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+  },
+  guestBannerText: {
+    color: '#146C94',
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
 });

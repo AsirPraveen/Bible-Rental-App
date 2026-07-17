@@ -4,10 +4,11 @@ const { notifyUserById } = require('../utils/notificationService');
 // Create a new question
 exports.createQuestion = async (req, res) => {
   try {
-    const { user, questionText, isAnonymous, visibility } = req.body;
+    const { questionText, isAnonymous } = req.body;
+    const user = req.user._id;
     
-    if (!user || !questionText) {
-      return res.status(400).json({ status: "Error", data: 'User ID and Question text are required.' });
+    if (!questionText) {
+      return res.status(400).json({ status: "Error", data: 'Question text is required.' });
     }
 
     const newQuestion = new ForumQuestion({
@@ -15,7 +16,7 @@ exports.createQuestion = async (req, res) => {
       user,
       questionText,
       isAnonymous,
-      visibility: visibility || 'org'
+      visibility: 'org'
     });
 
     await newQuestion.save();
@@ -29,12 +30,7 @@ exports.createQuestion = async (req, res) => {
 // Get all questions
 exports.getAllQuestions = async (req, res) => {
   try {
-    const questions = await ForumQuestion.find({
-      $or: [
-        { organization: req.orgId },
-        { visibility: 'public' }
-      ]
-    })
+    const questions = await ForumQuestion.find({ organization: req.orgId })
       .populate('user', 'name profilePic')
       .populate('answers.user', 'name profilePic')
       .sort({ createdAt: -1 });
@@ -58,15 +54,16 @@ exports.getAllQuestions = async (req, res) => {
 exports.addAnswer = async (req, res) => {
   try {
     const { questionId } = req.params;
-    const { user, answerText } = req.body;
+    const { answerText } = req.body;
+    const user = req.user._id;
 
-    if (!user || !answerText) {
-      return res.status(400).json({ status: "Error", data: 'User ID and Answer text are required.' });
+    if (!answerText) {
+      return res.status(400).json({ status: "Error", data: 'Answer text is required.' });
     }
 
     const question = await ForumQuestion.findOne({
       _id: questionId,
-      $or: [{ organization: req.orgId }, { visibility: 'public' }]
+      organization: req.orgId
     });
     
     if (!question) {
@@ -77,7 +74,7 @@ exports.addAnswer = async (req, res) => {
     await question.save();
     
     // Notify the question owner
-    if (question.user && question.user.toString() !== user) {
+    if (question.user && question.user.toString() !== user.toString()) {
         await notifyUserById(
             question.user, 
             'forumActivity', 

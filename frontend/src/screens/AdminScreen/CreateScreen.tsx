@@ -1,68 +1,64 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Image, Platform, StatusBar, SafeAreaView, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Platform, StatusBar, SafeAreaView, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SquarePen, BookPlus, BarChart3, ShieldAlert, Map, Music, Eye } from 'lucide-react-native';
+import { SquarePen, BookPlus, BarChart3, ShieldAlert, Music, Users } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function CreateScreen() {
   const navigation = useNavigation<any>();
-  const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
-  const isSuperAdmin = user?.globalRole === 'SuperAdmin';
+  const cardBg = colors.theme === 'dark' ? colors.surface : '#AFD3E2';
+  const iconColor = colors.tint;
 
   const cards = [
     {
       title: 'Create Post',
-      icon: <SquarePen color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <SquarePen color={iconColor} size={32} />,
+      bgColor: cardBg,
     },
     {
       title: 'Add Book',
-      icon: <BookPlus color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
-    },
-    {
-      title: 'Manage Maps',
-      icon: <Map color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
-      hide: !isSuperAdmin,
+      icon: <BookPlus color={iconColor} size={32} />,
+      bgColor: cardBg,
     },
     {
       title: 'Manage Songs',
-      icon: <Music color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <Music color={iconColor} size={32} />,
+      bgColor: cardBg,
+    },
+    {
+      title: 'Manage Members',
+      icon: <Users color={iconColor} size={32} />,
+      bgColor: cardBg,
+      route: 'MemberManagement',
     },
     {
       title: 'App Analytics',
-      icon: <BarChart3 color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
-      hide: !isSuperAdmin,
+      icon: <BarChart3 color={iconColor} size={32} />,
+      bgColor: cardBg,
     },
     {
       title: 'Moderation',
-      icon: <ShieldAlert color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
-      hide: !isSuperAdmin,
-    },
-    {
-      title: 'Guest Settings',
-      icon: <Eye color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
-      hide: !isSuperAdmin,
+      icon: <ShieldAlert color={iconColor} size={32} />,
+      bgColor: cardBg,
     }
-  ].filter(card => !card.hide);
+  ];
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
             {cards.map((card, index) => (
               <TouchableOpacity
                 key={index}
                 style={[styles.card, { backgroundColor: card.bgColor }]}
-                onPress={() => navigation.navigate(card.title)}>
+                onPress={() => navigation.navigate(card.route || card.title)}
+              >
                 <View style={styles.cardContent}>
                   {card.icon}
                   <Text style={styles.cardTitle}>{card.title}</Text>
@@ -76,13 +72,11 @@ export default function CreateScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
@@ -121,7 +115,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     textAlign: 'center',
   },
 });

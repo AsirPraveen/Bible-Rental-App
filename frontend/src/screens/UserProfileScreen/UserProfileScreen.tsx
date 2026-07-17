@@ -37,7 +37,9 @@ const GuestProfileScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Your Profile</Text>
+          <View style={{ width: 60 }} />
+          <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Your Profile</Text>
+          <View style={{ width: 60 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -52,7 +54,7 @@ const GuestProfileScreen = () => {
                 end={{ x: 1, y: 1 }}
               >
                 <View style={styles.profileImageContainer}>
-                  <Ionicons name="person-circle-outline" size={120} color={colors.textLight} />
+                  <Ionicons name="person-circle-outline" size={120} color={colors.tint} />
                 </View>
               </LinearGradient>
 
@@ -105,9 +107,8 @@ const GuestProfileScreen = () => {
 //  Main UserProfileScreen — routes to Guest or Authenticated profile
 // ═══════════════════════════════════════════════════════════════════
 const UserProfileScreen = () => {
-  const { isGuest, user } = useAuth();
-  const { activeOrg, orgRole, memberships, switchOrg } = useOrg();
-  const [showDropdown, setShowDropdown] = useState(false);
+  const { isGuest, user, logout } = useAuth();
+  const { activeOrg, orgRole } = useOrg();
   const navigation = useNavigation<any>();
   const { theme, colors, toggleTheme } = useTheme();
   const styles = getStyles(colors);
@@ -123,6 +124,38 @@ const UserProfileScreen = () => {
   const [imageUrl, setImageUrl] = useState<string | null>(null); // Cloudinary URL
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false); // Track upload status for loader
+  const tempUploadedImages = React.useRef<string[]>([]);
+
+  const handleRemoveProfileImage = async () => {
+    if (imageUrl) {
+      const publicId = extractPublicIdFromUrl(imageUrl);
+      if (publicId) {
+        tempUploadedImages.current = tempUploadedImages.current.filter(id => id !== publicId);
+      }
+      await deleteImageFromCloudinary(imageUrl);
+      setImage(null);
+      setImageUrl(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      // Cleanup unsaved temp uploads on unmount
+      if (tempUploadedImages.current.length > 0) {
+        tempUploadedImages.current.forEach(async (id) => {
+          try {
+            const token = await AsyncStorage.getItem('token');
+            await axios.post(`${API_URL}/api/cloudinary/delete`, {
+              token,
+              publicId: id
+            });
+          } catch (err) {
+            console.log('Error cleaning unsaved profile picture:', err);
+          }
+        });
+      }
+    };
+  }, []);
 
   // Fetch user data using token from AsyncStorage
   useEffect(() => {
@@ -167,20 +200,20 @@ const UserProfileScreen = () => {
   }
 
   // Function to extract public_id from Cloudinary URL
-  const extractPublicIdFromUrl = (url:any) => {
+  const extractPublicIdFromUrl = (url: any) => {
     if (!url) return null;
-    
+
     try {
       const urlParts = url.split('/');
       const lastPart = urlParts[urlParts.length - 1]; // Get the filename with extension
       const publicId = lastPart.split('.')[0]; // Remove the file extension
-      
-      const versionIndex = urlParts.findIndex((part:any) => part.startsWith('v') && /^\d+$/.test(part.substring(1)));
+
+      const versionIndex = urlParts.findIndex((part: any) => part.startsWith('v') && /^\d+$/.test(part.substring(1)));
       if (versionIndex !== -1 && versionIndex < urlParts.length - 1) {
         const pathAfterVersion = urlParts.slice(versionIndex + 1);
         return pathAfterVersion.join('/').split('.')[0];
       }
-      
+
       return publicId;
     } catch (error) {
       console.error('Error extracting public_id:', error);
@@ -189,7 +222,7 @@ const UserProfileScreen = () => {
   };
 
   // Function to delete image from Cloudinary
-  const deleteImageFromCloudinary = async (imageUrl:any) => {
+  const deleteImageFromCloudinary = async (imageUrl: any) => {
     try {
       const publicId = extractPublicIdFromUrl(imageUrl);
       if (!publicId) {
@@ -216,10 +249,14 @@ const UserProfileScreen = () => {
   };
 
   // Modified uploadImage function
-  const uploadImage = async (uri:any) => {
+  const uploadImage = async (uri: any) => {
     setIsUploading(true);
     try {
       if (imageUrl) {
+        const oldPubId = extractPublicIdFromUrl(imageUrl);
+        if (oldPubId) {
+          tempUploadedImages.current = tempUploadedImages.current.filter(id => id !== oldPubId);
+        }
         await deleteImageFromCloudinary(imageUrl);
       }
 
@@ -244,12 +281,14 @@ const UserProfileScreen = () => {
       );
 
       if (response.data && response.data.secure_url) {
+        const newPubId = response.data.public_id;
+        tempUploadedImages.current.push(newPubId);
         setImageUrl(response.data.secure_url);
         Alert.alert('Success', 'Profile image uploaded successfully!');
       } else {
         throw new Error('Upload failed');
       }
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Error uploading image:', error.response ? error.response.data : error.message);
       Alert.alert('Error', `Failed to upload image. Details: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
       setImage(null);
@@ -302,6 +341,7 @@ const UserProfileScreen = () => {
         setUserData({ ...userData, ...updatedData });
         setIsEditing(false);
         setImage(null); // Clear local image after successful save
+        tempUploadedImages.current = [];
         Alert.alert('Success', 'Profile updated successfully!');
       } else {
         Alert.alert('Error', 'Failed to update profile.');
@@ -310,6 +350,47 @@ const UserProfileScreen = () => {
       console.error('Error updating profile:', error);
       Alert.alert('Error', 'An error occurred while updating your profile.');
     }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    if (userData) {
+      setName(userData.name || '');
+      setMobile(userData.mobile || '');
+      setGender(userData.gender || '');
+      setProfession(userData.profession || '');
+      setImageUrl(userData.image || null);
+    }
+    setImage(null);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            try {
+              await logout();
+              await AsyncStorage.removeItem('userType');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Onboarding' }],
+              });
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'An error occurred during logout.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -321,14 +402,14 @@ const UserProfileScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
-        {/* Header with Switch Workspace Dropdown */}
+        {/* Header with Logout */}
         <View style={styles.header}>
           <View style={{ width: 60 }} />
-          <Text style={styles.headerText}>Your Profile</Text>
+          <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Your Profile</Text>
           <View style={{ width: 60, alignItems: 'flex-end' }}>
             {!isGuest && (
-              <TouchableOpacity 
-                onPress={() => setShowDropdown(true)}
+              <TouchableOpacity
+                onPress={handleLogout}
                 activeOpacity={0.7}
                 style={{
                   padding: 6,
@@ -336,91 +417,11 @@ const UserProfileScreen = () => {
                   backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 }}
               >
-                <MaterialCommunityIcons name="swap-horizontal" size={20} color={colors.textLight} />
+                <Ionicons name="log-out-outline" size={20} color={colors.textLight} />
               </TouchableOpacity>
             )}
           </View>
         </View>
-
-        {/* Switch Organization Dropdown Modal */}
-        <Modal
-          visible={showDropdown}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowDropdown(false)}
-        >
-          <TouchableOpacity 
-            style={styles.dropdownOverlay}
-            activeOpacity={1}
-            onPress={() => setShowDropdown(false)}
-          >
-            <View style={styles.dropdownContainer}>
-              <Text style={styles.dropdownTitle}>Switch Workspace</Text>
-              
-              {memberships.map((item: any) => {
-                const org = item.organization;
-                const isCurrent = org._id === activeOrg?._id;
-                
-                return (
-                  <TouchableOpacity
-                    key={org._id}
-                    style={[styles.dropdownItem, isCurrent && styles.dropdownItemActive]}
-                    onPress={async () => {
-                      setShowDropdown(false);
-                      if (isCurrent) return;
-                      
-                      const success = await switchOrg(org._id);
-                      if (success) {
-                        if (item.role === 'Admin') {
-                          navigation.replace('AdminScreen');
-                        } else {
-                          // Already on User View, but let's reload stack to refresh all contents
-                          navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'MainApp' }]
-                          });
-                        }
-                      } else {
-                        Alert.alert('Error', 'Failed to switch organization.');
-                      }
-                    }}
-                  >
-                    <MaterialCommunityIcons 
-                      name="office-building" 
-                      size={20} 
-                      color={isCurrent ? colors.primary : '#666'} 
-                      style={{ marginRight: 10 }}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.dropdownItemText, isCurrent && { color: colors.primary }]}>
-                        {org.name}
-                      </Text>
-                      <Text style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
-                        Role: {item.role}
-                      </Text>
-                    </View>
-                    {isCurrent && (
-                      <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-
-              <TouchableOpacity
-                style={[styles.dropdownItem, { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 12 }]}
-                onPress={() => {
-                  setShowDropdown(false);
-                  navigation.navigate('OrgSelection');
-                }}
-              >
-                <Ionicons name="add-circle-outline" size={20} color={colors.primary} style={{ marginRight: 10 }} />
-                <Text style={[styles.dropdownItemText, { color: colors.primary }]}>
-                  Add Workspace
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
@@ -436,15 +437,24 @@ const UserProfileScreen = () => {
                   {displayImage ? (
                     <Image source={{ uri: displayImage }} style={styles.profileImage} />
                   ) : (
-                    <Ionicons name="person-circle-outline" size={120} color={colors.textLight} />
+                    <Ionicons name="person-circle-outline" size={120} color={colors.tint} />
                   )}
                   {isEditing && (
-                    <TouchableOpacity 
-                      style={styles.editImageButton} 
+                    <TouchableOpacity
+                      style={styles.editImageButton}
                       onPress={pickImage}
                       disabled={isUploading}
                     >
                       <Ionicons name="camera" size={24} color={colors.textLight} />
+                    </TouchableOpacity>
+                  )}
+                  {isEditing && !!displayImage && (
+                    <TouchableOpacity
+                      style={[styles.editImageButton, { left: 10, right: undefined, backgroundColor: '#FF5252' }]}
+                      onPress={handleRemoveProfileImage}
+                      disabled={isUploading}
+                    >
+                      <Ionicons name="trash" size={18} color="#fff" />
                     </TouchableOpacity>
                   )}
                   {isUploading && (
@@ -522,20 +532,49 @@ const UserProfileScreen = () => {
                   )}
                 </View>
 
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => (isEditing ? saveProfile() : setIsEditing(true))}
-                  disabled={isUploading}
-                >
-                  <LinearGradient
-                    colors={colors.linearGradient}
-                    style={styles.buttonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                {isEditing ? (
+                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+                    <TouchableOpacity
+                      style={[styles.editButton, { flex: 1, marginTop: 0 }]}
+                      onPress={handleCancelEdit}
+                      disabled={isUploading}
+                    >
+                      <View style={[styles.buttonGradient, { backgroundColor: colors.theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#ccc' }]}>
+                        <Text style={[styles.buttonText, { color: colors.text }]}>Cancel</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.editButton, { flex: 1, marginTop: 0 }]}
+                      onPress={saveProfile}
+                      disabled={isUploading}
+                    >
+                      <LinearGradient
+                        colors={colors.linearGradient}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <Text style={styles.buttonText}>Save Profile</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => setIsEditing(true)}
+                    disabled={isUploading}
                   >
-                    <Text style={styles.buttonText}>{isEditing ? 'Save Profile' : 'Edit Profile'}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+                    <LinearGradient
+                      colors={colors.linearGradient}
+                      style={styles.buttonGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Text style={styles.buttonText}>Edit Profile</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
 
                 {/* === Organization & SaaS Controls === */}
                 {!isGuest && (
@@ -560,15 +599,6 @@ const UserProfileScreen = () => {
                           <Ionicons name="settings-outline" size={20} color={colors.tint} style={{ marginRight: 10 }} />
                           <Text style={styles.orgControlBtnText}>Organization Settings</Text>
                         </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.orgControlBtn}
-                          onPress={() => navigation.navigate('MemberManagement')}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="people-outline" size={20} color={colors.tint} style={{ marginRight: 10 }} />
-                          <Text style={styles.orgControlBtnText}>Manage Members</Text>
-                        </TouchableOpacity>
                       </>
                     )}
 
@@ -585,44 +615,6 @@ const UserProfileScreen = () => {
                   </View>
                 )}
 
-                <View style={styles.rentedBooksContainer}>
-                  <Text style={styles.label}>Books Rented</Text>
-                  {userData?.books_rented?.length > 0 ? (
-                    userData.books_rented.map((book: any, index: number) => (
-                      <View key={index} style={styles.bookItem}>
-                        <View style={[
-                          styles.statusTag,
-                          {
-                            backgroundColor:
-                              book.status === 'approved'
-                                ? 'rgba(76, 175, 80, 0.15)'
-                                : book.status === 'rejected'
-                                ? 'rgba(244, 67, 54, 0.15)'
-                                : 'rgba(255, 152, 0, 0.15)'
-                          }
-                        ]}>
-                          <Text style={[
-                            styles.statusTagText,
-                            {
-                              color:
-                                book.status === 'approved'
-                                  ? '#4CAF50'
-                                  : book.status === 'rejected'
-                                  ? '#F44336'
-                                  : '#FF9800'
-                            }
-                          ]}>
-                            {book.status ? book.status.toUpperCase() : 'PENDING'}
-                          </Text>
-                        </View>
-                        <Text style={styles.bookText}>Book Name : {book.book_name || `ID: ${book.book_id}`}</Text>
-                        <Text style={styles.bookDate}>Requested: {new Date(book.requested_at).toLocaleDateString()}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={styles.noBooksText}>No books rented yet.</Text>
-                  )}
-                </View>
               </View>
 
             </View>
@@ -742,8 +734,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: colors.tint,
   },
   rentedBooksContainer: {
     marginTop: 20,

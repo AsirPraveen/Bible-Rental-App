@@ -64,6 +64,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
   const [emailOrPhoneError, setEmailOrPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
@@ -233,8 +234,12 @@ function LoginPage() {
         Alert.alert('Error', res.data.error || 'Google sign-in failed.');
       }
     } catch (err) {
+      if (err.response?.data?.code === 'ORG_SUSPENDED' || err.response?.data?.code === 'ORG_NOT_FOUND') {
+        return;
+      }
       console.error('[Google] Backend error:', err);
-      Alert.alert('Error', 'Failed to complete sign-in.');
+      const errorMsg = err.response?.data?.error || err.response?.data?.data || err.response?.data?.message || 'Failed to complete sign-in.';
+      Alert.alert('Error', errorMsg);
     }
   };
   // ─────────────────────────────────────────────────────────────────────────────
@@ -262,25 +267,28 @@ function LoginPage() {
     setLoading(true);
     axios
       .post(`${API_URL}/api/auth/login-user`, { emailOrPhone, password })
-      .then(res => {
+      .then(async (res) => {
         if (res.data.status === 'ok') {
           Alert.alert('Success', 'Logged in successfully!');
           const token = res.data.data;
           const activeOrgId = res.data.activeOrganizationId;
           const userType = res.data.userType;
 
-          login({ 
+          await login({ 
             email: emailOrPhone, 
             globalRole: res.data.globalRole 
           }, token);
-          AsyncStorage.setItem('userType', userType);
+          
           if (activeOrgId) {
-            AsyncStorage.setItem('activeOrgId', activeOrgId);
+            await AsyncStorage.setItem('activeOrgId', activeOrgId);
           }
 
-          AsyncStorage.getItem('expoPushToken').then(pt => {
+          try {
+            const pt = await AsyncStorage.getItem('expoPushToken');
             if (pt) syncPushTokenWithBackend(pt);
-          });
+          } catch (e) {
+            console.log('Error syncing push token:', e);
+          }
 
           if (res.data.globalRole === 'SuperAdmin') {
             navigation.replace('SuperAdmin');
@@ -298,6 +306,9 @@ function LoginPage() {
         }
       })
       .catch(err => {
+        if (err.response?.data?.code === 'ORG_SUSPENDED' || err.response?.data?.code === 'ORG_NOT_FOUND') {
+          return;
+        }
         if (err.response && (err.response.status === 401 || err.response.status === 400)) {
           console.log('Login failed (auth/validation error):', err.response.data?.data || err.response.statusText);
         } else {
@@ -311,7 +322,7 @@ function LoginPage() {
 
   const handleGuestLogin = async () => {
     try {
-      setLoading(true);
+      setGuestLoading(true);
       const settingsRes = await axios.get(`${API_URL}/api/app-settings`);
       const isGuestLive = settingsRes.data?.data?.isGuestLoginEnabled !== false;
 
@@ -321,12 +332,12 @@ function LoginPage() {
       }
 
       await continueAsGuest();
-      navigation.replace('OrgSelection');
+      navigation.replace('MainApp');
     } catch (err) {
       console.error('Guest login verification error:', err);
       Alert.alert('Error', 'Failed to verify guest access. Please check your internet connection.');
     } finally {
-      setLoading(false);
+      setGuestLoading(false);
     }
   };
 
@@ -401,8 +412,14 @@ function LoginPage() {
             <View style={styles.bottomButton}>
               {/* Guest */}
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <TouchableOpacity style={styles.inBut2} onPress={handleGuestLogin}>
-                  <FontAwesome name="user-circle-o" color={colors.theme === 'dark' ? colors.tint : 'white'} style={styles.smallIcon2} />
+                <TouchableOpacity
+                  style={[styles.inBut2, guestLoading && { opacity: 0.6 }]}
+                  onPress={handleGuestLogin}
+                  disabled={guestLoading}>
+                  {guestLoading
+                    ? <ActivityIndicator size="small" color={colors.theme === 'dark' ? colors.tint : 'white'} />
+                    : <FontAwesome name="user-circle-o" color={colors.theme === 'dark' ? colors.tint : 'white'} style={styles.smallIcon2} />
+                  }
                 </TouchableOpacity>
                 <Text style={styles.bottomText}>Guest</Text>
               </View>

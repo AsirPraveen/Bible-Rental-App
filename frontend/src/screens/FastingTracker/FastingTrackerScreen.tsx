@@ -24,12 +24,23 @@ export default function FastingTrackerScreen() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const fetchPlans = async () => {
+    if (isGuest) {
+      setPlans([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
-      const userId = await AsyncStorage.getItem('userId') || '67c13da8f8d68d19dcaec1a4';
-      const res = await axios.get(`${BASE_URL}/api/fasting/user/${userId}`);
-      if (res.data.status === 'Success') {
-        setPlans(res.data.data);
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        const res = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
+        if (res.data.status === 'Ok' && res.data.data) {
+          const userId = res.data.data._id;
+          const plansRes = await axios.get(`${BASE_URL}/api/fasting/user/${userId}`);
+          if (plansRes.data.status === 'Success') {
+            setPlans(plansRes.data.data);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching fasting plans', error);

@@ -4,10 +4,11 @@ const { notifyUserById } = require('../utils/notificationService');
 // Create a new prayer request
 exports.createPrayerRequest = async (req, res) => {
   try {
-    const { user, requestText, isAnonymous, visibility } = req.body;
+    const { requestText, isAnonymous } = req.body;
+    const user = req.user._id;
     
-    if (!user || !requestText) {
-      return res.status(400).json({ status: "Error", data: 'User ID and Request text are required.' });
+    if (!requestText) {
+      return res.status(400).json({ status: "Error", data: 'Request text is required.' });
     }
 
     const newRequest = new PrayerRequest({
@@ -15,7 +16,7 @@ exports.createPrayerRequest = async (req, res) => {
       user,
       requestText,
       isAnonymous,
-      visibility: visibility || 'org'
+      visibility: 'org'
     });
 
     await newRequest.save();
@@ -29,12 +30,7 @@ exports.createPrayerRequest = async (req, res) => {
 // Get all prayer requests (latest first)
 exports.getAllPrayerRequests = async (req, res) => {
   try {
-    const requests = await PrayerRequest.find({
-      $or: [
-        { organization: req.orgId },
-        { visibility: 'public' }
-      ]
-    })
+    const requests = await PrayerRequest.find({ organization: req.orgId })
       .populate('user', 'name profilePic')
       .sort({ createdAt: -1 });
 
@@ -58,15 +54,11 @@ exports.getAllPrayerRequests = async (req, res) => {
 exports.incrementPrayedCount = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ status: "Error", data: 'User ID is required' });
-    }
+    const userId = req.user._id;
 
     const request = await PrayerRequest.findOne({
       _id: id,
-      $or: [{ organization: req.orgId }, { visibility: 'public' }]
+      organization: req.orgId
     });
     if (!request) {
       return res.status(404).json({ status: "Error", data: 'Prayer request not found or inaccessible' });
@@ -84,7 +76,7 @@ exports.incrementPrayedCount = async (req, res) => {
     await request.save();
     
     // Notify the requester if someone else is praying
-    if (!hasPrayed && request.user && request.user.toString() !== userId) {
+    if (!hasPrayed && request.user && request.user.toString() !== userId.toString()) {
         await notifyUserById(
             request.user, 
             'prayerActivity', 

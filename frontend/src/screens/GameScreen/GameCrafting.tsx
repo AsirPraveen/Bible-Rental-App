@@ -162,7 +162,7 @@ const GameCrafting = ({ navigation }: any) => {
             setLoading(true);
             try {
               const baseId = baseCard.uniqueInstanceId || baseCard._id;
-              const res = await axios.post(`${API_URL}/api/game/refine`, {
+              const res = await axios.post(`${API_URL}/api/game/refine-card`, {
                 email,
                 baseInstanceId: baseId,
                 materialInstanceIds: selectedMaterials

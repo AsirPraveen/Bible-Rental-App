@@ -34,10 +34,35 @@ const NotificationSettings = () => {
     prayerActivity: true,
     rentalUpdates: true,
   });
+  const [showBibleProgress, setShowBibleProgress] = useState(true);
 
   useEffect(() => {
     fetchSettings();
+    loadBibleProgressSetting();
   }, []);
+
+  const loadBibleProgressSetting = async () => {
+    try {
+      const val = await AsyncStorage.getItem('@bible_show_progress_bar');
+      if (val !== null) {
+        setShowBibleProgress(val === 'true');
+      }
+    } catch (e) {
+      console.error('Error loading bible progress setting', e);
+    }
+  };
+
+  const toggleBibleProgress = async () => {
+    try {
+      const newValue = !showBibleProgress;
+      setShowBibleProgress(newValue);
+      await AsyncStorage.setItem('@bible_show_progress_bar', String(newValue));
+      Alert.alert('Success', 'Reader progress border preference updated successfully!');
+    } catch (e) {
+      console.error('Error saving bible progress setting', e);
+      Alert.alert('Error', 'Failed to update reader progress border preference.');
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -130,8 +155,8 @@ const NotificationSettings = () => {
             <ArrowLeft size={22} color="#F6F1F1" />
           </Pressable>
           <View style={styles.headerTextWrapper}>
-            <Text style={styles.headerTitle}>Notifications</Text>
-            <Text style={styles.subtitleText}>Manage your alerts</Text>
+            <Text style={styles.headerTitle}>Settings</Text>
+            <Text style={styles.subtitleText}>App Preferences</Text>
           </View>
           <View style={{ width: 38 }} />
         </View>
@@ -144,7 +169,7 @@ const NotificationSettings = () => {
             showsVerticalScrollIndicator={false}
           >
             {/* Section label */}
-            <Text style={styles.sectionTitle}>PREFERENCES</Text>
+            <Text style={styles.sectionTitle}>NOTIFICATION SETTINGS</Text>
 
             {/* Bible Reading */}
             <View style={styles.settingCard}>
@@ -259,6 +284,28 @@ const NotificationSettings = () => {
                   thumbColor={settings.rentalUpdates ? colors.tint : colors.textSecondary}
                 />
               )}
+            </View>
+
+            {/* Section label */}
+            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>BIBLE PREFERENCES</Text>
+
+            {/* Bible Progress Bar Toggle */}
+            <View style={styles.settingCard}>
+              <View style={styles.settingInfo}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.12)' : '#E3F2FD' }]}>
+                  <BookOpen color={colors.tint} size={20} />
+                </View>
+                <View style={styles.textContainer}>
+                  <Text style={styles.settingLabel}>Reader Progress Border</Text>
+                  <Text style={styles.settingDescription}>Show glowing scroll progress around the Bible reader card.</Text>
+                </View>
+              </View>
+              <Switch
+                value={showBibleProgress}
+                onValueChange={toggleBibleProgress}
+                trackColor={{ false: colors.border, true: colors.secondary }}
+                thumbColor={showBibleProgress ? colors.tint : colors.textSecondary}
+              />
             </View>
 
             {/* Info box */}

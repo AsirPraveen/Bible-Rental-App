@@ -5,10 +5,13 @@ import { Trash2, Plus, MapPin, Navigation } from 'lucide-react-native';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../context/ThemeContext';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
 export default function ManageMapsTab() {
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors, theme);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,7 +117,8 @@ export default function ManageMapsTab() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}
@@ -126,7 +130,7 @@ export default function ManageMapsTab() {
               {/* Form Section */}
               <View style={styles.formCard}>
                 <View style={styles.formHeader}>
-                  <Navigation color="#146C94" size={24} />
+                  <Navigation color={colors.tint} size={24} />
                   <Text style={styles.formTitle}>Add New Location</Text>
                 </View>
                 
@@ -134,7 +138,7 @@ export default function ManageMapsTab() {
                 <TextInput
                   style={styles.input}
                   placeholder="e.g., Jerusalem"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textSecondary}
                   value={name}
                   onChangeText={setName}
                 />
@@ -145,7 +149,7 @@ export default function ManageMapsTab() {
                     <TextInput
                       style={styles.input}
                       placeholder="-1000 for BC"
-                      placeholderTextColor="#999"
+                      placeholderTextColor={colors.textSecondary}
                       keyboardType="numeric"
                       value={periodStart}
                       onChangeText={setPeriodStart}
@@ -156,7 +160,7 @@ export default function ManageMapsTab() {
                     <TextInput
                       style={styles.input}
                       placeholder="70 for AD"
-                      placeholderTextColor="#999"
+                      placeholderTextColor={colors.textSecondary}
                       keyboardType="numeric"
                       value={periodEnd}
                       onChangeText={setPeriodEnd}
@@ -170,7 +174,7 @@ export default function ManageMapsTab() {
                     <TextInput
                       style={styles.input}
                       placeholder="e.g., 31.7683"
-                      placeholderTextColor="#999"
+                      placeholderTextColor={colors.textSecondary}
                       keyboardType="numeric"
                       value={latitude}
                       onChangeText={setLatitude}
@@ -181,7 +185,7 @@ export default function ManageMapsTab() {
                     <TextInput
                       style={styles.input}
                       placeholder="e.g., 35.2137"
-                      placeholderTextColor="#999"
+                      placeholderTextColor={colors.textSecondary}
                       keyboardType="numeric"
                       value={longitude}
                       onChangeText={setLongitude}
@@ -193,7 +197,7 @@ export default function ManageMapsTab() {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Description of the historical significance..."
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textSecondary}
                   multiline
                   numberOfLines={4}
                   value={description}
@@ -269,11 +273,11 @@ export default function ManageMapsTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, theme: string) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -296,7 +300,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -314,24 +318,24 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginLeft: 8,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   row: {
     flexDirection: 'row',
@@ -350,7 +354,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.tint,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -359,7 +363,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   submitButtonDisabled: {
-    backgroundColor: '#A0C4C9',
+    backgroundColor: theme === 'dark' ? colors.border : '#A0C4C9',
   },
   submitButtonText: {
     color: '#FFF',
@@ -383,11 +387,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 16,
   },
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -397,7 +401,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -412,28 +416,28 @@ const styles = StyleSheet.create({
   locationName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginLeft: 8,
   },
   deleteButton: {
     padding: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2',
     borderRadius: 20,
   },
   periodText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 4,
   },
   coordText: {
     fontSize: 13,
-    color: '#888',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   descText: {
     fontSize: 14,
-    color: '#555',
+    color: colors.text,
     lineHeight: 20,
   }
 });

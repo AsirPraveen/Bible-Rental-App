@@ -3,7 +3,7 @@ import { NavigationContainer, createNavigationContainerRef } from '@react-naviga
 import StackNavigation from "../navigation/StackNavigation";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import {  Platform } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 
@@ -19,13 +19,14 @@ Notifications.setNotificationHandler({
 
 import { AuthProvider } from '../context/AuthContext';
 import { OrganizationProvider } from '../context/OrganizationContext';
+import { SocketProvider } from '../context/SocketContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { CustomAlert, initializeGlobalAlerts } from '../components/CustomAlert';
 
 // Initialize the global alert interceptor
 initializeGlobalAlerts();
 
-const navigationRef = createNavigationContainerRef<any>();
+export const navigationRef = createNavigationContainerRef<any>();
 const routeListeners = new Set<() => void>();
 
 const notifyRouteListeners = () => {
@@ -59,6 +60,7 @@ const BLUE_STATUS_BAR_SCREENS = [
   'Wishlist',
   'History',
   'Notifications',
+  'Settings',
   'Stuff',
   'UserProfile',
   'Bible',
@@ -74,10 +76,12 @@ const BLUE_STATUS_BAR_SCREENS = [
   'QuestionDetails',
   'SongDetails',
   'OrgSelection',
-  'CreateOrg',
   'OrgSettings',
   'MemberManagement',
   'SuperAdmin',
+  'Generated PDFs',
+  'SongSelectionScreen',
+  'SongPdfGenerator',
 ];
 
 function ThemedStatusBar() {
@@ -132,6 +136,8 @@ function ThemedStatusBar() {
   );
 }
 
+import { Provider as PaperProvider } from 'react-native-paper';
+
 export default function App() {
   React.useEffect(() => {
     registerForPushNotificationsAsync();
@@ -139,23 +145,29 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <OrganizationProvider>
-          <ThemeProvider>
-            <SafeAreaProvider style={{ flex: 1 }}>
-              <ThemedStatusBar />
-              <NavigationContainer
-                ref={navigationRef}
-                onReady={notifyRouteListeners}
-                onStateChange={notifyRouteListeners}
-              >
-                <StackNavigation/>
-              </NavigationContainer>
-              <CustomAlert />
-            </SafeAreaProvider>
-          </ThemeProvider>
-        </OrganizationProvider>
-      </AuthProvider>
+      <PaperProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <OrganizationProvider>
+              <ThemeProvider>
+                <SafeAreaProvider style={{ flex: 1 }}>
+                  <ThemedStatusBar />
+                  <NavigationContainer
+                    ref={navigationRef}
+                    onReady={notifyRouteListeners}
+                    onStateChange={notifyRouteListeners}
+                  >
+                    <StackNavigation />
+                  </NavigationContainer>
+                  <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                    <CustomAlert />
+                  </View>
+                </SafeAreaProvider>
+              </ThemeProvider>
+            </OrganizationProvider>
+          </SocketProvider>
+        </AuthProvider>
+      </PaperProvider>
     </GestureHandlerRootView>
   );
 }

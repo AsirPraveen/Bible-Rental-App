@@ -218,6 +218,7 @@ export default function MemberManagementScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           
@@ -226,7 +227,7 @@ export default function MemberManagementScreen({ navigation }: any) {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <ArrowLeft color={colors.text} size={24} />
+              <ArrowLeft color="#fff" size={24} />
             </TouchableOpacity>
             <Text style={styles.title}>Member Management</Text>
           </View>
@@ -329,7 +330,7 @@ export default function MemberManagementScreen({ navigation }: any) {
                               </View>
                               <View style={styles.roleRow}>
                                 <Text style={styles.roleLabel}>Role: </Text>
-                                <Text style={[styles.roleText, isAdmin && { color: '#FFD700', fontWeight: 'bold' }]}>
+                                <Text style={[styles.roleText, isAdmin && { color: colors.theme === 'dark' ? '#FBBF24' : '#D97706', fontWeight: 'bold' }]}>
                                   {item.role}
                                 </Text>
                               </View>
@@ -488,12 +489,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: colors.text,
+    color: '#fff',
   },
   sectionLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.tint,
+    color: '#fff',
     marginBottom: 12,
   },
   pendingSection: {
@@ -579,14 +580,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    color: colors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 14,
   },
   tabHeader: {
     flexDirection: 'row',
     marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
   tabButton: {
     flex: 1,
@@ -596,15 +597,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabButtonActive: {
-    borderBottomColor: colors.tint,
+    borderBottomColor: '#fff',
   },
   tabButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   tabButtonTextActive: {
-    color: colors.tint,
+    color: '#fff',
   },
   inviteContainer: {
     backgroundColor: colors.surface,

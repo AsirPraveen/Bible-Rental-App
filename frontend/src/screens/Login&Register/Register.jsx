@@ -30,12 +30,14 @@ function RegisterPage() {
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [mobileError, setMobileError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   const validateName = (name) => name.length > 1;
   const validateEmail = (email) => /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email);
@@ -43,21 +45,34 @@ function RegisterPage() {
   const validatePassword = (password) => /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/.test(password);
 
   const handleSubmit = () => {
-    setNameError('');
-    setEmailError('');
-    setMobileError('');
-    setPasswordError('');
+    let localNameError = '';
+    let localEmailError = '';
+    let localMobileError = '';
+    let localPasswordError = '';
+    let localConfirmPasswordError = '';
 
-    if (!name) setNameError('Name is required');
-    else if (!validateName(name)) setNameError('Name must be more than 1 character');
-    if (!email) setEmailError('Email is required');
-    else if (!validateEmail(email)) setEmailError('Please enter a valid email address');
-    if (!mobile) setMobileError('Mobile is required');
-    else if (!validateMobile(mobile)) setMobileError('Mobile must start with 6-9 and be 10 digits');
-    if (!password) setPasswordError('Password is required');
-    else if (!validatePassword(password)) setPasswordError('Password must include uppercase, lowercase, number, and be at least 6 characters');
+    if (!name) localNameError = 'Name is required';
+    else if (!validateName(name)) localNameError = 'Name must be more than 1 character';
 
-    if (!name || !email || !mobile || !password || nameError || emailError || mobileError || passwordError) {
+    if (!email) localEmailError = 'Email is required';
+    else if (!validateEmail(email)) localEmailError = 'Please enter a valid email address';
+
+    if (!mobile) localMobileError = 'Mobile is required';
+    else if (!validateMobile(mobile)) localMobileError = 'Mobile must start with 6-9 and be 10 digits';
+
+    if (!password) localPasswordError = 'Password is required';
+    else if (!validatePassword(password)) localPasswordError = 'Password must include uppercase, lowercase, number, and be at least 6 characters';
+
+    if (!confirmPassword) localConfirmPasswordError = 'Confirm password is required';
+    else if (confirmPassword !== password) localConfirmPasswordError = 'Passwords do not match';
+
+    setNameError(localNameError);
+    setEmailError(localEmailError);
+    setMobileError(localMobileError);
+    setPasswordError(localPasswordError);
+    setConfirmPasswordError(localConfirmPasswordError);
+
+    if (localNameError || localEmailError || localMobileError || localPasswordError || localConfirmPasswordError) {
       Toast.show({
         type: 'error',
         text1: 'Error!!',
@@ -171,6 +186,12 @@ function RegisterPage() {
                 setPassword(text);
                 if (!validatePassword(text)) setPasswordError('Password must include uppercase, lowercase, number, and be at least 6 characters');
                 else setPasswordError('');
+
+                if (confirmPassword && text !== confirmPassword) {
+                  setConfirmPasswordError('Passwords do not match');
+                } else {
+                  setConfirmPasswordError('');
+                }
               }}
               secureTextEntry={!showPassword}
             />
@@ -184,6 +205,31 @@ function RegisterPage() {
             </TouchableOpacity>
           </View>
           {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
+          <View style={styles.action}>
+            <FontAwesome name="lock" color={colors.tint} style={styles.smallIcon} />
+            <TextInput
+              placeholder="Re-enter Password"
+              placeholderTextColor={colors.textSecondary}
+              style={styles.textInput}
+              value={confirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (text !== password) setConfirmPasswordError('Passwords do not match');
+                else setConfirmPasswordError('');
+              }}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Feather
+                name={showPassword ? 'eye' : 'eye-off'}
+                style={{ marginRight: -10 }}
+                color={confirmPasswordError ? 'red' : colors.tint}
+                size={23}
+              />
+            </TouchableOpacity>
+          </View>
+          {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
 
           <View style={styles.button}>
             <TouchableOpacity

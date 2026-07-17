@@ -134,6 +134,17 @@ exports.joinByInviteCode = async (req, res) => {
 
     const org = invite.organization;
 
+    // Check membership limits
+    const currentMembersCount = await User.countDocuments({
+      'memberships.organization': org._id
+    });
+    if (currentMembersCount >= (org.maxMembers || 50)) {
+      return res.status(400).json({ 
+        status: 'error', 
+        message: `Organization membership limit of ${org.maxMembers || 50} members reached.` 
+      });
+    }
+
     // Check if user is already a member
     const isMember = req.user.memberships.some(m => m.organization.toString() === org._id.toString());
     if (isMember) {
@@ -160,7 +171,12 @@ exports.joinByInviteCode = async (req, res) => {
     invite.isUsed = true;
     await invite.save();
 
-    res.json({ status: 'Ok', message: 'Successfully joined organization', data: org });
+    res.json({ 
+      status: 'Ok', 
+      message: 'Successfully joined organization', 
+      data: org,
+      role: invite.role || 'User'
+    });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -236,6 +252,16 @@ exports.requestToJoin = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'You are already a member of this organization' });
     }
 
+    const currentMembersCount = await User.countDocuments({
+      'memberships.organization': org._id
+    });
+    if (currentMembersCount >= (org.maxMembers || 50)) {
+      return res.status(400).json({ 
+        status: 'error', 
+        message: `Organization membership limit of ${org.maxMembers || 50} members reached.` 
+      });
+    }
+
     if (req.user.pendingJoinRequests.includes(org._id)) {
       return res.status(400).json({ status: 'error', message: 'Join request already pending' });
     }
@@ -270,12 +296,9 @@ exports.requestToJoin = async (req, res) => {
 exports.switchActiveOrg = async (req, res) => {
   const { orgId } = req.body;
   try {
-    const isSuperAdmin = req.user.globalRole === 'SuperAdmin';
-    if (!isSuperAdmin) {
-      const membership = req.user.memberships.find(m => m.organization.toString() === orgId && m.isActive);
-      if (!membership) {
-        return res.status(403).json({ status: 'error', message: 'You do not have an active membership with this organization' });
-      }
+    const membership = req.user.memberships.find(m => m.organization.toString() === orgId && m.isActive);
+    if (!membership) {
+      return res.status(403).json({ status: 'error', message: 'You do not have an active membership with this organization' });
     }
 
     await User.findByIdAndUpdate(req.user._id, {
@@ -292,7 +315,8 @@ exports.switchActiveOrg = async (req, res) => {
 exports.getOrgMembers = async (req, res) => {
   try {
     const members = await User.find({
-      'memberships.organization': req.orgId
+      'memberships.organization': req.orgId,
+      globalRole: { $ne: 'SuperAdmin' }
     }).select('name email mobile gender profession memberships activeOrganizationId lastActiveAt');
 
     const mappedMembers = members.map(m => {
@@ -342,6 +366,17 @@ exports.approveJoinRequest = async (req, res) => {
     });
 
     if (approve) {
+      const org = await Organization.findById(req.orgId);
+      const currentMembersCount = await User.countDocuments({
+        'memberships.organization': req.orgId
+      });
+      if (currentMembersCount >= (org.maxMembers || 50)) {
+        return res.status(400).json({ 
+          status: 'error', 
+          message: `Cannot approve. Organization membership limit of ${org.maxMembers || 50} members reached.` 
+        });
+      }
+
       await User.findByIdAndUpdate(userId, {
         $push: {
           memberships: {
@@ -372,10 +407,13 @@ exports.updateMember = async (req, res) => {
 
     if (remove) {
       await User.findByIdAndUpdate(userId, {
-        $pull: { memberships: { organization: req.orgId } },
-        // If active org was removed, nullify it so they are forced to select next time
-        $cond: { if: { $eq: ['$activeOrganizationId', req.orgId] }, then: { $set: { activeOrganizationId: null } }, else: {} }
+        $pull: { memberships: { organization: req.orgId } }
       });
+      // Conditionally clear activeOrganizationId if it was the removed organization
+      await User.updateOne(
+        { _id: userId, activeOrganizationId: req.orgId },
+        { $set: { activeOrganizationId: null } }
+      );
       return res.json({ status: 'Ok', message: 'Member removed from organization' });
     }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, StatusBar, Switch, Alert } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { ArrowLeft, Users, BookOpen, Music, MessageSquare, Heart, Shield, User, Calendar, AlertTriangle, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, Users, BookOpen, Music, MessageSquare, Heart, Shield, User, Calendar, AlertTriangle, CheckCircle, Eye } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -96,11 +96,22 @@ export default function SuperAdminOrgDetail({ route, navigation }: any) {
     { icon: Heart, label: 'Prayer Requests', value: stats?.prayerCount || 0, color: '#E84393' },
   ];
 
+  const stuffFeatures = [
+    'Bible',
+    'Songs',
+    'HistoricalMaps',
+    'ReadingTracker',
+    'ReadingPlanner',
+    'DiscussionForum',
+    'FastingTracker',
+    'PrayerRequests',
+    'MessageNotes',
+    'BookPdf'
+  ];
+
   const enabledFeatures = org?.features
-    ? Object.entries(org.features)
-        .filter(([_, v]) => v === true)
-        .map(([k]) => k.replace(/([A-Z])/g, ' $1').trim())
-    : [];
+    ? stuffFeatures.filter(key => org.features[key] !== false)
+    : stuffFeatures;
 
   return (
     <SafeAreaView style={styles.outerContainer}>
@@ -145,6 +156,7 @@ export default function SuperAdminOrgDetail({ route, navigation }: any) {
                   />
                 </View>
 
+
                 {/* Org Info */}
                 {org?.description ? (
                   <View style={styles.infoCard}>
@@ -157,10 +169,6 @@ export default function SuperAdminOrgDetail({ route, navigation }: any) {
                   <View style={[styles.infoCard, { flex: 1 }]}>
                     <Text style={styles.infoLabel}>Created</Text>
                     <Text style={styles.infoValue}>{formatDate(org?.createdAt)}</Text>
-                  </View>
-                  <View style={[styles.infoCard, { flex: 1 }]}>
-                    <Text style={styles.infoLabel}>Invite Code</Text>
-                    <Text style={[styles.infoValue, { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12 }]}>{org?.inviteCode || '—'}</Text>
                   </View>
                 </View>
 

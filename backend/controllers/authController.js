@@ -13,7 +13,6 @@ const JWT_SECRET = process.env.JWT_SECRET;
 exports.register = async (req, res) => {
   const { name, email, mobile, password } = req.body;
   try {
-    console.log("inside register", req.body);
     const oldUser = await User.findOne({ email });
     if (oldUser) return res.status(409).send({ status: "error", data: "User already exists!!" });
 
@@ -25,7 +24,7 @@ exports.register = async (req, res) => {
       mobile,
       password: encryptedPassword,
       userType: 'User', // default to standard User type
-      globalRole: email.toLowerCase() === 'superadmin@youthroom.com' ? 'SuperAdmin' : null, // Auto seed superadmin
+      globalRole: null,
       memberships: [],
       activeOrganizationId: null
     });
@@ -38,7 +37,6 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { emailOrPhone, password } = req.body;
-  console.log("inside login", req.body);
 
   try {
     const isPhone = /^[6-9][0-9]{9}$/.test(emailOrPhone);
@@ -52,10 +50,35 @@ exports.login = async (req, res) => {
 
     const passwordMatch = await bcrypt.compare(password, oldUser.password);
     if (passwordMatch) {
+      if (oldUser.globalRole !== 'SuperAdmin' && oldUser.activeOrganizationId) {
+        const activeOrg = await Organization.findById(oldUser.activeOrganizationId);
+        if (!activeOrg || !activeOrg.isActive) {
+          let fallbackOrgId = null;
+          for (const m of oldUser.memberships) {
+            if (m.isActive && m.organization) {
+              const o = await Organization.findById(m.organization._id);
+              if (o && o.isActive) {
+                fallbackOrgId = o._id;
+                break;
+              }
+            }
+          }
+          if (fallbackOrgId) {
+            oldUser.activeOrganizationId = fallbackOrgId;
+          } else {
+            return res.status(403).json({
+              status: "error",
+              code: "ORG_SUSPENDED",
+              data: "Your organization has been freezed. Please contact your organization administrator."
+            });
+          }
+        }
+      }
+
       oldUser.lastActiveAt = new Date();
       await oldUser.save();
       const token = jwt.sign({ email: oldUser.email }, JWT_SECRET, { expiresIn: '30d' });
-      
+
       // Determine user role for the active org
       let activeOrgRole = 'User';
       if (oldUser.activeOrganizationId) {
@@ -95,7 +118,7 @@ exports.getUserData = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    
+
     // Update active timestamp
     await User.updateOne({ email: decoded.email }, { $set: { lastActiveAt: new Date() } });
 
@@ -107,16 +130,94 @@ exports.getUserData = async (req, res) => {
       return res.status(404).send({ status: "error", message: "User not found" });
     }
 
-    // Populate book names for rented books if they exist
+    let activeOrgId = user.activeOrganizationId;
+    if (user.globalRole !== 'SuperAdmin' && activeOrgId) {
+      const activeOrg = await Organization.findById(activeOrgId);
+      if (!activeOrg || !activeOrg.isActive) {
+        let fallbackOrgId = null;
+        for (const m of user.memberships) {
+          if (m.isActive && m.organization) {
+            const o = await Organization.findById(m.organization._id);
+            if (o && o.isActive) {
+              fallbackOrgId = o._id;
+              break;
+            }
+          }
+        }
+        if (fallbackOrgId) {
+          await User.updateOne({ _id: user._id }, { $set: { activeOrganizationId: fallbackOrgId } });
+          activeOrgId = fallbackOrgId;
+          user.activeOrganizationId = fallbackOrgId;
+        } else {
+          return res.status(403).json({
+            status: "error",
+            code: "ORG_SUSPENDED",
+            message: "Your organization has been freezed. Please contact your administrator."
+          });
+        }
+      }
+    }
+
+    // Filter books_rented by activeOrganizationId and populate book names
     if (user.books_rented && user.books_rented.length > 0) {
+      user.books_rented = user.books_rented.filter(
+        r => r.organization && r.organization.toString() === activeOrgId?.toString()
+      );
+
       const bookIds = user.books_rented.map(r => r.book_id);
-      const books = await Book.find({ book_id: { $in: bookIds } }).select('book_id book_name');
+      const books = await Book.find({ book_id: { $in: bookIds }, organization: activeOrgId }).select('book_id book_name');
       const bookMap = new Map(books.map(b => [b.book_id, b.book_name]));
 
       user.books_rented = user.books_rented.map(r => ({
         ...r,
         book_name: bookMap.get(r.book_id) || 'Unknown Book'
       }));
+    } else {
+      user.books_rented = [];
+    }
+
+    // Filter and map favouriteBooks to a flat array of numbers (keeping frontend compatibility) and show new to old
+    if (user.favouriteBooks && user.favouriteBooks.length > 0) {
+      user.favouriteBooks = user.favouriteBooks
+        .filter(f => f.organization && f.organization.toString() === activeOrgId?.toString())
+        .map(f => f.book_id);
+      user.favouriteBooks.reverse();
+    } else {
+      user.favouriteBooks = [];
+    }
+
+    // Sort likedVerses from new to old
+    if (user.likedVerses && user.likedVerses.length > 0) {
+      user.likedVerses.sort((a, b) => new Date(b.likedAt || 0) - new Date(a.likedAt || 0));
+    } else {
+      user.likedVerses = [];
+    }
+
+    // Filter likedSongs by activeOrganizationId, populate, and sort from new to old
+    if (user.likedSongs && user.likedSongs.length > 0) {
+      const activeLikedSongs = user.likedSongs.filter(
+        s => s.organization && s.organization.toString() === activeOrgId?.toString()
+      );
+      
+      const Song = require('../models/Song');
+      const songIds = activeLikedSongs.map(s => s.song);
+      const songs = await Song.find({ _id: { $in: songIds } }).populate('author').lean();
+      const songMap = new Map(songs.map(s => [s._id.toString(), s]));
+      
+      user.likedSongs = activeLikedSongs.map(s => {
+        const songData = songMap.get(s.song?.toString()) || {};
+        return {
+          _id: s.song,
+          titleTamil: songData.titleTamil,
+          titleEnglish: songData.titleEnglish,
+          author: songData.author?.name || '',
+          likedAt: s.likedAt
+        };
+      });
+
+      user.likedSongs.sort((a, b) => new Date(b.likedAt || 0) - new Date(a.likedAt || 0));
+    } else {
+      user.likedSongs = [];
     }
 
     res.send({ status: "Ok", data: user });
@@ -140,7 +241,6 @@ exports.forgotPassword = async (req, res) => {
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
     await user.save();
-    console.log('OTP generated:', otp);
 
     const emailUser = process.env.EMAIL_USER;
     const emailPass = process.env.EMAIL_PASS;
@@ -271,8 +371,35 @@ exports.googleLogin = async (req, res) => {
     }
 
     console.log('Existing Google user logged in:', email);
+
+    if (user.globalRole !== 'SuperAdmin' && user.activeOrganizationId) {
+      const activeOrg = await Organization.findById(user.activeOrganizationId);
+      if (!activeOrg || !activeOrg.isActive) {
+        let fallbackOrgId = null;
+        for (const m of user.memberships) {
+          if (m.isActive && m.organization) {
+            const o = await Organization.findById(m.organization._id);
+            if (o && o.isActive) {
+              fallbackOrgId = o._id;
+              break;
+            }
+          }
+        }
+        if (fallbackOrgId) {
+          user.activeOrganizationId = fallbackOrgId;
+          await user.save();
+        } else {
+          return res.status(403).json({
+            status: "error",
+            code: "ORG_SUSPENDED",
+            error: "Your organization has been freezed. Please contact your organization administrator."
+          });
+        }
+      }
+    }
+
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '30d' });
-    
+
     let activeOrgRole = 'User';
     if (user.activeOrganizationId) {
       const activeMembership = user.memberships.find(
@@ -315,7 +442,7 @@ exports.googleSetPassword = async (req, res) => {
         mobile: '',
         password: await bcrypt.hash(newPassword, 10),
         userType: 'User',
-        globalRole: email.toLowerCase() === 'superadmin@youthroom.com' ? 'SuperAdmin' : null,
+        globalRole: null,
         image: image || '',
         secretText: '',
         googleId: googleId || '',

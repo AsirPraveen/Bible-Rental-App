@@ -3,10 +3,11 @@ const FastingPlan = require('../models/FastingPlan');
 // Start a new fast
 exports.createFastingPlan = async (req, res) => {
   try {
-    const { user, startDate, endDate, type, notes, notifyInterval } = req.body;
+    const { startDate, endDate, type, notes, notifyInterval } = req.body;
+    const user = req.user._id;
 
-    if (!user || !startDate || !endDate) {
-      return res.status(400).json({ status: "Error", data: 'User ID, start date, and end date are required.' });
+    if (!startDate || !endDate) {
+      return res.status(400).json({ status: "Error", data: 'Start date and end date are required.' });
     }
 
     const newFast = new FastingPlan({
@@ -31,6 +32,11 @@ exports.createFastingPlan = async (req, res) => {
 exports.getUserFastingPlans = async (req, res) => {
   try {
     const { userId } = req.params;
+    const isSelf = userId.toString() === req.user._id.toString();
+    const isAdmin = req.orgRole === 'Admin';
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ status: "Error", data: 'Access denied' });
+    }
     const plans = await FastingPlan.find({ user: userId, organization: req.orgId }).sort({ createdAt: -1 });
     
     return res.status(200).json({ status: "Success", data: plans });

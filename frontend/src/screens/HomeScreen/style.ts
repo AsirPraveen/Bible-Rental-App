@@ -1,4 +1,4 @@
-import { StyleSheet, Dimensions, Platform } from "react-native";
+import { StyleSheet, Dimensions, Platform, StatusBar } from "react-native";
 const { width, height } = Dimensions.get("window");
 
 const getStyles = (colors: any) => StyleSheet.create({
@@ -280,6 +280,54 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 65 : 95) : 105,
+    paddingRight: 16,
+  },
+  dropdownContainer: {
+    width: 250,
+    backgroundColor: colors.cardBg,
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  dropdownTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingBottom: 6,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  dropdownItemActive: {
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#E6F0FA',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  dropdownItemTextActive: {
+    color: colors.tint,
   },
 });
 

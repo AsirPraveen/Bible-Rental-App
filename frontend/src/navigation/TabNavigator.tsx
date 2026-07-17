@@ -12,6 +12,7 @@ import StuffComponent from "../screens/StuffComponent/StuffComponent";
 import NotificationScreen from "../screens/NotificationScreen/NotificationScreen";
 import UserProfileScreen from "../screens/UserProfileScreen/UserProfileScreen";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 import type LottieView from "lottie-react-native";
 
@@ -19,69 +20,81 @@ const Tab = createBottomTabNavigator();
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
 
 const HomeTabsNavigation = () => {
+  const { isGuest } = useAuth();
+  const { colors } = useTheme();
+  
   return (
     <Tab.Navigator
+      initialRouteName={isGuest ? "Stuff" : "Home"}
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: false,  // 👈 prevents collapsing after keyboard dismiss
       }}
       tabBar={(props) => <AnimatedTabBar {...props} />}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeComponent}
-        options={{
-          tabBarIcon: ({ ref }: any) => (
-            <Lottie
-              ref={ref}
-              loop={false}
-              source={require("../assets/lottie_icon/home.icon.json")}
-              style={styles.icon}
-            />
-          ),
-          headerShown: false,
-        }}
-      />
+      {!isGuest && (
+        <Tab.Screen
+          name="Home"
+          component={HomeComponent}
+          options={{
+            tabBarIcon: ({ ref, active }: any) => (
+              <Lottie
+                ref={ref}
+                loop={false}
+                source={require("../assets/lottie_icon/home.icon.json")}
+                style={styles.icon}
+                progress={active ? undefined : 1}
+              />
+            ),
+            headerShown: false,
+          }}
+        />
+      )}
       <Tab.Screen
         name="Stuff"
         component={StuffComponent}
         options={{
-          tabBarIcon: ({ ref }: any) => (
+          tabBarIcon: ({ ref, active }: any) => (
             <Lottie
               ref={ref}
               loop={false}
               source={require("../assets/lottie_icon/bible.icon.json")}
               style={styles.icon}
+              progress={active ? undefined : 1}
             />
           ),
           headerShown: false,
         }}
       />
-      <Tab.Screen
-        name="Notifications"
-        component={NotificationScreen}
-        options={{
-          tabBarIcon: ({ ref }: any) => (
-            <Lottie
-              ref={ref}
-              loop={false}
-              source={require("../assets/lottie_icon/notification.icon.json")}
-              style={styles.icon}
-            />
-          ),
-          headerShown: false,
-        }}
-      />
+      {!isGuest && (
+        <Tab.Screen
+          name="Notifications"
+          component={NotificationScreen}
+          options={{
+            tabBarIcon: ({ ref, active }: any) => (
+              <Lottie
+                ref={ref}
+                loop={false}
+                source={require("../assets/lottie_icon/notification.icon.json")}
+                style={styles.icon}
+                progress={active ? undefined : 1}
+              />
+            ),
+            headerShown: false,
+          }}
+        />
+      )}
       <Tab.Screen
         name="UserProfile"
         component={UserProfileScreen}
         options={{
-          tabBarIcon: ({ ref }: any) => (
+          tabBarIcon: ({ ref, active }: any) => (
             <Lottie
               ref={ref}
               loop={false}
               source={require("../assets/lottie_icon/user.icon.json")}
               style={styles.icon}
+              progress={active ? undefined : 1}
             />
           ),
           headerShown: false,
@@ -94,7 +107,15 @@ const HomeTabsNavigation = () => {
 const AnimatedTabBar = ({ state: { index: activeIndex, routes }, navigation, descriptors }: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
   const { colors } = useTheme();
-  const reducer = (state: any, action: any) => [...state, { x: action.x, index: action.index }];
+  const reducer = (state: any, action: any) => {
+    const existingIndex = state.findIndex((item: any) => item.index === action.index);
+    if (existingIndex > -1) {
+      const newState = [...state];
+      newState[existingIndex] = { x: action.x, index: action.index };
+      return newState;
+    }
+    return [...state, { x: action.x, index: action.index }];
+  };
   const [layout, dispatch] = useReducer(reducer, []);
 
   // track keyboard visibility
@@ -181,7 +202,7 @@ const TabBarComponent = ({ active, options, onLayout, onPress }: any) => {
       <Animated.View style={[styles.componentCircle, animatedComponentCircleStyles, { backgroundColor: colors.background }]} />
       <Animated.View style={[styles.iconContainer, animatedIconContainerStyles]}>
         {options.tabBarIcon ? (
-          options.tabBarIcon({ ref })
+          options.tabBarIcon({ ref, active })
         ) : (
           <Ionicons name="help-circle-outline" size={24} color={colors.background} />
         )}

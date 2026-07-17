@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Send, MessageCircle } from 'lucide-react-native';
@@ -66,10 +66,8 @@ export default function QuestionDetailsScreen() {
 
     try {
       setLoading(true);
-      const userIdToUse = currentUserId || await AsyncStorage.getItem('userId') || '67c13da8f8d68d19dcaec1a4';
 
       const res = await axios.post(`${BASE_URL}/api/forum/questions/${question._id}/answers`, {
-        user: userIdToUse,
         answerText
       });
 
@@ -79,7 +77,7 @@ export default function QuestionDetailsScreen() {
       }
     } catch (error) {
       console.error('Error posting answer', error);
-      alert('Failed to post reply.');
+      Alert.alert('Error', 'Failed to post reply.');
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,7 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme } from '../../context/ThemeContext';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
@@ -29,6 +30,8 @@ interface AnalyticsData {
 }
 
 export default function AppAnalyticsTab() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -73,7 +76,8 @@ export default function AppAnalyticsTab() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.container}>
             <Text style={styles.headerText}>App Analytics</Text>
@@ -185,11 +189,11 @@ export default function AppAnalyticsTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -209,7 +213,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -224,7 +228,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 16,
   },
   section: {
@@ -233,7 +237,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 10,
     marginLeft: 4,
   },

@@ -6,10 +6,13 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme } from '../../context/ThemeContext';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
 
 export default function ModerationTab() {
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors, theme);
   const [activeTab, setActiveTab] = useState('prayers'); // 'prayers' or 'forum'
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +157,8 @@ export default function ModerationTab() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.container}>
             <Text style={styles.headerText}>Content Moderation</Text>
@@ -166,7 +170,7 @@ export default function ModerationTab() {
             style={[styles.tabButton, activeTab === 'prayers' && styles.tabButtonActive]}
             onPress={() => setActiveTab('prayers')}
           >
-            <HandHeart color={activeTab === 'prayers' ? '#146C94' : '#888'} size={20} />
+            <HandHeart color={activeTab === 'prayers' ? colors.tint : colors.textSecondary} size={20} />
             <Text style={[styles.tabText, activeTab === 'prayers' && styles.tabTextActive]}>
               Prayer Requests
             </Text>
@@ -175,7 +179,7 @@ export default function ModerationTab() {
             style={[styles.tabButton, activeTab === 'forum' && styles.tabButtonActive]}
             onPress={() => setActiveTab('forum')}
           >
-            <MessageSquare color={activeTab === 'forum' ? '#146C94' : '#888'} size={20} />
+            <MessageSquare color={activeTab === 'forum' ? colors.tint : colors.textSecondary} size={20} />
             <Text style={[styles.tabText, activeTab === 'forum' && styles.tabTextActive]}>
               Forum Questions
             </Text>
@@ -207,11 +211,11 @@ export default function ModerationTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, theme: string) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -239,12 +243,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    minHeight: 400, // Ensure form area takes reasonable space
+    minHeight: 400,
   },
   tabContainer: {
     flexDirection: 'row',
     marginBottom: 20,
-    backgroundColor: '#E8F1F5',
+    backgroundColor: theme === 'dark' ? colors.border : '#E8F1F5',
     borderRadius: 12,
     padding: 4,
   },
@@ -257,7 +261,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   tabButtonActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -265,13 +269,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    color: '#888',
+    color: colors.textSecondary,
     fontWeight: '600',
     fontSize: 15,
     marginLeft: 8,
   },
   tabTextActive: {
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
   },
   listContainer: {
@@ -305,14 +309,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 16,
   },
   scrollView: {
     flex: 1,
   },
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -322,15 +326,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.border,
   },
   cardTitleContainer: {
     flexDirection: 'row',
@@ -343,31 +347,31 @@ const styles = StyleSheet.create({
   userNameText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   contentDate: {
     fontSize: 11,
-    color: '#999',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   cardBody: {
-    padding: 16,
+    paddingTop: 12,
   },
   deleteButton: {
     padding: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2',
     borderRadius: 8,
   },
   contentQuestionText: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     lineHeight: 22,
     marginBottom: 12,
     fontWeight: '500',
   },
   contentText: {
     fontSize: 14,
-    color: '#555',
+    color: colors.text,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -378,9 +382,9 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#19A7CE',
+    color: colors.tint,
     fontWeight: '600',
-    backgroundColor: '#E8F1F5',
+    backgroundColor: theme === 'dark' ? colors.border : '#E8F1F5',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -389,24 +393,24 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    backgroundColor: '#FAFBFC',
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
   },
   answersHeading: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   answerCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#19A7CE',
+    borderLeftColor: colors.tint,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -415,7 +419,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     fontSize: 14,
-    color: '#444',
+    color: colors.text,
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -424,17 +428,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#F5F5F5',
+    borderTopColor: colors.border,
     paddingTop: 8,
   },
   answerDate: {
     fontSize: 10,
-    color: '#999',
+    color: colors.textSecondary,
   },
   answerAuthor: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#146C94',
+    color: colors.tint,
   },
   forumCard: {
     padding: 0,

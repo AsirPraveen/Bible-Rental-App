@@ -2,6 +2,7 @@ const Book = require('../models/Book');
 const User = require('../models/UserDetails');
 const RequestHistory = require('../models/RequestHistory');
 const EmailTemplate = require('../models/EmailTemplate');
+const Organization = require('../models/Organization');
 const nodemailer = require('nodemailer');
 const { bookApprovalTemplate, bookRejectionTemplate } = require('../config/emailTemplate');
 const { notifyOrgAdmins, notifyUserById } = require('../utils/notificationService');
@@ -31,14 +32,39 @@ exports.addBook = async (req, res) => {
   } = req.body;
 
   try {
+    const org = await Organization.findById(req.orgId);
+    if (!org) {
+      return res.status(404).send({ status: "error", data: "Organization not found" });
+    }
+
+    const currentBooksCount = await Book.countDocuments({ organization: req.orgId });
+    if (currentBooksCount >= (org.maxBooks || 100)) {
+      return res.status(400).send({ 
+        status: "error", 
+        data: `Book inventory limit of ${org.maxBooks || 100} books reached for this organization.` 
+      });
+    }
+
+    // Auto-calculate book_id if not provided
+    let finalBookId = book_id;
+    if (!finalBookId) {
+      const latestBook = await Book.findOne({ organization: req.orgId }).sort({ book_id: -1 });
+      finalBookId = latestBook && latestBook.book_id ? (latestBook.book_id + 1) : 1;
+    } else {
+      finalBookId = Number(finalBookId);
+    }
+
+    // Default available_count to 1 if not provided
+    const finalAvailableCount = available_count !== undefined && available_count !== '' ? Number(available_count) : 1;
+
     // Check if book ID already exists in this organization
-    const existingBook = await Book.findOne({ book_id, organization: req.orgId });
+    const existingBook = await Book.findOne({ book_id: finalBookId, organization: req.orgId });
     if (existingBook) {
       return res.status(400).send({ status: "error", data: "Book ID already exists in this organization" });
     }
 
-    // Validate required fields
-    if (!book_name || !author_name || !pages || !year_of_publication || !author_id || !book_id || !available_count) {
+    // Validate required fields (book_id and available_count are resolved, so check finalBookId and finalAvailableCount)
+    if (!book_name || !author_name || !pages || !year_of_publication || !author_id || !finalBookId || !finalAvailableCount) {
       return res.status(400).send({ status: "error", data: "Missing required fields" });
     }
 
@@ -47,7 +73,7 @@ exports.addBook = async (req, res) => {
       return res.status(400).send({ status: "error", data: "Pages must be a valid positive number" });
     }
 
-    if (isNaN(Number(available_count)) || Number(available_count) <= 0) {
+    if (isNaN(finalAvailableCount) || finalAvailableCount <= 0) {
       return res.status(400).send({ status: "error", data: "Available count must be a valid positive number" });
     }
 
@@ -67,8 +93,8 @@ exports.addBook = async (req, res) => {
       thumbnail2: thumbnail2 || null,
       year_of_publication: Number(year_of_publication),
       author_id: Number(author_id),
-      available_count: Number(available_count),
-      book_id: Number(book_id),
+      available_count: finalAvailableCount,
+      book_id: finalBookId,
       rent_count: 0,
       available: true,
       owned_by: null,
@@ -127,7 +153,7 @@ exports.submitRentRequest = async (req, res) => {
     // Add the rent request to the user's books_rented array
     await User.updateOne(
       { email: userEmail },
-      { $push: { books_rented: { book_id, status: 'pending', requested_at: new Date() } } }
+      { $push: { books_rented: { book_id, organization: req.orgId, status: 'pending', requested_at: new Date() } } }
     );
 
     // Notify Admins of this specific organization of new request
@@ -451,12 +477,14 @@ exports.toggleFavourite = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Book not found in this organization" });
     }
 
-    const isFavourite = user.favouriteBooks.includes(book_id);
+    const isFavourite = user.favouriteBooks && user.favouriteBooks.some(
+      f => f.book_id === Number(book_id) && f.organization && f.organization.toString() === req.orgId.toString()
+    );
     
     if (isFavourite) {
       await User.updateOne(
         { email: userEmail },
-        { $pull: { favouriteBooks: book_id } }
+        { $pull: { favouriteBooks: { book_id: Number(book_id), organization: req.orgId } } }
       );
       
       await Book.updateOne(
@@ -468,7 +496,7 @@ exports.toggleFavourite = async (req, res) => {
     } else {
       await User.updateOne(
         { email: userEmail },
-        { $addToSet: { favouriteBooks: book_id } }
+        { $addToSet: { favouriteBooks: { book_id: Number(book_id), organization: req.orgId } } }
       );
       
       await Book.updateOne(

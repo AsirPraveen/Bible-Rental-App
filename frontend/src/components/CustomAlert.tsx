@@ -17,7 +17,7 @@ import LottieView from 'lottie-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, ColorsType } from '../context/ThemeContext';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 
 // Global manager to store a reference to the mounted CustomAlert component
 type CustomAlertRef = {
@@ -109,47 +109,7 @@ export const CustomAlert: React.FC = () => {
   const [buttons, setButtons] = useState<AlertButton[]>([]);
   const [options, setOptions] = useState<AlertOptions>({});
 
-  // Animations
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Pulse animation on the message text (sync with LoadingScreen styling)
-  useEffect(() => {
-    let pulse: Animated.CompositeAnimation | null = null;
-    if (visible) {
-      pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 1200,
-            useNativeDriver: false,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: false,
-          }),
-        ])
-      );
-      pulse.start();
-    }
-    return () => {
-      if (pulse) pulse.stop();
-    };
-  }, [visible, pulseAnim]);
-
-  // Entrance spring animation for the card scale
-  useEffect(() => {
-    if (visible) {
-      scaleAnim.setValue(0.9);
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 7,
-        tension: 40,
-        useNativeDriver: false,
-      }).start();
-    }
-  }, [visible, scaleAnim]);
 
   // Intercept hardware back button on Android when the alert is visible
   useEffect(() => {
@@ -173,10 +133,8 @@ export const CustomAlert: React.FC = () => {
 
   // Register with Manager on mount
   useEffect(() => {
-    console.log('CustomAlert: Component mounted, setting manager ref');
     CustomAlertManager.setRef({
       show: (t, m, b = [], o = {}) => {
-        console.log('CustomAlert: Ref.show called inside component state update. Title:', t);
         setTitle(t);
         setMessage(m);
         setButtons(b);
@@ -184,13 +142,11 @@ export const CustomAlert: React.FC = () => {
         setVisible(true);
       },
       hide: () => {
-        console.log('CustomAlert: Ref.hide called inside component state update.');
         setVisible(false);
       },
     });
 
     return () => {
-      console.log('CustomAlert: Component unmounted, clearing manager ref');
       CustomAlertManager.setRef(null);
     };
   }, []);
@@ -408,60 +364,55 @@ export const CustomAlert: React.FC = () => {
   };
 
   return (
-    <View style={styles.overlay}>
-      <TouchableOpacity
-        style={StyleSheet.absoluteFillObject}
-        activeOpacity={1}
-        onPress={handleBackdropPress}
-      />
-      <Animated.View
-        style={[
-          styles.card,
-          {
-            transform: [{ scale: scaleAnim }],
-          },
-        ]}
-      >
-        {/* Top colored accent line */}
-        <LinearGradient
-          colors={colors.linearGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.accentBar}
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      statusBarTranslucent={true}
+      onRequestClose={handleBackdropPress}
+    >
+      <View style={styles.overlay}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={handleBackdropPress}
         />
+        <View
+          style={styles.card}
+        >
+          {/* Top colored accent line */}
+          <LinearGradient
+            colors={colors.linearGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.accentBar}
+          />
 
-        <View style={styles.contentContainer}>
-          <View style={styles.lottieWrapper}>
-            <LottieView
-              source={getLottieSource()}
-              autoPlay
-              loop
-              style={styles.lottie}
-            />
+          <View style={styles.contentContainer}>
+            <View style={styles.lottieWrapper}>
+              <LottieView
+                source={getLottieSource()}
+                autoPlay={visible}
+                loop={visible}
+                style={styles.lottie}
+              />
+            </View>
+
+            {title ? (
+              <Text style={styles.title}>{title}</Text>
+            ) : null}
+
+            {message ? (
+              <View>
+                <Text style={styles.message}>{message}</Text>
+              </View>
+            ) : null}
+
+            {renderButtons()}
           </View>
-
-          {title ? (
-            <Text style={styles.title}>{title}</Text>
-          ) : null}
-
-          {message ? (
-            <Animated.View
-              style={{
-                transform: [{ scale: pulseAnim }],
-                opacity: pulseAnim.interpolate({
-                  inputRange: [1, 1.05],
-                  outputRange: [0.9, 1],
-                }),
-              }}
-            >
-              <Text style={styles.message}>{message}</Text>
-            </Animated.View>
-          ) : null}
-
-          {renderButtons()}
         </View>
-      </Animated.View>
-    </View>
+      </View>
+    </Modal>
   );
 };
 
@@ -471,9 +422,8 @@ const getStyles = (colors: ColorsType) =>
       position: 'absolute',
       top: 0,
       left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 99999,
+      width: SCREEN_WIDTH,
+      height: SCREEN_HEIGHT,
       backgroundColor: colors.theme === 'dark' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(0, 0, 0, 0.5)',
       justifyContent: 'center',
       alignItems: 'center',

@@ -113,26 +113,6 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
             setOrgRole(activeMembership.role);
             await AsyncStorage.setItem('activeOrgId', activeId);
             axios.defaults.headers.common['x-organization-id'] = activeId;
-          } else if (isSuper) {
-            // SuperAdmin bypass: Fetch organization details directly
-            try {
-              const orgDetailsRes = await axios.get(`${API_URL}/api/organizations/details`, {
-                params: { orgId: activeId }
-              });
-              if (orgDetailsRes.data.status === 'Ok') {
-                setActiveOrg(orgDetailsRes.data.data);
-                setOrgRole('Admin'); // SuperAdmins always have Admin privileges
-                await AsyncStorage.setItem('activeOrgId', activeId);
-                axios.defaults.headers.common['x-organization-id'] = activeId;
-              } else {
-                setActiveOrg(null);
-                setOrgRole('User');
-              }
-            } catch (err) {
-              console.log('Error fetching superadmin active org details:', err);
-              setActiveOrg(null);
-              setOrgRole('User');
-            }
           } else {
             setActiveOrg(null);
             setOrgRole('User');

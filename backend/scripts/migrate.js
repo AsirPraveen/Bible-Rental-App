@@ -19,7 +19,7 @@ async function runMigration() {
   const oldBookSchema = new mongoose.Schema({}, { strict: false, collection: 'Bible Books' });
   const oldSongSchema = new mongoose.Schema({}, { strict: false, collection: 'songs' });
   const oldAuthorSchema = new mongoose.Schema({}, { strict: false, collection: 'Authors' });
-  const oldBibleSchema = new mongoose.Schema({}, { strict: false, collection: 'BibleChapters' });
+  const oldBibleSchema = new mongoose.Schema({}, { strict: false, collection: 'biblechapters' });
   const oldMapSchema = new mongoose.Schema({}, { strict: false, collection: 'historicalmaps' });
   const oldLocationSchema = new mongoose.Schema({}, { strict: false, collection: 'historicallocations' });
   const oldCardSchema = new mongoose.Schema({}, { strict: false, collection: 'Cards' });

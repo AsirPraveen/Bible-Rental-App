@@ -36,10 +36,29 @@ const UserDetailSchema = new mongoose.Schema(
     otpExpiry: Date,
     books_rented: [{
       book_id: { type: Number },
+      organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
       status: { type: String, enum: ['pending', 'approved', 'rejected', 'returned'], default: 'pending' },
       requested_at: { type: Date, default: Date.now }
     }],
-    favouriteBooks: [{ type: Number, ref: 'Book' }],
+    favouriteBooks: [{
+      book_id: { type: Number },
+      organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' }
+    }],
+    likedVerses: [{
+      key: { type: String },
+      language: { type: String },
+      bookNumber: { type: Number },
+      chapterNumber: { type: Number },
+      verseNumber: { type: Number },
+      text: { type: String },
+      citation: { type: String },
+      likedAt: { type: Date, default: Date.now }
+    }],
+    likedSongs: [{
+      song: { type: mongoose.Schema.Types.ObjectId, ref: 'Song' },
+      organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
+      likedAt: { type: Date, default: Date.now }
+    }],
     image_generation_credits_available: { 
       type: Number, 
       default: 5 

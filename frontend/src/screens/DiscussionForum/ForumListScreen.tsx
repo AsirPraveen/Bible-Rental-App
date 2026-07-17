@@ -123,10 +123,8 @@ export default function ForumListScreen() {
     if (!newQuestion.trim()) return;
     try {
       setSubmitLoading(true);
-      const userIdToUse = currentUserId || await AsyncStorage.getItem('userId') || '67c13da8f8d68d19dcaec1a4';
 
       const res = await axios.post(`${BASE_URL}/api/forum/questions`, {
-        user: userIdToUse,
         questionText: newQuestion,
         isAnonymous,
         visibility
@@ -141,7 +139,7 @@ export default function ForumListScreen() {
       }
     } catch (error) {
       console.error('Error asking question', error);
-      alert('Failed to post question.');
+      Alert.alert('Error', 'Failed to post question.');
     } finally {
       setSubmitLoading(false);
     }
@@ -326,7 +324,7 @@ export default function ForumListScreen() {
         </View>
 
         {/* ── Ask Question Modal ─────────────────────────────── */}
-        <Modal visible={modalVisible} animationType="fade" transparent={true} onRequestClose={() => setModalVisible(false)}>
+        <Modal visible={modalVisible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               {/* Modal header */}

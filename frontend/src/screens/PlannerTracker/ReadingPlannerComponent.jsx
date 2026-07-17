@@ -189,9 +189,7 @@ const ReadingPlannerComponent = () => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         // First get user ID
-        const userRes = await axios.get(`${apiUrl}/api/auth/userdata`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const userRes = await axios.post(`${apiUrl}/api/auth/userdata`, { token });
         
         if (userRes.data && userRes.data.data && userRes.data.data._id) {
           const planProgress = plans.map(p => {

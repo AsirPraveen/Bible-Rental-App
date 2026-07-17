@@ -10,5 +10,13 @@ router.get('/organizations/:orgId', superAdminAuth, superAdminController.getOrgD
 router.post('/organizations/create', superAdminAuth, superAdminController.createOrganization);
 router.post('/organizations/toggle-status', superAdminAuth, superAdminController.toggleOrgStatus);
 router.post('/promote', superAdminAuth, superAdminController.promoteToSuperAdmin);
+router.get('/admins', superAdminAuth, superAdminController.listSuperAdmins);
+router.post('/demote', superAdminAuth, superAdminController.demoteFromSuperAdmin);
+
+// Global songs management (SuperAdmin only)
+router.get('/songs', superAdminAuth, superAdminController.getGlobalSongs);
+router.post('/songs', superAdminAuth, superAdminController.createGlobalSong);
+router.put('/songs/:id', superAdminAuth, superAdminController.updateGlobalSong);
+router.delete('/songs/:id', superAdminAuth, superAdminController.deleteGlobalSong);
 
 module.exports = router;

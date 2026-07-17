@@ -6,6 +6,11 @@ const MessageNoteSchema = new mongoose.Schema({
     ref: 'UserInfo',
     required: true
   },
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true
+  },
   title: {
     type: String,
     required: true,

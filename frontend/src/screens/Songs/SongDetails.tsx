@@ -9,6 +9,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import YoutubePlayer from "react-native-youtube-iframe";
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
@@ -23,6 +24,7 @@ export default function SongDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState<'Tamil' | 'English'>('Tamil');
   const [fontSize, setFontSize] = useState(14);
+  const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
     const fetchSongDetails = async () => {
@@ -30,7 +32,11 @@ export default function SongDetailsScreen() {
         setLoading(true);
         const res = await axios.get(`${API_URL}/api/songs/${songId}`);
         if (res.data.status === 'Ok') {
-          setSong(res.data.data);
+          const songData = res.data.data;
+          setSong(songData);
+          if (!songData.lyricsTamil && songData.lyricsEnglish) {
+            setLanguage('English');
+          }
         }
       } catch (err) {
         console.error('Error fetching song details:', err);
@@ -40,6 +46,76 @@ export default function SongDetailsScreen() {
     };
     fetchSongDetails();
   }, [songId]);
+
+  useEffect(() => {
+    const checkIfLiked = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const response = await axios.post(`${API_URL}/api/auth/userdata`, { token });
+          if (response.data.status === 'Ok') {
+            const data = response.data.data;
+            if (data.likedSongs) {
+              await AsyncStorage.setItem('@liked_songs', JSON.stringify(data.likedSongs));
+              setIsLiked(data.likedSongs.some((s: any) => s._id === songId));
+              return;
+            }
+          }
+        }
+        
+        const savedLikedSongs = await AsyncStorage.getItem('@liked_songs');
+        if (savedLikedSongs) {
+          const parsed = JSON.parse(savedLikedSongs);
+          if (Array.isArray(parsed)) {
+            setIsLiked(parsed.some((s: any) => s._id === songId));
+          }
+        }
+      } catch (err) {
+        console.error('Error checking liked songs:', err);
+      }
+    };
+    if (song) {
+      checkIfLiked();
+    }
+  }, [songId, song]);
+
+  const toggleLikeSong = async () => {
+    if (!song) return;
+    try {
+      const savedLikedSongs = await AsyncStorage.getItem('@liked_songs');
+      let likedList = savedLikedSongs ? JSON.parse(savedLikedSongs) : [];
+      if (!Array.isArray(likedList)) {
+        likedList = [];
+      }
+
+      const exists = likedList.some((s: any) => s._id === song._id);
+      if (exists) {
+        likedList = likedList.filter((s: any) => s._id !== song._id);
+        setIsLiked(false);
+      } else {
+        likedList.push({
+          _id: song._id,
+          titleTamil: song.titleTamil,
+          titleEnglish: song.titleEnglish,
+          author: song.author,
+          likedAt: new Date().toISOString()
+        });
+        setIsLiked(true);
+      }
+      await AsyncStorage.setItem('@liked_songs', JSON.stringify(likedList));
+
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        await axios.post(
+          `${API_URL}/api/users/toggle-liked-song`,
+          { songId: song._id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+    } catch (err) {
+      console.error('Error toggling song like:', err);
+    }
+  };
 
   const handleZoomIn = () => setFontSize(prev => Math.min(prev + 2, 32));
   const handleZoomOut = () => setFontSize(prev => Math.max(prev - 2, 12));
@@ -64,43 +140,55 @@ export default function SongDetailsScreen() {
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={colors.linearGradient} style={styles.header}>
         <View style={styles.headerContent}>
-          <IconButton 
-            icon="arrow-left" 
-            iconColor="#fff" 
-            size={28} 
-            onPress={() => navigation.goBack()} 
+          <IconButton
+            icon="arrow-left"
+            iconColor="#fff"
+            size={28}
+            onPress={() => navigation.goBack()}
           />
           <View style={styles.titleContainer}>
-            <Text style={styles.title} numberOfLines={1}>{song.titleTamil}</Text>
+            <Text style={styles.title} numberOfLines={1}>{song.titleTamil || song.titleEnglish}</Text>
             {song.author ? (
               <Text style={styles.authorSubtitle}>{song.author}</Text>
             ) : null}
           </View>
           <View style={styles.zoomControls}>
-            <TouchableOpacity onPress={handleZoomOut} style={styles.zoomButton}>
-              <MaterialCommunityIcons name="minus-circle-outline" size={26} color="#F6F1F1" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleZoomIn} style={styles.zoomButton}>
-              <MaterialCommunityIcons name="plus-circle-outline" size={26} color="#F6F1F1" />
+            <View style={styles.zoomGroup}>
+              <TouchableOpacity onPress={handleZoomOut} style={styles.zoomGroupButton}>
+                <MaterialCommunityIcons name="minus" size={20} color="#F6F1F1" />
+              </TouchableOpacity>
+              <View style={styles.zoomGroupDivider} />
+              <TouchableOpacity onPress={handleZoomIn} style={styles.zoomGroupButton}>
+                <MaterialCommunityIcons name="plus" size={20} color="#F6F1F1" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={toggleLikeSong} style={styles.zoomButton}>
+              <MaterialCommunityIcons
+                name={isLiked ? "heart" : "heart-outline"}
+                size={26}
+                color={isLiked ? "#ff4757" : "#F6F1F1"}
+              />
             </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
 
-      <View style={styles.languageToggle}>
-        <TouchableOpacity 
-          style={[styles.toggleBtn, language === 'Tamil' && styles.toggleBtnActive]}
-          onPress={() => setLanguage('Tamil')}
-        >
-          <Text style={[styles.toggleText, language === 'Tamil' && styles.toggleTextActive]}>Tamil</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.toggleBtn, language === 'English' && styles.toggleBtnActive]}
-          onPress={() => setLanguage('English')}
-        >
-          <Text style={[styles.toggleText, language === 'English' && styles.toggleTextActive]}>English</Text>
-        </TouchableOpacity>
-      </View>
+      {song.lyricsTamil && song.lyricsEnglish ? (
+        <View style={styles.languageToggle}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, language === 'Tamil' && styles.toggleBtnActive]}
+            onPress={() => setLanguage('Tamil')}
+          >
+            <Text style={[styles.toggleText, language === 'Tamil' && styles.toggleTextActive]}>Tamil</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, language === 'English' && styles.toggleBtnActive]}
+            onPress={() => setLanguage('English')}
+          >
+            <Text style={[styles.toggleText, language === 'English' && styles.toggleTextActive]}>English</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.activeTitle}>
@@ -109,7 +197,7 @@ export default function SongDetailsScreen() {
 
         <View style={styles.lyricsCard}>
           <Text style={[styles.lyrics, { fontSize }]}>
-            {language === 'Tamil' ? song.lyricsTamil : song.lyricsEnglish}
+            {language === 'Tamil' ? (song.lyricsTamil || song.lyricsEnglish) : song.lyricsEnglish}
           </Text>
         </View>
 
@@ -126,6 +214,18 @@ export default function SongDetailsScreen() {
               </View>
             </View>
           )}
+          {song.songbooks?.length > 0 && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Song Books:</Text>
+              <View style={styles.topicsContainer}>
+                {song.songbooks.map((sb: string, idx: number) => (
+                  <Text key={idx} style={styles.topicTag}>
+                    {sb}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          )}
           {song.author && (
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Author:</Text>
@@ -134,13 +234,13 @@ export default function SongDetailsScreen() {
           )}
         </View>
         {videoId && (
-            <View style={styles.videoPlayerContainer}>
-                <YoutubePlayer
-                    height={(width - 32) * 0.5625}
-                    play={false}
-                    videoId={videoId}
-                />
-            </View>
+          <View style={styles.videoPlayerContainer}>
+            <YoutubePlayer
+              height={(width - 32) * 0.5625}
+              play={false}
+              videoId={videoId}
+            />
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -196,6 +296,26 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   zoomButton: {
     padding: 4,
+  },
+  zoomGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
+  },
+  zoomGroupButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomGroupDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   languageToggle: {
     flexDirection: 'row',

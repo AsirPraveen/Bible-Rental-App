@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Alert } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import * as Notifications from 'expo-notifications';
@@ -89,7 +89,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
 
   const handleSubmit = async () => {
     if (!startDate || !endDate) {
-      alert("Please select both a start and end date.");
+      Alert.alert("Error", "Please select both a start and end date.");
       return;
     }
     
@@ -98,25 +98,23 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
     
     // Strict Future Validation
     if (startDate.getTime() <= nowMs) {
-      alert("Start time MUST be strictly in the future. Please modify it.");
+      Alert.alert("Error", "Start time MUST be strictly in the future. Please modify it.");
       return;
     }
     
     if (endDate.getTime() <= startDate.getTime()) {
-      alert("End time must be strictly after the start time.");
+      Alert.alert("Error", "End time must be strictly after the start time.");
       return;
     }
     if (type === 'Others' && !customType.trim()) {
-      alert("Please enter your custom fasting type.");
+      Alert.alert("Error", "Please enter your custom fasting type.");
       return;
     }
 
     try {
       setLoading(true);
-      const userId = await AsyncStorage.getItem('userId') || '67c13da8f8d68d19dcaec1a4';
       
       const res = await axios.post(`${BASE_URL}/api/fasting`, {
-        user: userId,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         type,
@@ -138,14 +136,14 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
       }
     } catch (error) {
       console.error('Error adding fast', error);
-      alert('Failed to save the fast. Please try again.');
+      Alert.alert('Error', 'Failed to save the fast. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Start a Fast</Text>

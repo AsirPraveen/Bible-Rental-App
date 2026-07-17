@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, FlatList, ActivityIndicator, SafeAreaView, Platform, StatusBar, TextInput, Modal, Alert } from 'react-native';
-import { useOrg, Membership } from '../../context/OrganizationContext';
+import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, SafeAreaView, Platform, StatusBar, TextInput, Alert } from 'react-native';
+import { useOrg } from '../../context/OrganizationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { LogOut, Plus, Building2, Shield, User, ArrowRight } from 'lucide-react-native';
+import { LogOut, ArrowLeft, Building2, KeyRound, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -12,13 +12,12 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function OrgSelectionScreen({ navigation }: any) {
   const { memberships, loading, switchOrg, refreshOrgs } = useOrg();
-  const { logout, isGuest, user } = useAuth();
+  const { logout, user } = useAuth();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
   const [inviteCode, setInviteCode] = useState('');
   const [joining, setJoining] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
 
   // SuperAdmin guard — redirect to their dedicated dashboard
   React.useEffect(() => {
@@ -26,19 +25,6 @@ export default function OrgSelectionScreen({ navigation }: any) {
       navigation.replace('SuperAdmin');
     }
   }, [user]);
-
-  const handleSelectOrg = async (orgId: string) => {
-    const success = await switchOrg(orgId);
-    if (success) {
-      const membership = memberships.find(m => m.organization._id === orgId);
-      const isAdmin = membership?.role === 'Admin';
-      if (isAdmin) {
-        navigation.replace('AdminScreen');
-      } else {
-        navigation.replace('MainApp');
-      }
-    }
-  };
 
   const handleJoinByCode = async (codeToUse: string) => {
     const code = codeToUse.trim();
@@ -52,16 +38,20 @@ export default function OrgSelectionScreen({ navigation }: any) {
       if (res.data.status === 'Ok') {
         Alert.alert('Success', 'Successfully joined organization!');
         setInviteCode('');
-        setShowJoinModal(false);
-        
+
         // Refresh context memberships
         await refreshOrgs();
-        
-        // Switch active org and redirect to MainApp (new members join with standard User role)
+
+        // Switch active org and redirect (Admin invites land in AdminScreen, others in MainApp)
         const orgId = res.data.data._id;
+        const role = res.data.role;
         const success = await switchOrg(orgId);
         if (success) {
-          navigation.replace('MainApp');
+          if (role === 'Admin') {
+            navigation.replace('AdminScreen');
+          } else {
+            navigation.replace('MainApp');
+          }
         }
       }
     } catch (err: any) {
@@ -69,43 +59,6 @@ export default function OrgSelectionScreen({ navigation }: any) {
     } finally {
       setJoining(false);
     }
-  };
-
-  const renderMembershipCard = ({ item }: { item: Membership }) => {
-    const org = item.organization;
-    const isAdmin = item.role === 'Admin';
-
-    return (
-      <TouchableOpacity 
-        style={styles.card}
-        onPress={() => handleSelectOrg(org._id)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.orgIconContainer}>
-            <Building2 color={colors.tint} size={28} />
-          </View>
-          <View style={styles.orgInfo}>
-            <Text style={styles.orgName}>{org.name}</Text>
-            <Text style={styles.orgSlug}>/{org.slug}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.cardFooter}>
-          <View style={styles.roleBadge}>
-            {isAdmin ? (
-              <Shield color="#FFD700" size={14} style={styles.roleIcon} />
-            ) : (
-              <User color={colors.textSecondary} size={14} style={styles.roleIcon} />
-            )}
-            <Text style={[styles.roleText, isAdmin && { color: '#FFD700' }]}>
-              {item.role}
-            </Text>
-          </View>
-          <ArrowRight color={colors.tint} size={20} />
-        </View>
-      </TouchableOpacity>
-    );
   };
 
   const hasWorkspaces = memberships.length > 0;
@@ -116,7 +69,7 @@ export default function OrgSelectionScreen({ navigation }: any) {
       <SafeAreaView style={styles.outerContainer}>
         <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={colors.tint} />
+            <ActivityIndicator size="large" color="#fff" />
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -126,15 +79,27 @@ export default function OrgSelectionScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.outerContainer}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        {hasWorkspaces && (
+          <View style={styles.topBar}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <ArrowLeft color="#fff" size={22} />
+            </TouchableOpacity>
+            <Text style={styles.topBarTitle}>Join Workspace</Text>
+            <View style={{ width: 44 }} />
+          </View>
+        )}
         <View style={styles.container}>
-          
+
           <View style={styles.header}>
-            <Text style={styles.title}>
-              {hasWorkspaces ? "Select Workspace" : "Welcome to Youth Room"}
-            </Text>
+            {!hasWorkspaces && (
+              <Text style={styles.title}>Welcome to Youth Room</Text>
+            )}
             <Text style={styles.subtitle}>
-              {hasWorkspaces 
-                ? "Choose a workspace organization to enter"
+              {hasWorkspaces
+                ? "Enter the invite code generated by your organization admin to join a new workspace."
                 : "Enter the invite code sent by your organization admin to join a workspace."
               }
             </Text>
@@ -142,39 +107,57 @@ export default function OrgSelectionScreen({ navigation }: any) {
 
           {loading ? (
             <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color={colors.tint} />
+              <ActivityIndicator size="large" color="#fff" />
               <Text style={styles.loaderText}>Loading workspaces...</Text>
             </View>
-          ) : !hasWorkspaces ? (
-            /* Onboarding Invite Form for new users */
-            <View style={styles.onboardingContainer}>
+          ) : (
+            <View style={styles.glassCard}>
+              <View style={styles.iconWrapper}>
+                <View style={styles.iconGlow}>
+                  <Building2 color={colors.tint} size={32} />
+                </View>
+              </View>
+
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Invite Code</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={inviteCode}
-                  onChangeText={setInviteCode}
-                  placeholder="Enter code (e.g. MKP-2026-X8Y9)"
-                  placeholderTextColor={colors.textSecondary + '80'}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                />
+                <Text style={styles.inputLabel}>Workspace Invite Code</Text>
+                <View style={styles.inputWrapper}>
+                  <KeyRound color={colors.tint} size={20} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.textInput}
+                    value={inviteCode}
+                    onChangeText={setInviteCode}
+                    placeholder="Enter code (e.g. GRACE-1234)"
+                    placeholderTextColor={colors.textSecondary + '80'}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                </View>
               </View>
 
               <TouchableOpacity
-                style={[styles.btn, styles.btnPrimary, joining && { opacity: 0.7 }]}
+                style={styles.joinButton}
                 onPress={() => handleJoinByCode(inviteCode)}
                 disabled={joining}
               >
-                {joining ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.btnTextPrimary}>Join Workspace</Text>
-                )}
+                <LinearGradient
+                  colors={colors.linearGradient}
+                  style={styles.gradientButton}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  {joining ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <View style={styles.btnContent}>
+                      <Plus color="#fff" size={18} style={{ marginRight: 6 }} />
+                      <Text style={styles.joinButtonText}>Join Workspace</Text>
+                    </View>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.btn, styles.btnDanger, { marginTop: 12 }]}
+              <TouchableOpacity
+                style={styles.logoutButton}
                 onPress={async () => {
                   await logout();
                   navigation.reset({
@@ -183,103 +166,11 @@ export default function OrgSelectionScreen({ navigation }: any) {
                   });
                 }}
               >
-                <LogOut color="#FF6B6B" size={20} style={styles.btnIcon} />
-                <Text style={styles.btnTextDanger}>Logout</Text>
+                <LogOut color="#FF6B6B" size={18} style={{ marginRight: 8 }} />
+                <Text style={styles.logoutButtonText}>Logout Account</Text>
               </TouchableOpacity>
             </View>
-          ) : (
-            /* Workspaces List for returning users */
-            <View style={{ flex: 1 }}>
-              <FlatList
-                data={memberships}
-                renderItem={renderMembershipCard}
-                keyExtractor={(item) => item.organization._id}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-              />
-
-              <View style={styles.actionSection}>
-                <TouchableOpacity 
-                  style={[styles.btn, styles.btnPrimary]}
-                  onPress={() => setShowJoinModal(true)}
-                >
-                  <Plus color="#fff" size={20} style={styles.btnIcon} />
-                  <Text style={styles.btnTextPrimary}>Join Another Workspace</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[styles.btn, styles.btnDanger]}
-                  onPress={async () => {
-                    await logout();
-                    navigation.reset({
-                      index: 0,
-                      routes: [{ name: 'Login' }],
-                    });
-                  }}
-                >
-                  <LogOut color="#FF6B6B" size={20} style={styles.btnIcon} />
-                  <Text style={styles.btnTextDanger}>Logout</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           )}
-
-          {/* Join Another Workspace Modal */}
-          <Modal
-            visible={showJoinModal}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={() => setShowJoinModal(false)}
-          >
-            <TouchableOpacity 
-              style={styles.modalOverlay}
-              activeOpacity={1}
-              onPress={() => setShowJoinModal(false)}
-            >
-              <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-                <Text style={styles.modalTitle}>Join a Workspace</Text>
-                <Text style={styles.modalDescription}>
-                  Enter the invite code generated by your organization admin to join.
-                </Text>
-
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.textInput}
-                    value={inviteCode}
-                    onChangeText={setInviteCode}
-                    placeholder="Enter code (e.g. MKP-2026-X8Y9)"
-                    placeholderTextColor={colors.textSecondary + '80'}
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <View style={styles.modalActions}>
-                  <TouchableOpacity 
-                    style={[styles.btn, styles.btnSecondary, { flex: 1, marginRight: 8 }]}
-                    onPress={() => {
-                      setShowJoinModal(false);
-                      setInviteCode('');
-                    }}
-                  >
-                    <Text style={styles.btnTextSecondary}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity 
-                    style={[styles.btn, styles.btnPrimary, { flex: 1, marginLeft: 8 }, joining && { opacity: 0.7 }]}
-                    onPress={() => handleJoinByCode(inviteCode)}
-                    disabled={joining}
-                  >
-                    {joining ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Text style={styles.btnTextPrimary}>Join</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Modal>
 
         </View>
       </LinearGradient>
@@ -298,207 +189,151 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
+    padding: 24,
+    paddingBottom: 60,
+    justifyContent: 'center',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  topBarTitle: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   header: {
-    marginTop: 20,
-    marginBottom: 30,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  backButton: {
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: colors.text,
+    color: '#fff',
+    letterSpacing: -0.5,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginTop: 8,
-    lineHeight: 22,
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 10,
+    lineHeight: 24,
+    textAlign: 'center',
   },
   loaderContainer: {
-    flex: 1,
+    paddingVertical: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loaderText: {
     marginTop: 12,
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#fff',
   },
-  listContent: {
-    paddingBottom: 20,
-  },
-  card: {
+  glassCard: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 24,
+    padding: 24,
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
     alignItems: 'center',
-    marginBottom: 12,
   },
-  orgIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  iconWrapper: {
+    marginBottom: 24,
+  },
+  iconGlow: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: colors.tint + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
-  },
-  orgInfo: {
-    flex: 1,
-  },
-  orgName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  orgSlug: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 12,
-  },
-  roleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.border + '30',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  roleIcon: {
-    marginRight: 6,
-  },
-  roleText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  actionSection: {
-    marginTop: 'auto',
-    gap: 12,
-    paddingVertical: 10,
-  },
-  btn: {
-    height: 52,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 1,
-  },
-  btnPrimary: {
-    backgroundColor: colors.primary || colors.tint,
-    borderColor: colors.primary || colors.tint,
-  },
-  btnSecondary: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-  },
-  btnDanger: {
-    backgroundColor: 'transparent',
-    borderColor: '#FF6B6B30',
-  },
-  btnIcon: {
-    marginRight: 10,
-  },
-  btnTextPrimary: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  btnTextSecondary: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  btnTextDanger: {
-    color: '#FF6B6B',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  onboardingContainer: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 20,
+    borderColor: colors.tint + '30',
   },
   inputContainer: {
-    marginBottom: 20,
     width: '100%',
+    marginBottom: 24,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 54,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
+    opacity: 0.8,
   },
   textInput: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.background,
-  },
-  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    height: '100%',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  joinButton: {
+    width: '100%',
+    height: 52,
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  gradientButton: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
-  modalContent: {
-    width: '100%',
-    maxWidth: 320,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  modalDescription: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 20,
-  },
-  modalActions: {
+  btnContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  joinButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
     width: '100%',
+    borderWidth: 1,
+    borderColor: '#FF6B6B30',
+    borderRadius: 14,
+    marginTop: 8,
+  },
+  logoutButtonText: {
+    color: '#FF6B6B',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

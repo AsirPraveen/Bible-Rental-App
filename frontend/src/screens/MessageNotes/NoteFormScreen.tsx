@@ -18,6 +18,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import {
   createNote, updateNote, addHighlight, deleteHighlight,
   addVoiceNote, deleteVoiceNote, addReminder, deleteReminder,
@@ -28,6 +31,10 @@ import { MessageNote, NoteCategory, HighlightColor } from './types/MessageNote';
 import { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
+const uploadPresentPosts = Constants.expoConfig?.extra?.uploadPresentPosts ?? '';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 const { tamilBibleData, bookTranslations } = getLocalBibleData();
@@ -92,12 +99,46 @@ export default function NoteFormScreen() {
   const [voiceNotes, setVoiceNotes] = useState(editNote?.voiceNotes ?? []);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+  const tempUploadedVoiceNotes = useRef<string[]>([]);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [playTime, setPlayTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [recordTime, setRecordTime] = useState(0);
   const timerRef = useRef<any>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
+
+  const deleteVoiceNoteFromCloudinary = async (publicId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      await axios.post(`${API_URL}/api/cloudinary/delete`, {
+        token,
+        publicId,
+        resourceType: 'video'
+      });
+    } catch (err) {
+      console.log('Error deleting voice note from Cloudinary:', err);
+    }
+  };
+
+  const handleRemoveVoiceNote = async (vn: any) => {
+    setVoiceNotes(prev => prev.filter(v => v.id !== vn.id));
+    if (vn.publicId) {
+      tempUploadedVoiceNotes.current = tempUploadedVoiceNotes.current.filter(id => id !== vn.publicId);
+      await deleteVoiceNoteFromCloudinary(vn.publicId);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      // Cleanup unsaved temp voice recordings on unmount
+      if (tempUploadedVoiceNotes.current.length > 0) {
+        tempUploadedVoiceNotes.current.forEach(async (id) => {
+          await deleteVoiceNoteFromCloudinary(id);
+        });
+      }
+    };
+  }, []);
 
   // ── Reminder state ────────────────────────────
   const [reminders, setReminders] = useState(editNote?.reminders ?? []);
@@ -219,14 +260,51 @@ export default function NoteFormScreen() {
     const uri = recording.getURI();
     const status = await recording.getStatusAsync();
     if (uri) {
-      const vn = {
-        id: `vn_${Date.now()}`,
-        uri,
-        durationMs: (status as any).durationMillis ?? 0,
-        createdAt: new Date().toISOString(),
-        label: `Recording ${voiceNotes.length + 1}`,
-      };
-      setVoiceNotes(prev => [...prev, vn]);
+      setIsUploadingVoice(true);
+      try {
+        const fileExtension = uri.split('.').pop()?.toLowerCase();
+        const mimeType = fileExtension === 'm4a' ? 'audio/m4a' : fileExtension === 'caf' ? 'audio/caf' : 'audio/mpeg';
+
+        const formData = new FormData();
+        formData.append('file', {
+          uri,
+          type: mimeType,
+          name: `voice_note_${Date.now()}.${fileExtension || 'm4a'}`,
+        } as any);
+        formData.append('upload_preset', uploadPresentPosts);
+
+        // Upload to Cloudinary auto/video endpoint
+        const response = await axios.post(
+          `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/video/upload`,
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          }
+        );
+
+        if (response.data && response.data.secure_url) {
+          const newPubId = response.data.public_id;
+          tempUploadedVoiceNotes.current.push(newPubId);
+
+          const vn = {
+            id: `vn_${Date.now()}`,
+            uri: response.data.secure_url,
+            publicId: newPubId,
+            durationMs: (status as any).durationMillis ?? 0,
+            createdAt: new Date().toISOString(),
+            label: `Recording ${voiceNotes.length + 1}`,
+          };
+          setVoiceNotes(prev => [...prev, vn]);
+          Alert.alert('Success', 'Voice recording uploaded successfully!');
+        } else {
+          throw new Error('Cloudinary response did not contain secure_url');
+        }
+      } catch (error: any) {
+        console.error('Error uploading voice note to Cloudinary:', error);
+        Alert.alert('Error', 'Failed to upload voice note to server.');
+      } finally {
+        setIsUploadingVoice(false);
+      }
     }
     setRecording(null);
   };
@@ -308,9 +386,11 @@ export default function NoteFormScreen() {
       };
       if (isEdit) {
         await updateNote((editNote as any)._id || editNote!.id, payload);
+        tempUploadedVoiceNotes.current = [];
         Alert.alert('Updated ✓', 'Note updated.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
       } else {
         await createNote(payload);
+        tempUploadedVoiceNotes.current = [];
         Alert.alert('Saved ✓', 'Note added.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
       }
     } catch (err: any) {
@@ -473,6 +553,14 @@ export default function NoteFormScreen() {
             </Text>
           </View>
         )}
+        {isUploadingVoice && (
+          <View style={[styles.recordingBar, { backgroundColor: '#E0F2FE' }]}>
+            <ActivityIndicator size="small" color="#0284C7" style={{ marginRight: 8 }} />
+            <Text style={[styles.recordingText, { color: '#0284C7' }]}>
+              Uploading to Cloudinary...
+            </Text>
+          </View>
+        )}
         {voiceNotes.map(vn => (
           <View key={vn.id} style={styles.voiceCard}>
             <TouchableOpacity onPress={() => playVoice(vn.id, vn.uri)} style={styles.playBtn}>
@@ -505,7 +593,7 @@ export default function NoteFormScreen() {
                     />
                 )}
             </View>
-            <TouchableOpacity onPress={() => setVoiceNotes(prev => prev.filter(v => v.id !== vn.id))}>
+            <TouchableOpacity onPress={() => handleRemoveVoiceNote(vn)}>
               <Ionicons name="trash-outline" size={16} color="#C62828" />
             </TouchableOpacity>
           </View>
@@ -553,7 +641,7 @@ export default function NoteFormScreen() {
                 <ScrollView style={styles.selectorScroll} showsVerticalScrollIndicator={false}>
                   {availableBooks.map(b => (
                     <TouchableOpacity 
-                      key={b.value} 
+                      key={`vl-bk-${b.value}`} 
                       style={[styles.selectBtn, selectedBookNum === b.value && styles.selectBtnActive]}
                       onPress={() => setSelectedBookNum(b.value)}
                     >
@@ -636,7 +724,7 @@ export default function NoteFormScreen() {
                 <ScrollView style={styles.selectorScroll} showsVerticalScrollIndicator={false}>
                   {availableBooks.map(b => (
                     <TouchableOpacity 
-                      key={b.value} 
+                      key={`hl-bk-${b.value}`} 
                       style={[styles.smallSelectBtn, selectedBookNum === b.value && styles.selectBtnActive]}
                       onPress={() => setSelectedBookNum(b.value)}
                     >

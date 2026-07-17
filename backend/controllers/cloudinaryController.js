@@ -12,7 +12,7 @@ cloudinary.config({
 });
 
 exports.deleteImage = async (req, res) => {
-  const { token, publicId } = req.body;
+  const { token, publicId, resourceType } = req.body;
   console.log('Delete request body:', req.body);
   
   try {
@@ -27,10 +27,12 @@ exports.deleteImage = async (req, res) => {
       });
     }
 
-    console.log('Attempting to delete image with public_id:', publicId);
+    console.log('Attempting to delete asset with public_id:', publicId, 'resource_type:', resourceType);
 
-    // Delete the image from Cloudinary
-    const result = await cloudinary.uploader.destroy(publicId);
+    // Delete the image/video from Cloudinary
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType || 'image'
+    });
     console.log('Cloudinary deletion result:', result);
 
     if (result.result === 'ok') {

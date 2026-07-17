@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TextInput, FlatList, TouchableOpacity, Switch, ActivityIndicator, Alert, SafeAreaView, Platform, StatusBar, Modal, RefreshControl } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { Globe, UserCheck, Database, Music, ShieldAlert, AlertTriangle, Plus, LogOut, ChevronRight, Building2 } from 'lucide-react-native';
+import { Globe, UserCheck, Database, Music, ShieldAlert, AlertTriangle, Plus, LogOut, ChevronRight, Building2, Shield, Eye, Menu } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -11,16 +11,17 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function SuperAdminDashboard({ navigation }: any) {
   const { colors } = useTheme();
-  const { logout } = useAuth();
+  const { logout, user: currentUser } = useAuth();
   const styles = getStyles(colors);
 
   const [analytics, setAnalytics] = useState<any>(null);
   const [organizations, setOrganizations] = useState<any[]>([]);
+  const [superAdmins, setSuperAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actioning, setActioning] = useState<string | null>(null);
-  
-  // Promote User State
+
+  // Promote Admin State
   const [promoteEmail, setPromoteEmail] = useState('');
   const [promoting, setPromoting] = useState(false);
 
@@ -28,6 +29,7 @@ export default function SuperAdminDashboard({ navigation }: any) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
   const [newOrgDescription, setNewOrgDescription] = useState('');
+  const [newOrgAdminEmails, setNewOrgAdminEmails] = useState('');
   const [creatingOrg, setCreatingOrg] = useState(false);
 
   useEffect(() => {
@@ -39,9 +41,10 @@ export default function SuperAdminDashboard({ navigation }: any) {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const [analyticsRes, orgsRes] = await Promise.all([
+      const [analyticsRes, orgsRes, adminsRes] = await Promise.all([
         axios.get(`${API_URL}/api/superadmin/analytics`),
-        axios.get(`${API_URL}/api/superadmin/organizations`)
+        axios.get(`${API_URL}/api/superadmin/organizations`),
+        axios.get(`${API_URL}/api/superadmin/admins`)
       ]);
 
       if (analyticsRes.data.status === 'Ok') {
@@ -50,12 +53,48 @@ export default function SuperAdminDashboard({ navigation }: any) {
       if (orgsRes.data.status === 'Ok') {
         setOrganizations(orgsRes.data.data);
       }
+      if (adminsRes.data.status === 'Ok') {
+        setSuperAdmins(adminsRes.data.data);
+      }
     } catch (err) {
       console.log('Error fetching superadmin dashboard:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleDemoteUser = (email: string) => {
+    if (email.toLowerCase().trim() === currentUser?.email?.toLowerCase().trim()) {
+      Alert.alert('Error', 'You cannot demote yourself from SuperAdmin');
+      return;
+    }
+    Alert.alert(
+      'Confirm Demotion',
+      `Are you sure you want to remove SuperAdmin privileges from ${email}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Demote',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await axios.post(`${API_URL}/api/superadmin/demote`, { email });
+              if (res.data.status === 'Ok') {
+                Alert.alert('Success', `${email} has been demoted successfully`);
+                await fetchDashboardData();
+              }
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.message || 'Failed to demote user');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleOpenGuestSettings = () => {
+    navigation.navigate('Guest Settings');
   };
 
   const handleToggleOrgStatus = async (orgId: string, currentStatus: boolean) => {
@@ -116,12 +155,17 @@ export default function SuperAdminDashboard({ navigation }: any) {
       setCreatingOrg(true);
       const res = await axios.post(`${API_URL}/api/superadmin/organizations/create`, {
         name: newOrgName.trim(),
-        description: newOrgDescription.trim()
+        description: newOrgDescription.trim(),
+        adminEmails: newOrgAdminEmails.trim()
       });
       if (res.data.status === 'Ok') {
-        Alert.alert('Success', 'Organization created successfully!');
+        Alert.alert(
+          'Success',
+          `Organization created successfully!\n\nInvites sent to: ${newOrgAdminEmails || 'None'}`
+        );
         setNewOrgName('');
         setNewOrgDescription('');
+        setNewOrgAdminEmails('');
         setShowCreateModal(false);
         await fetchDashboardData();
       }
@@ -197,12 +241,17 @@ export default function SuperAdminDashboard({ navigation }: any) {
     <SafeAreaView style={styles.outerContainer}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
-          
+
           {/* Header */}
           <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Platform Admin</Text>
-              <Text style={styles.subtitle}>Youth Room · SuperAdmin Console</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.menuBtn}>
+                <Menu color={colors.text} size={24} />
+              </TouchableOpacity>
+              <View>
+                <Text style={styles.title}>Platform Admin</Text>
+                <Text style={styles.subtitle}>Youth Room · SuperAdmin Console</Text>
+              </View>
             </View>
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
               <LogOut color="#FF6B6B" size={20} />
@@ -236,10 +285,12 @@ export default function SuperAdminDashboard({ navigation }: any) {
                       <Text style={styles.statVal}>{analytics?.totalOrganizations || 0}</Text>
                       <Text style={styles.statLabel}>Organizations</Text>
                     </View>
-                    <View style={[styles.statCard, { borderLeftColor: '#00B894' }]}>
+                    <View style={[styles.statCard, { borderLeftColor: '#00B894', paddingHorizontal: 6 }]}>
                       <UserCheck color="#00B894" size={20} />
                       <Text style={styles.statVal}>{analytics?.totalUsers || 0}</Text>
-                      <Text style={styles.statLabel}>Users</Text>
+                      <Text style={[styles.statLabel, { fontSize: 9, letterSpacing: -0.2, textTransform: 'none' }]} numberOfLines={1}>
+                        Users:{analytics?.regularUserCount || 0} • Admins:{analytics?.adminCount || 0} • Supers:{analytics?.superAdminCount || 0}
+                      </Text>
                     </View>
                     <View style={[styles.statCard, { borderLeftColor: '#FDCB6E' }]}>
                       <Database color="#FDCB6E" size={20} />
@@ -256,11 +307,39 @@ export default function SuperAdminDashboard({ navigation }: any) {
                   {/* Quick Actions */}
                   <View style={styles.quickActions}>
                     <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: colors.tint }]}
+                      style={[styles.actionBtn, { backgroundColor: colors.tint, flex: 1 }]}
                       onPress={() => setShowCreateModal(true)}
+                      activeOpacity={0.8}
                     >
-                      <Plus color="#fff" size={18} />
-                      <Text style={styles.actionBtnText}>Create Organization</Text>
+                      <Plus color="#fff" size={16} />
+                      <Text style={styles.actionBtnText}>Create Org</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: '#146C94', flex: 1 }]}
+                      onPress={() => navigation.navigate('Manage Maps')}
+                      activeOpacity={0.8}
+                    >
+                      <Globe color="#fff" size={16} />
+                      <Text style={styles.actionBtnText}>Manage Maps</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={[styles.quickActions, { marginTop: -6 }]}>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: '#10B981', flex: 1 }]}
+                      onPress={() => navigation.navigate('SuperAdminSongs')}
+                      activeOpacity={0.8}
+                    >
+                      <Music color="#fff" size={16} />
+                      <Text style={styles.actionBtnText}>Manage Songs</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: '#4A5568', flex: 1 }]}
+                      onPress={handleOpenGuestSettings}
+                      activeOpacity={0.8}
+                    >
+                      <Eye color="#fff" size={16} />
+                      <Text style={styles.actionBtnText}>Guest Settings</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -279,7 +358,7 @@ export default function SuperAdminDashboard({ navigation }: any) {
                         autoCapitalize="none"
                         keyboardType="email-address"
                       />
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.promoteBtn}
                         onPress={handlePromoteUser}
                         disabled={promoting}
@@ -291,6 +370,33 @@ export default function SuperAdminDashboard({ navigation }: any) {
                         )}
                       </TouchableOpacity>
                     </View>
+                  </View>
+
+                  {/* Platform SuperAdmins List */}
+                  <View style={styles.adminsSection}>
+                    <Text style={styles.promoteLabel}>
+                      <Shield color={colors.tint} size={14} style={{ marginRight: 6 }} /> Platform SuperAdmins ({superAdmins.length})
+                    </Text>
+                    {superAdmins.map((admin) => {
+                      const isSelf = admin.email.toLowerCase().trim() === currentUser?.email?.toLowerCase().trim();
+                      return (
+                        <View key={admin.email} style={styles.adminRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.adminName}>{admin.name || 'Platform Admin'}</Text>
+                            <Text style={styles.adminEmail}>{admin.email}</Text>
+                          </View>
+                          {!isSelf && (
+                            <TouchableOpacity
+                              style={styles.demoteRowBtn}
+                              onPress={() => handleDemoteUser(admin.email)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.demoteRowBtnText}>Revoke</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
                   </View>
 
                   <Text style={[styles.sectionLabel, { marginTop: 8 }]}>
@@ -352,6 +458,19 @@ export default function SuperAdminDashboard({ navigation }: any) {
               />
             </View>
 
+            <View style={[styles.inputGroup, { marginTop: 4 }]}>
+              <Text style={styles.inputLabel}>Initial Admin Emails (Comma separated)</Text>
+              <TextInput
+                style={styles.textInput}
+                value={newOrgAdminEmails}
+                onChangeText={setNewOrgAdminEmails}
+                placeholder="e.g. admin1@email.com, admin2@email.com"
+                placeholderTextColor={colors.textSecondary + '80'}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
@@ -359,6 +478,7 @@ export default function SuperAdminDashboard({ navigation }: any) {
                   setShowCreateModal(false);
                   setNewOrgName('');
                   setNewOrgDescription('');
+                  setNewOrgAdminEmails('');
                 }}
               >
                 <Text style={[styles.modalBtnText, { color: colors.text }]}>Cancel</Text>
@@ -424,6 +544,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FF6B6B30',
   },
+  menuBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -471,6 +601,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   quickActions: {
+    flexDirection: 'row',
+    gap: 10,
     marginBottom: 14,
   },
   actionBtn: {
@@ -662,5 +794,43 @@ const getStyles = (colors: any) => StyleSheet.create({
   modalBtnText: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  adminsSection: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+  },
+  adminRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border + '20',
+  },
+  adminName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  adminEmail: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  demoteRowBtn: {
+    backgroundColor: '#FF6B6B20',
+    borderColor: '#FF6B6B55',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  demoteRowBtnText: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

@@ -5,16 +5,13 @@ import HistoryCard from './components/HistoryCard';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
-};
 
 const RequestHistoryTab = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [requestHistory, setRequestHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,7 +80,8 @@ const RequestHistoryTab = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-    <ScrollView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Request History</Text>
 
@@ -191,15 +189,15 @@ const RequestHistoryTab = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -209,7 +207,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: Colors.bg,
+    color: colors.tint,
   },
   section: {
     padding: 15,
@@ -217,37 +215,37 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.bg,
+    color: colors.tint,
     marginBottom: 15,
   },
   noDataText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 20,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 15,
-    color: '#0F172A',
+    color: colors.text,
     paddingVertical: 0,
   },
   filterLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -263,18 +261,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: Colors.bg,
-    borderColor: Colors.bg,
+    backgroundColor: colors.tint,
+    borderColor: colors.tint,
   },
   filterChipText: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   filterChipTextActive: {

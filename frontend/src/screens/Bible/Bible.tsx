@@ -12,19 +12,32 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 import _tamilBibleData from '../../assets/offline-bible/tamil_bible.json';
 const tamilBibleData = _tamilBibleData as any[];
 import _bookTranslations from '../../assets/offline-bible/book_translations.json';
 const bookTranslations = _bookTranslations as any;
 import * as Speech from 'expo-speech';
+import Svg, { Rect, Path } from 'react-native-svg';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? ''; 
 const STABILITY_API_URL = Constants.expoConfig?.extra?.stabilityApiUrl ?? '';
 
+const HIGHLIGHT_COLORS = [
+  { name: 'yellow', colorVal: 'rgba(250, 204, 21, 0.3)' },
+  { name: 'green', colorVal: 'rgba(74, 222, 128, 0.3)' },
+  { name: 'blue', colorVal: 'rgba(56, 189, 248, 0.3)' },
+  { name: 'pink', colorVal: 'rgba(244, 114, 182, 0.3)' },
+  { name: 'orange', colorVal: 'rgba(251, 146, 60, 0.3)' },
+];
+
 const BibleComponent = () => {
   const { colors, theme } = useTheme();
   const styles = getStyles(colors);
+  const navigation = useNavigation<any>();
+  const { isGuest } = useAuth();
 
   // State for Dropdowns
   const [language, setLanguage] = useState('Tamil');
@@ -63,6 +76,7 @@ const BibleComponent = () => {
   const [dictMeaning, setDictMeaning] = useState('');
   const [dictSource, setDictSource] = useState('');
   const [confirmWord, setConfirmWord] = useState<string | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
   
   // Generate Image State
   const [verseImage, setVerseImage] = useState<string | null>(null);
@@ -74,12 +88,15 @@ const BibleComponent = () => {
   const [underlinedWordIndices, setUnderlinedWordIndices] = useState<number[]>([]);
   const [verseFontSize, setVerseFontSize] = useState<number>(18);
   const [isImageGenEnabled, setIsImageGenEnabled] = useState(true);
+  const [showProgressBarSetting, setShowProgressBarSetting] = useState(true);
   
   // Copied state
   const [isCopied, setIsCopied] = useState(false);
   
   // Local saved generated images state
   const [localImageVerses, setLocalImageVerses] = useState<any[]>([]);
+  const [highlights, setHighlights] = useState<Record<string, string>>({});
+  const [likedVerses, setLikedVerses] = useState<any[]>([]);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollPositionRef = useRef(0);
@@ -90,6 +107,8 @@ const BibleComponent = () => {
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [showPlayer, setShowPlayer] = useState(false);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [cardLayout, setCardLayout] = useState({ width: 0, height: 0 });
   const [speechRate, setSpeechRate] = useState(0.9); // TTS speed: 0.5 slow → 1.5 fast
   const speechRateRef = useRef(0.9); // stable ref for inside speakVerse callback
   const isSpeakingRef = useRef(false);
@@ -130,7 +149,14 @@ const BibleComponent = () => {
         try {
           const langRes = await axios.get(`${API_URL}/api/bible/languages`);
           if (langRes.data.status === 'Ok') {
-            const langs = langRes.data.data.map((l:any) => ({ label: l === 'Tamil' ? 'Tamil (Offline)' : l, value: l }));
+            const rawLangs = Array.isArray(langRes.data.data) ? langRes.data.data : [];
+            const langs = rawLangs.map((l:any) => ({ label: l === 'Tamil' ? 'Tamil (Offline)' : l, value: l }));
+            
+            // Always ensure Tamil (Offline) is present in the list
+            if (!langs.some((l: any) => l.value === 'Tamil')) {
+              langs.push({ label: 'Tamil (Offline)', value: 'Tamil' });
+            }
+            
             langs.sort((a: any, b: any) => {
               const valA = a.value;
               const valB = b.value;
@@ -170,6 +196,18 @@ const BibleComponent = () => {
         if (savedGenImages) {
           setLocalImageVerses(JSON.parse(savedGenImages));
         }
+
+        // Fetch saved highlights
+        const savedHighlights = await AsyncStorage.getItem('@bible_highlights');
+        if (savedHighlights) {
+          setHighlights(JSON.parse(savedHighlights));
+        }
+
+        // Fetch saved liked verses
+        const savedLikedVerses = await AsyncStorage.getItem('@liked_verses');
+        if (savedLikedVerses) {
+          setLikedVerses(JSON.parse(savedLikedVerses));
+        }
       } catch (error) {
         console.error('Error during initialization:', error);
       } finally {
@@ -180,12 +218,34 @@ const BibleComponent = () => {
     initialize();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      const loadProgressSetting = async () => {
+        try {
+          const savedShowProgress = await AsyncStorage.getItem('@bible_show_progress_bar');
+          if (savedShowProgress !== null) {
+            setShowProgressBarSetting(savedShowProgress === 'true');
+          } else {
+            setShowProgressBarSetting(true);
+          }
+        } catch (e) {
+          console.error('[Bible] Error loading show progress setting:', e);
+        }
+      };
+      loadProgressSetting();
+    }, [])
+  );
+
   const fetchUserData = async (token:any) => {
     try {
       const response = await axios.post(`${API_URL}/api/auth/userdata`, { token });
       if (response.data.status === 'Ok') {
         const data = response.data.data;
         setImageGenerationCredits(data.image_generation_credits_available ?? 5);
+        if (data.likedVerses) {
+          setLikedVerses(data.likedVerses);
+          await AsyncStorage.setItem('@liked_verses', JSON.stringify(data.likedVerses));
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -359,6 +419,16 @@ const BibleComponent = () => {
 
   const handleScroll = (event:any) => {
     const scrollY = event.nativeEvent.contentOffset.y;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const containerHeight = event.nativeEvent.layoutMeasurement.height;
+    
+    if (contentHeight > containerHeight) {
+      const progress = (scrollY / (contentHeight - containerHeight)) * 100;
+      setScrollProgress(Math.max(0, Math.min(100, progress)));
+    } else {
+      setScrollProgress(0);
+    }
+
     // Debounce the save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -432,6 +502,20 @@ const BibleComponent = () => {
   };
 
   const handleGenerateImage = async () => {
+    if (isGuest) {
+      setIsVerseModalVisible(false);
+      setTimeout(() => {
+        Alert.alert(
+          '🔒 Sign In Required',
+          'Image generation requires an account. Sign in to access this feature.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign In', onPress: () => navigation.navigate('Login') },
+          ]
+        );
+      }, 100);
+      return;
+    }
     if (!selectedVerse) return;
 
     if (imageGenerationCredits <= 0) {
@@ -536,6 +620,20 @@ const BibleComponent = () => {
   };
 
   const handleCompare = () => {
+    if (isGuest) {
+      setIsVerseModalVisible(false);
+      setTimeout(() => {
+        Alert.alert(
+          '🔒 Sign In Required',
+          'Comparing translations requires an account. Sign in to access this feature.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign In', onPress: () => navigation.navigate('Login') },
+          ]
+        );
+      }, 100);
+      return;
+    }
     setIsVerseModalVisible(false);
     setIsCompareModalVisible(true);
     fetchCompareVerse(compareLanguage);
@@ -604,6 +702,20 @@ const BibleComponent = () => {
   };
 
   const handleWordLongPress = (word: string) => {
+    if (isGuest) {
+      setIsVerseModalVisible(false);
+      setTimeout(() => {
+        Alert.alert(
+          '🔒 Sign In Required',
+          'Looking up word meanings requires an account. Sign in to access this feature.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign In', onPress: () => navigation.navigate('Login') },
+          ]
+        );
+      }, 100);
+      return;
+    }
     const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()"]/g, "").trim();
     if (!cleanWord) return;
     setConfirmWord(cleanWord);
@@ -612,6 +724,7 @@ const BibleComponent = () => {
   const fetchWordMeaning = async (word: string) => {
     try {
       setLoadingMeaning(true);
+      setLookupError(null);
       const res = await axios.post(`${API_URL}/api/bible/dictionary`, {
         word,
         verseContext: selectedVerse?.text || '',
@@ -624,10 +737,10 @@ const BibleComponent = () => {
         setDictSource(source);
         setIsDictModalVisible(true);
       } else {
-        Alert.alert('Error', res.data.message || 'Failed to fetch meaning.');
+        setLookupError(res.data.message || 'Failed to fetch meaning.');
       }
     } catch (e) {
-      Alert.alert('Error', 'Failed to fetch meaning. Please check your internet connection.');
+      setLookupError('Failed to fetch meaning. Please check your internet connection.');
     } finally {
       setLoadingMeaning(false);
     }
@@ -643,6 +756,62 @@ const BibleComponent = () => {
 
   const clearSelection = () => {
     setSelectedVerse(null);
+  };
+
+  const highlightVerse = async (color: string | null) => {
+    if (!selectedVerse || selectedBookNumber === null || selectedChapter === null) return;
+    const key = `${language}_${selectedBookNumber}_${selectedChapter}_${selectedVerse.verseNumber}`;
+    const updated = { ...highlights };
+    if (color) {
+      updated[key] = color;
+    } else {
+      delete updated[key];
+    }
+    setHighlights(updated);
+    try {
+      await AsyncStorage.setItem('@bible_highlights', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save highlights', e);
+    }
+    closeVerseModal();
+  };
+
+  const toggleLikeVerse = async () => {
+    if (!selectedVerse || selectedBookNumber === null || selectedChapter === null) return;
+    const key = `${language}_${selectedBookNumber}_${selectedChapter}_${selectedVerse.verseNumber}`;
+    const targetVerse = {
+      key,
+      language,
+      bookNumber: selectedBookNumber,
+      chapterNumber: selectedChapter,
+      verseNumber: selectedVerse.verseNumber,
+      text: selectedVerse.text,
+      citation: selectedVerse.citation,
+    };
+    
+    let updatedList = [...likedVerses];
+    const exists = updatedList.some((v: any) => v.key === key);
+    if (exists) {
+      updatedList = updatedList.filter((v: any) => v.key !== key);
+    } else {
+      updatedList.push({
+        ...targetVerse,
+        likedAt: new Date().toISOString()
+      });
+    }
+    setLikedVerses(updatedList);
+    try {
+      await AsyncStorage.setItem('@liked_verses', JSON.stringify(updatedList));
+      if (userToken) {
+        await axios.post(
+          `${API_URL}/api/users/toggle-liked-verse`,
+          targetVerse,
+          { headers: { Authorization: `Bearer ${userToken}` } }
+        );
+      }
+    } catch (e) {
+      console.error('Failed to save liked verses', e);
+    }
   };
 
   // ──────────────── TTS Functions ────────────────
@@ -669,6 +838,7 @@ const BibleComponent = () => {
     setCurrentVerseIndex(0);
     currentVerseIndexRef.current = 0;
     verseLayoutsRef.current = []; // clear stale layout measurements
+    setScrollProgress(0);
   }, [selectedBookNumber, selectedChapter]);
 
   // Auto-start playback when new chapter verses load (after auto-play advance)
@@ -827,6 +997,37 @@ const BibleComponent = () => {
   const currentBook = books.find((b: any) => b.value === selectedBookNumber);
   const totalVerses = chapterVerses.length;
   const progressPercent = totalVerses > 0 ? ((currentVerseIndex + 1) / totalVerses) * 100 : 0;
+  
+  const currentKey = selectedVerse && selectedBookNumber !== null && selectedChapter !== null
+    ? `${language}_${selectedBookNumber}_${selectedChapter}_${selectedVerse.verseNumber}`
+    : '';
+  const currentHighlight = highlights[currentKey] || null;
+  const isVerseLiked = likedVerses.some((v: any) => v.key === currentKey);
+  
+  const insetWidth = cardLayout.width > 8 ? cardLayout.width - 8 : 0;
+  const insetHeight = cardLayout.height > 8 ? cardLayout.height - 8 : 0;
+  const insetR = 8;
+  const perimeter = insetWidth > 0 && insetHeight > 0
+    ? 2 * insetWidth + 2 * insetHeight - insetR * (8 - 2 * Math.PI)
+    : 0;
+
+  const startX = 4 + insetR - insetR * 0.7071;
+  const startY = 4 + insetR - insetR * 0.7071;
+  const endX = 4 + insetWidth - insetR + insetR * 0.7071;
+  const endY = 4 + insetHeight - insetR + insetR * 0.7071;
+
+  const pathTopRight = `M ${startX} ${startY} A ${insetR} ${insetR} 0 0 1 ${4 + insetR} 4 H ${4 + insetWidth - insetR} A ${insetR} ${insetR} 0 0 1 ${4 + insetWidth} ${4 + insetR} V ${4 + insetHeight - insetR} A ${insetR} ${insetR} 0 0 1 ${endX} ${endY}`;
+  const pathLeftBottom = `M ${startX} ${startY} A ${insetR} ${insetR} 0 0 0 4 ${4 + insetR} V ${4 + insetHeight - insetR} A ${insetR} ${insetR} 0 0 0 ${4 + insetR} ${4 + insetHeight} H ${4 + insetWidth - insetR} A ${insetR} ${insetR} 0 0 0 ${endX} ${endY}`;
+
+  const pathLength = perimeter / 2;
+
+  const isDark = colors.theme === 'dark';
+  const strokeColorGlow = isDark ? '#00E5FF' : colors.tint;
+  const strokeColorCore = isDark ? '#E0F2FE' : '#FFFFFF';
+  const strokeOpacityGlowOuter = 0.18;
+  const strokeOpacityGlowMed = 0.4;
+  const strokeOpacityCore = 1.0;
+  const shadowOpacityValue = 0.8;
 
   return (
     <SafeAreaView style={styles.outer_container}>
@@ -935,8 +1136,90 @@ const BibleComponent = () => {
           {/* Verses Scroll Reader */}
           <View
             style={styles.readerCard}
-            onLayout={(e) => { scrollViewHeightRef.current = e.nativeEvent.layout.height; }}
+            onLayout={(e) => {
+              const { width, height } = e.nativeEvent.layout;
+              scrollViewHeightRef.current = height;
+              setCardLayout({ width, height });
+            }}
           >
+            {showProgressBarSetting && cardLayout.width > 0 && cardLayout.height > 0 && (
+              <Svg 
+                width={cardLayout.width}
+                height={cardLayout.height}
+                style={[
+                  StyleSheet.absoluteFill, 
+                  { 
+                    zIndex: 10, 
+                    pointerEvents: 'none',
+                    shadowColor: strokeColorGlow,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: shadowOpacityValue,
+                    shadowRadius: 5,
+                  }
+                ]}
+              >
+                {/* Layer 1: Outer wide glow */}
+                <Path
+                  d={pathTopRight}
+                  fill="none"
+                  stroke={strokeColorGlow}
+                  strokeWidth={8}
+                  strokeOpacity={strokeOpacityGlowOuter}
+                  strokeDasharray={`${(scrollProgress / 100) * pathLength}, ${pathLength}`}
+                  strokeLinecap="round"
+                />
+                <Path
+                  d={pathLeftBottom}
+                  fill="none"
+                  stroke={strokeColorGlow}
+                  strokeWidth={8}
+                  strokeOpacity={strokeOpacityGlowOuter}
+                  strokeDasharray={`${(scrollProgress / 100) * pathLength}, ${pathLength}`}
+                  strokeLinecap="round"
+                />
+
+                {/* Layer 2: Medium glow */}
+                <Path
+                  d={pathTopRight}
+                  fill="none"
+                  stroke={strokeColorGlow}
+                  strokeWidth={5}
+                  strokeOpacity={strokeOpacityGlowMed}
+                  strokeDasharray={`${(scrollProgress / 100) * pathLength}, ${pathLength}`}
+                  strokeLinecap="round"
+                />
+                <Path
+                  d={pathLeftBottom}
+                  fill="none"
+                  stroke={strokeColorGlow}
+                  strokeWidth={5}
+                  strokeOpacity={strokeOpacityGlowMed}
+                  strokeDasharray={`${(scrollProgress / 100) * pathLength}, ${pathLength}`}
+                  strokeLinecap="round"
+                />
+
+                {/* Layer 3: Core */}
+                <Path
+                  d={pathTopRight}
+                  fill="none"
+                  stroke={strokeColorCore}
+                  strokeWidth={2.5}
+                  strokeOpacity={strokeOpacityCore}
+                  strokeDasharray={`${(scrollProgress / 100) * pathLength}, ${pathLength}`}
+                  strokeLinecap="round"
+                />
+                <Path
+                  d={pathLeftBottom}
+                  fill="none"
+                  stroke={strokeColorCore}
+                  strokeWidth={2.5}
+                  strokeOpacity={strokeOpacityCore}
+                  strokeDasharray={`${(scrollProgress / 100) * pathLength}, ${pathLength}`}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            )}
+
             <ScrollView 
               ref={scrollViewRef}
               showsVerticalScrollIndicator={false}
@@ -964,6 +1247,10 @@ const BibleComponent = () => {
 
                     const isSpeaking = isPlaying && currentVerseIndex === index;
 
+                    const verseHighlightKey = `${language}_${selectedBookNumber}_${selectedChapter}_${verse.verseNumber}`;
+                    const highlightColor = highlights[verseHighlightKey];
+                    const isLiked = likedVerses.some((v: any) => v.key === verseHighlightKey);
+
                     return (
                       <TouchableOpacity 
                         key={`${selectedBookNumber}_${selectedChapter}_${index}`} 
@@ -972,11 +1259,12 @@ const BibleComponent = () => {
                         onLayout={(e) => { verseLayoutsRef.current[index] = e.nativeEvent.layout.y; }}
                         style={[
                           styles.verseRow,
-                          isSelected && styles.selectedVerseRow,
+                          highlightColor && { backgroundColor: highlightColor },
+                          isSelected && !highlightColor && styles.selectedVerseRow,
                           isSpeaking && styles.speakingVerseRow,
                         ]}
                       >
-                        <Text style={styles.verseNumberText}>{verse.verseNumber}</Text>
+                        <Text style={[styles.verseNumberText, isLiked && { color: '#ff4757' }]}>{verse.verseNumber}</Text>
                         <Text style={[
                           styles.verseBodyText,
                           isSelected && styles.selectedVerseText,
@@ -1084,9 +1372,12 @@ const BibleComponent = () => {
           visible={isVerseModalVisible}
           transparent={true}
           animationType="fade"
+          statusBarTranslucent={true}
           onRequestClose={() => {
             if (confirmWord) {
               setConfirmWord(null);
+            } else if (lookupError) {
+              setLookupError(null);
             } else if (isDictModalVisible) {
               setIsDictModalVisible(false);
             } else {
@@ -1105,7 +1396,16 @@ const BibleComponent = () => {
               )}
               {selectedVerse && (
                 <>
-                  <Text style={styles.modalCitation}>{selectedVerse.citation}</Text>
+                  <View style={styles.modalHeaderRow}>
+                    <Text style={styles.modalCitation}>{selectedVerse.citation}</Text>
+                    <TouchableOpacity onPress={toggleLikeVerse} style={styles.modalLikeBtn}>
+                      <Icon 
+                        name={isVerseLiked ? "heart" : "heart-outline"} 
+                        size={24} 
+                        color={isVerseLiked ? "#ff4757" : colors.textSecondary} 
+                      />
+                    </TouchableOpacity>
+                  </View>
                   
                   {/* Wrapping the text to allow individual word long-press interaction */}
                   <View style={styles.modalVerseTextWrapper}>
@@ -1129,16 +1429,16 @@ const BibleComponent = () => {
                   </View>
                   
                   <View style={styles.buttonContainer}>
-                    {isImageGenEnabled && (
+                    {(isImageGenEnabled || isGuest) && (
                       <Button
                         mode="contained"
                         onPress={handleGenerateImage}
                         loading={isGeneratingImage}
                         style={[styles.actionButton, styles.generateButton]}
                         labelStyle={styles.buttonText}
-                        disabled={imageGenerationCredits <= 0 || isGeneratingImage}
+                        disabled={isGuest ? false : (imageGenerationCredits <= 0 || isGeneratingImage)}
                       >
-                        Generate Image ({imageGenerationCredits} left)
+                        {isGuest ? "Generate Image" : `Generate Image (${imageGenerationCredits} left)`}
                       </Button>
                     )}
                     <Button
@@ -1158,6 +1458,31 @@ const BibleComponent = () => {
                     >
                       {isCopied ? 'Copied !' : 'Copy Verse'}
                     </Button>
+                  </View>
+
+                  {/* Color Highlighter Row */}
+                  <View style={styles.highlightRow}>
+                    <View style={styles.colorOptions}>
+                      {HIGHLIGHT_COLORS.map((color) => (
+                        <TouchableOpacity
+                          key={color.name}
+                          onPress={() => highlightVerse(color.colorVal)}
+                          style={[
+                            styles.colorCircle,
+                            { backgroundColor: color.colorVal, borderColor: colors.border },
+                            currentHighlight === color.colorVal && styles.colorCircleActive
+                          ]}
+                        />
+                      ))}
+                      {currentHighlight && (
+                        <TouchableOpacity
+                          onPress={() => highlightVerse(null)}
+                          style={[styles.colorCircle, styles.clearHighlightBtn, { borderColor: colors.border }]}
+                        >
+                          <Icon name="format-color-text" size={16} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
 
                   {/* Thumbnail Image display when generated */}
@@ -1213,6 +1538,29 @@ const BibleComponent = () => {
               </View>
             )}
 
+            {/* Custom Error Dialog overlay inside the same native Modal window */}
+            {lookupError && (
+              <View style={[StyleSheet.absoluteFillObject, styles.confirmOverlay]}>
+                <TouchableOpacity 
+                  style={styles.modalDismissArea} 
+                  activeOpacity={1} 
+                  onPress={() => setLookupError(null)} 
+                />
+                <View style={styles.confirmCard}>
+                  <Text style={[styles.confirmTitle, { color: '#ef4444' }]}>Error</Text>
+                  <Text style={styles.confirmMessage}>
+                    {lookupError}
+                  </Text>
+                  <TouchableOpacity 
+                    style={[styles.confirmBtn, styles.confirmBtnYes, { backgroundColor: colors.primary, width: '100%', marginTop: 10 }]} 
+                    onPress={() => setLookupError(null)}
+                  >
+                    <Text style={styles.confirmBtnTextYes}>OK</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Dictionary View (Rendered inside parent modal to bypass native Modal conflict bugs) */}
             {isDictModalVisible && (
               <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay]}>
@@ -1252,6 +1600,7 @@ const BibleComponent = () => {
           visible={isCompareModalVisible}
           transparent={true}
           animationType="fade"
+          statusBarTranslucent={true}
           onRequestClose={() => setIsCompareModalVisible(false)}
         >
           <View style={styles.compareModalOverlay}>
@@ -1266,7 +1615,27 @@ const BibleComponent = () => {
                 </TouchableOpacity>
               </View>
               
-              <View style={{ marginHorizontal: 20, marginBottom: 10, zIndex: 4000, elevation: 4000 }}>
+              {selectedVerse && (
+                <View style={{ paddingHorizontal: 20, marginBottom: 15 }}>
+                  <Text style={styles.compareCitationText}>{selectedVerse.citation}</Text>
+                  
+                  {/* Primary Version */}
+                  <View style={[styles.compareVersionContainer, { marginBottom: 0 }]}>
+                    <Text style={styles.compareVersionTitle}>{language}</Text>
+                    <View style={styles.compareTextContainer}>
+                      <Text style={styles.compareVerseText}>{selectedVerse.text}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Dropdown in between with Android Touch/Scroll fix */}
+              <View 
+                style={[
+                  { marginHorizontal: 20, zIndex: 4000, elevation: 4000 },
+                  Platform.OS === 'android' && openCompareLanguage ? { height: 200, marginBottom: -150 } : { marginBottom: 15 }
+                ]}
+              >
                 <DropDownPicker
                   open={openCompareLanguage}
                   value={compareLanguage}
@@ -1276,7 +1645,7 @@ const BibleComponent = () => {
                   placeholder="Select Language to Compare"
                   style={styles.dropdown}
                   textStyle={styles.dropdownText}
-                  dropDownContainerStyle={styles.dropdownMenu}
+                  dropDownContainerStyle={[styles.dropdownMenu, { maxHeight: 150 }]}
                   listMode="SCROLLVIEW"
                   scrollViewProps={{ nestedScrollEnabled: true, keyboardShouldPersistTaps: 'handled' }}
                   zIndex={4000}
@@ -1286,17 +1655,7 @@ const BibleComponent = () => {
 
               <ScrollView style={styles.compareScrollContainer} showsVerticalScrollIndicator={false}>
                 {selectedVerse && (
-                  <>
-                    <Text style={styles.compareCitationText}>{selectedVerse.citation}</Text>
-                    
-                    {/* Primary Version */}
-                    <View style={styles.compareVersionContainer}>
-                      <Text style={styles.compareVersionTitle}>{language}</Text>
-                      <View style={styles.compareTextContainer}>
-                        <Text style={styles.compareVerseText}>{selectedVerse.text}</Text>
-                      </View>
-                    </View>
-                    
+                  <View style={{ paddingBottom: 20 }}>
                     {/* Compared Version */}
                     <View style={styles.compareVersionContainer}>
                       <Text style={styles.compareVersionTitle}>{compareLanguage}</Text>
@@ -1306,7 +1665,7 @@ const BibleComponent = () => {
                         </Text>
                       </View>
                     </View>
-                  </>
+                  </View>
                 )}
               </ScrollView>
             </View>
@@ -1317,6 +1676,7 @@ const BibleComponent = () => {
         <Modal
           visible={isFullScreen}
           transparent={false}
+          statusBarTranslucent={true}
           onRequestClose={() => setIsFullScreen(false)}
         >
           <View style={styles.fullScreenContainer}>
@@ -1489,6 +1849,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+
   readerScrollContent: {
     paddingBottom: 20,
   },
@@ -1553,12 +1914,21 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 15,
+    paddingHorizontal: 4,
+  },
+  modalLikeBtn: {
+    padding: 6,
+  },
   modalCitation: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.tint,
-    marginBottom: 10,
-    textAlign: 'center',
   },
   modalVerseTextWrapper: {
     flexDirection: 'row',
@@ -1893,6 +2263,38 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.textLight,
+  },
+  highlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  colorOptions: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  colorCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  colorCircleActive: {
+    borderWidth: 3,
+    borderColor: colors.tint,
+  },
+  clearHighlightBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
   },
 });
 

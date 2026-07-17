@@ -29,12 +29,7 @@ export default function OrgSettingsScreen({ navigation }: any) {
   const [game, setGame] = useState(true);
   const [imageGeneration, setImageGeneration] = useState(true);
   
-  // Guest Access
-  const [guestBible, setGuestBible] = useState(true);
-  const [guestSongs, setGuestSongs] = useState(true);
-  const [guestMaps, setGuestMaps] = useState(true);
-  const [guestForum, setGuestForum] = useState(false);
-  const [guestPrayers, setGuestPrayers] = useState(false);
+
 
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -55,12 +50,7 @@ export default function OrgSettingsScreen({ navigation }: any) {
       setGame(activeOrg.features?.game ?? true);
       setImageGeneration(activeOrg.features?.imageGeneration ?? true);
 
-      // Guest
-      setGuestBible(activeOrg.guestAccess?.Bible ?? true);
-      setGuestSongs(activeOrg.guestAccess?.Songs ?? true);
-      setGuestMaps(activeOrg.guestAccess?.HistoricalMaps ?? true);
-      setGuestForum(activeOrg.guestAccess?.DiscussionForum ?? false);
-      setGuestPrayers(activeOrg.guestAccess?.PrayerRequests ?? false);
+
     }
   }, [activeOrg]);
 
@@ -107,13 +97,6 @@ export default function OrgSettingsScreen({ navigation }: any) {
           songs,
           game,
           imageGeneration
-        },
-        guestAccess: {
-          Bible: guestBible,
-          Songs: guestSongs,
-          HistoricalMaps: guestMaps,
-          DiscussionForum: guestForum,
-          PrayerRequests: guestPrayers
         }
       });
 
@@ -175,24 +158,7 @@ export default function OrgSettingsScreen({ navigation }: any) {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Onboarding & Invites</Text>
 
-              <View style={styles.inviteBox}>
-                <Text style={styles.inviteLabel}>Active Invite Code</Text>
-                <View style={styles.inviteRow}>
-                  <Text style={styles.inviteCodeText}>{inviteCode || 'N/A'}</Text>
-                  <View style={styles.inviteActions}>
-                    <TouchableOpacity onPress={handleCopyInvite} style={styles.inviteActionBtn}>
-                      <Copy color={colors.tint} size={20} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleRegenerateInvite} style={styles.inviteActionBtn} disabled={regenerating}>
-                      {regenerating ? (
-                        <ActivityIndicator size="small" color={colors.tint} />
-                      ) : (
-                        <RefreshCw color={colors.tint} size={20} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
+
 
               <View style={styles.toggleRow}>
                 <View style={styles.toggleText}>
@@ -240,30 +206,7 @@ export default function OrgSettingsScreen({ navigation }: any) {
               </View>
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Guest View Toggles</Text>
-              
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Bible Reader Access</Text>
-                <Switch value={guestBible} onValueChange={setGuestBible} trackColor={{ false: colors.border, true: colors.tint }} />
-              </View>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Songs Access</Text>
-                <Switch value={guestSongs} onValueChange={setGuestSongs} trackColor={{ false: colors.border, true: colors.tint }} />
-              </View>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Historical Maps Access</Text>
-                <Switch value={guestMaps} onValueChange={setGuestMaps} trackColor={{ false: colors.border, true: colors.tint }} />
-              </View>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Forum Access</Text>
-                <Switch value={guestForum} onValueChange={setGuestForum} trackColor={{ false: colors.border, true: colors.tint }} />
-              </View>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Prayer Wall Access</Text>
-                <Switch value={guestPrayers} onValueChange={setGuestPrayers} trackColor={{ false: colors.border, true: colors.tint }} />
-              </View>
-            </View>
+
 
             <View style={{ height: 40 }} />
           </ScrollView>

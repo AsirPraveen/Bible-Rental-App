@@ -13,12 +13,12 @@ router.post('/submit-rent-request', auth, orgScope, bookController.submitRentReq
 router.post('/toggle-favourite', auth, orgScope, bookController.toggleFavourite);
 router.post('/return-book', auth, orgScope, bookController.returnBook);
 
-// Admin only (adminAuth middleware handles org authentication checks)
-router.post('/add-book', adminAuth, bookController.addBook);
-router.get('/book-analytics', adminAuth, bookController.getBookAnalytics);
-router.get('/pending-rent-requests', adminAuth, bookController.getPendingRentRequests);
-router.post('/approve-rent-request', adminAuth, bookController.approveRentRequest);
-router.post('/reject-rent-request', adminAuth, bookController.rejectRentRequest);
-router.get('/request-history', adminAuth, bookController.getRequestHistory);
+// Admin only
+router.post('/add-book', auth, orgScope, adminAuth, bookController.addBook);
+router.get('/book-analytics', auth, orgScope, adminAuth, bookController.getBookAnalytics);
+router.get('/pending-rent-requests', auth, orgScope, adminAuth, bookController.getPendingRentRequests);
+router.post('/approve-rent-request', auth, orgScope, adminAuth, bookController.approveRentRequest);
+router.post('/reject-rent-request', auth, orgScope, adminAuth, bookController.rejectRentRequest);
+router.get('/request-history', auth, orgScope, adminAuth, bookController.getRequestHistory);
 
 module.exports = router;

@@ -1,60 +1,65 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Image, Platform, StatusBar, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { BellElectric,FileStack } from 'lucide-react-native';
+import { BellElectric, FileStack } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function PendingScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
+  const cardBg = colors.theme === 'dark' ? colors.surface : '#AFD3E2';
+  const iconColor = colors.tint;
 
   const cards = [
     {
       title: 'Pending Requests',
-      icon: <BellElectric color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <BellElectric color={iconColor} size={32} />,
+      bgColor: cardBg,
     },
     {
       title: 'Request History',
-      icon: <FileStack color="#146C94" size={32} />,
-      bgColor: '#AFD3E2',
+      icon: <FileStack color={iconColor} size={32} />,
+      bgColor: cardBg,
     }
   ];
 
   return (
     <SafeAreaView style={styles.outer_container}>
-    <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
-    <View style={styles.container}>
-      <View style={styles.grid}>
-        {cards.map((card, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.card, { backgroundColor: card.bgColor }]}
-            onPress={() => navigation.navigate(card.title)}>
-            <View style={styles.cardContent}>
-              {card.icon}
-              <Text style={styles.cardTitle}>{card.title}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-    </LinearGradient>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        <View style={styles.container}>
+          <View style={styles.grid}>
+            {cards.map((card, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.card, { backgroundColor: card.bgColor }]}
+                onPress={() => navigation.navigate(card.title)}
+              >
+                <View style={styles.cardContent}>
+                  {card.icon}
+                  <Text style={styles.cardTitle}>{card.title}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
-    // justifyContent: 'center',
-    // alignItems: 'center',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
     padding: 16,
-    // backgroundColor: '#19A7CE',
   },
   grid: {
     flexDirection: 'row',
@@ -67,7 +72,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '47.5%',
-    aspectRatio: 0.25,
+    aspectRatio: 0.760,
     borderRadius: 16,
     padding: 16,
     elevation: 10,
@@ -83,8 +88,9 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     marginTop: 12,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
+    textAlign: 'center',
   },
 });

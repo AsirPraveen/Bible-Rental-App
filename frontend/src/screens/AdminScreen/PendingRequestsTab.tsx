@@ -7,16 +7,13 @@ import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { useTheme } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
-};
 
 const PendingRequestsTab = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTemplateModalVisible, setIsTemplateModalVisible] = useState(false);
@@ -97,18 +94,19 @@ const PendingRequestsTab = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-    <ScrollView style={styles.container}>
-      <View style={styles.section}>
-        <View style={styles.headerRow}>
-          <Text style={styles.sectionTitle}>Pending Rent Requests</Text>
-          <TouchableOpacity 
-            style={styles.tuneButton} 
-            onPress={() => setIsTemplateModalVisible(true)}
-          >
-            <MaterialIcons name="email" size={20} color={Colors.bg} />
-            <Text style={styles.tuneButtonText}>Edit Email</Text>
-          </TouchableOpacity>
-        </View>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <ScrollView style={styles.container}>
+        <View style={styles.section}>
+          <View style={styles.headerRow}>
+            <Text style={styles.sectionTitle}>Pending Rent Requests</Text>
+            <TouchableOpacity 
+              style={styles.tuneButton} 
+              onPress={() => setIsTemplateModalVisible(true)}
+            >
+              <MaterialIcons name="email" size={20} color={colors.tint} />
+              <Text style={styles.tuneButtonText}>Edit Email</Text>
+            </TouchableOpacity>
+          </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -196,15 +194,15 @@ const PendingRequestsTab = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -214,7 +212,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: Colors.bg,
+    color: colors.tint,
   },
   section: {
     padding: 15,
@@ -222,7 +220,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.bg,
+    color: colors.tint,
   },
   headerRow: {
     flexDirection: 'row',
@@ -233,12 +231,12 @@ const styles = StyleSheet.create({
   tuneButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.bg,
+    borderColor: colors.tint,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -247,38 +245,38 @@ const styles = StyleSheet.create({
   },
   tuneButtonText: {
     marginLeft: 5,
-    color: Colors.bg,
+    color: colors.tint,
     fontWeight: '600',
     fontSize: 14,
   },
   noDataText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 20,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 15,
-    color: '#0F172A',
+    color: colors.text,
     paddingVertical: 0,
   },
   filterLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -294,18 +292,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: Colors.bg,
-    borderColor: Colors.bg,
+    backgroundColor: colors.tint,
+    borderColor: colors.tint,
   },
   filterChipText: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   filterChipTextActive: {

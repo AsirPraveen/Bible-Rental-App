@@ -10,6 +10,7 @@ import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useOrg } from '../../context/OrganizationContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -25,6 +26,8 @@ type RootStackParamList = {
 const AboutAdminTab = () => {
   const navigation = useNavigation<any>();
   const { memberships, activeOrg, switchOrg } = useOrg();
+  const { theme, colors } = useTheme();
+  const styles = getStyles(colors);
   const [showDropdown, setShowDropdown] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -37,6 +40,38 @@ const AboutAdminTab = () => {
   const [imageUrl, setImageUrl] = useState<string | null>(null); // Cloudinary URL
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false); // Track upload status for loader
+  const tempUploadedImages = React.useRef<string[]>([]);
+
+  const handleRemoveProfileImage = async () => {
+    if (imageUrl) {
+      const publicId = extractPublicIdFromUrl(imageUrl);
+      if (publicId) {
+        tempUploadedImages.current = tempUploadedImages.current.filter(id => id !== publicId);
+      }
+      await deleteImageFromCloudinary(imageUrl);
+      setImage(null);
+      setImageUrl(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      // Cleanup unsaved temp uploads on unmount
+      if (tempUploadedImages.current.length > 0) {
+        tempUploadedImages.current.forEach(async (id) => {
+          try {
+            const token = await AsyncStorage.getItem('token');
+            await axios.post(`${API_URL}/api/cloudinary/delete`, {
+              token,
+              publicId: id
+            });
+          } catch (err) {
+            console.log('Error cleaning unsaved profile picture:', err);
+          }
+        });
+      }
+    };
+  }, []);
 
   // Fetch user data using token from AsyncStorage
   useEffect(() => {
@@ -164,6 +199,10 @@ const AboutAdminTab = () => {
     try {
       // Delete old image first if it exists
       if (imageUrl) {
+        const oldPubId = extractPublicIdFromUrl(imageUrl);
+        if (oldPubId) {
+          tempUploadedImages.current = tempUploadedImages.current.filter(id => id !== oldPubId);
+        }
         await deleteImageFromCloudinary(imageUrl);
       }
 
@@ -188,6 +227,8 @@ const AboutAdminTab = () => {
       );
 
       if (response.data && response.data.secure_url) {
+        const newPubId = response.data.public_id;
+        tempUploadedImages.current.push(newPubId);
         setImageUrl(response.data.secure_url);
         Alert.alert('Success', 'Profile image uploaded successfully!');
       } else {
@@ -246,6 +287,7 @@ const AboutAdminTab = () => {
         setUserData({ ...userData, ...updatedData });
         setIsEditing(false);
         setImage(null); // Clear local image after successful save
+        tempUploadedImages.current = [];
         Alert.alert('Success', 'Profile updated successfully!');
       } else {
         Alert.alert('Error', 'Failed to update profile.');
@@ -254,6 +296,18 @@ const AboutAdminTab = () => {
       console.error('Error updating profile:', error);
       Alert.alert('Error', 'An error occurred while updating your profile.');
     }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    if (userData) {
+      setName(userData.name || '');
+      setMobile(userData.mobile || '');
+      setGender(userData.gender || '');
+      setProfession(userData.profession || '');
+      setImageUrl(userData.image || null);
+    }
+    setImage(null);
   };
 
   if (loading) {
@@ -330,33 +384,33 @@ const AboutAdminTab = () => {
                     <MaterialCommunityIcons 
                       name="office-building" 
                       size={20} 
-                      color={isCurrent ? '#146C94' : '#666'} 
+                      color={isCurrent ? colors.tint : colors.textSecondary} 
                       style={{ marginRight: 10 }}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.dropdownItemText, isCurrent && styles.dropdownItemTextActive]}>
                         {org.name}
                       </Text>
-                      <Text style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 1 }}>
                         Role: {item.role}
                       </Text>
                     </View>
                     {isCurrent && (
-                      <Ionicons name="checkmark-circle" size={18} color="#146C94" />
+                      <Ionicons name="checkmark-circle" size={18} color={colors.tint} />
                     )}
                   </TouchableOpacity>
                 );
               })}
 
               <TouchableOpacity
-                style={[styles.dropdownItem, { borderTopWidth: 1, borderTopColor: '#F0F0F0', marginTop: 8, paddingTop: 12 }]}
+                style={[styles.dropdownItem, { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 12 }]}
                 onPress={() => {
                   setShowDropdown(false);
                   navigation.navigate('OrgSelection');
                 }}
               >
-                <Ionicons name="add-circle-outline" size={20} color="#146C94" style={{ marginRight: 10 }} />
-                <Text style={[styles.dropdownItemText, { color: '#146C94' }]}>
+                <Ionicons name="add-circle-outline" size={20} color={colors.tint} style={{ marginRight: 10 }} />
+                <Text style={[styles.dropdownItemText, { color: colors.tint }]}>
                   Add Workspace
                 </Text>
               </TouchableOpacity>
@@ -386,6 +440,15 @@ const AboutAdminTab = () => {
                       disabled={isUploading}
                     >
                       <Ionicons name="camera" size={24} color="#F6F1F1" />
+                    </TouchableOpacity>
+                  )}
+                  {isEditing && !!displayImage && (
+                    <TouchableOpacity 
+                      style={[styles.editImageButton, { left: 10, right: undefined, backgroundColor: '#FF5252' }]} 
+                      onPress={handleRemoveProfileImage}
+                      disabled={isUploading}
+                    >
+                      <Ionicons name="trash" size={18} color="#fff" />
                     </TouchableOpacity>
                   )}
                   {isUploading && (
@@ -463,58 +526,50 @@ const AboutAdminTab = () => {
                   )}
                 </View>
 
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => (isEditing ? saveProfile() : setIsEditing(true))}
-                  disabled={isUploading}
-                >
-                  <LinearGradient
-                    colors={['#146C94', '#19A7CE']}
-                    style={styles.buttonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                {isEditing ? (
+                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+                    <TouchableOpacity
+                      style={[styles.editButton, { flex: 1, marginTop: 0 }]}
+                      onPress={handleCancelEdit}
+                      disabled={isUploading}
+                    >
+                      <View style={[styles.buttonGradient, { backgroundColor: colors.theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#ccc' }]}>
+                        <Text style={[styles.buttonText, { color: colors.text }]}>Cancel</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.editButton, { flex: 1, marginTop: 0 }]}
+                      onPress={saveProfile}
+                      disabled={isUploading}
+                    >
+                      <LinearGradient
+                        colors={['#146C94', '#19A7CE']}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <Text style={styles.buttonText}>Save Profile</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => setIsEditing(true)}
+                    disabled={isUploading}
                   >
-                    <Text style={styles.buttonText}>{isEditing ? 'Save Profile' : 'Edit Profile'}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                {!isEditing && (
-                  <>
-                    <TouchableOpacity
-                      style={[styles.editButton, { marginTop: 12 }]}
-                      onPress={() => navigation.navigate('AppSettings')}
+                    <LinearGradient
+                      colors={['#146C94', '#19A7CE']}
+                      style={styles.buttonGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
                     >
-                      <LinearGradient
-                        colors={['#146C94', '#19A7CE']}
-                        style={styles.buttonGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
-                        <View style={styles.btnRow}>
-                          <MaterialCommunityIcons name="cog" size={20} color="#fff" />
-                          <Text style={styles.buttonText}>App Configuration</Text>
-                        </View>
-                      </LinearGradient>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.editButton, { marginTop: 12 }]}
-                      onPress={() => navigation.navigate('MemberManagement')}
-                    >
-                      <LinearGradient
-                        colors={['#146C94', '#19A7CE']}
-                        style={styles.buttonGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
-                        <View style={styles.btnRow}>
-                          <MaterialCommunityIcons name="account-group" size={20} color="#fff" />
-                          <Text style={styles.buttonText}>Manage Members</Text>
-                        </View>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </>
+                      <Text style={styles.buttonText}>Edit Profile</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 )}
+
               </View>
 
             </View>
@@ -525,9 +580,10 @@ const AboutAdminTab = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   gradient: {
     flex: 1,
@@ -543,7 +599,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#F6F1F1',
+    color: colors.textLight,
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
@@ -562,7 +618,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   profileCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -581,7 +637,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: '#E6F0FA',
+    backgroundColor: colors.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -595,7 +651,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 10,
     right: 10,
-    backgroundColor: '#146C94',
+    backgroundColor: colors.primary,
     borderRadius: 20,
     padding: 8,
   },
@@ -618,37 +674,37 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 8,
   },
   value: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
   },
   disabled: {
-    color: '#999',
+    color: colors.textSecondary,
   },
   input: {
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.inputBg,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    color: colors.text,
+    borderWidth: 1.5,
+    borderColor: colors.tint,
   },
   rentedBooksContainer: {
     marginTop: 20,
   },
   bookItem: {
-    backgroundColor: '#E6F0FA',
+    backgroundColor: colors.inputBg,
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
   },
   bookText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.text,
   },
   bookStatus: {
     fontSize: 14,
@@ -657,12 +713,12 @@ const styles = StyleSheet.create({
   },
   bookDate: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   noBooksText: {
     fontSize: 14,
-    color: '#999',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
   editButton: {
@@ -677,7 +733,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F6F1F1',
+    color: colors.textLight,
   },
   btnRow: {
     flexDirection: 'row',
@@ -688,11 +744,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F6F1F1',
+    backgroundColor: colors.background,
   },
   loadingText: {
     fontSize: 16,
-    color: '#146C94',
+    color: colors.primary,
   },
   dropdownOverlay: {
     flex: 1,
@@ -704,7 +760,7 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     width: 250,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 12,
     shadowColor: '#000',
@@ -713,15 +769,15 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   dropdownTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.border,
     paddingBottom: 6,
   },
   dropdownItem: {
@@ -732,15 +788,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   dropdownItemActive: {
-    backgroundColor: '#E6F0FA',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#E6F0FA',
   },
   dropdownItemText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   dropdownItemTextActive: {
-    color: '#146C94',
+    color: colors.tint,
   },
 });
 

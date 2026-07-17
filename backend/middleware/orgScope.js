@@ -18,8 +18,8 @@ const orgScope = async (req, res, next) => {
       // Authenticated User flow
       orgId = req.user.activeOrganizationId;
       if (!orgId) {
-        return res.status(400).json({ 
-          status: 'error', 
+        return res.status(400).json({
+          status: 'error',
           message: 'No active organization selected. Please select an organization first.',
           code: 'NO_ACTIVE_ORG'
         });
@@ -31,8 +31,8 @@ const orgScope = async (req, res, next) => {
       );
 
       if (!membership) {
-        return res.status(403).json({ 
-          status: 'error', 
+        return res.status(403).json({
+          status: 'error',
           message: 'You are not an active member of this organization.',
           code: 'NOT_ORG_MEMBER'
         });
@@ -43,8 +43,8 @@ const orgScope = async (req, res, next) => {
       // Guest flow
       orgId = req.headers['x-organization-id'] || req.query.orgId;
       if (!orgId) {
-        return res.status(400).json({ 
-          status: 'error', 
+        return res.status(400).json({
+          status: 'error',
           message: 'Organization context is missing. Org ID must be passed in headers or query.',
           code: 'MISSING_ORG_CONTEXT'
         });
@@ -54,9 +54,9 @@ const orgScope = async (req, res, next) => {
     // Verify organization exists and is active
     const org = await Organization.findOne({ _id: orgId, isActive: true });
     if (!org) {
-      return res.status(404).json({ 
-        status: 'error', 
-        message: 'Organization not found or is suspended.',
+      return res.status(404).json({
+        status: 'error',
+        message: 'Organization not found or is freezed.',
         code: 'ORG_NOT_FOUND'
       });
     }

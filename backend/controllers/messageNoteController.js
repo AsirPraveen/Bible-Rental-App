@@ -8,6 +8,7 @@ exports.createNote = async (req, res) => {
     
     const newNote = new MessageNote({
       user: req.user._id,
+      organization: req.orgId,
       title,
       category,
       content,
@@ -27,20 +28,20 @@ exports.createNote = async (req, res) => {
   }
 };
 
-// Get personal notes for logged-in user
+// Get personal notes for logged-in user in current organization
 exports.getMyNotes = async (req, res) => {
   try {
-    const notes = await MessageNote.find({ user: req.user._id }).sort({ date: -1 });
+    const notes = await MessageNote.find({ user: req.user._id, organization: req.orgId }).sort({ date: -1 });
     res.json({ status: 'ok', data: notes });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-// Get public notes shared by all users
+// Get public notes shared by users in current organization
 exports.getPublicNotes = async (req, res) => {
   try {
-    const notes = await MessageNote.find({ isPublic: true })
+    const notes = await MessageNote.find({ isPublic: true, organization: req.orgId })
       .populate('user', 'name image') // Show author info
       .sort({ date: -1 });
     res.json({ status: 'ok', data: notes });
@@ -53,7 +54,7 @@ exports.getPublicNotes = async (req, res) => {
 exports.updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const note = await MessageNote.findOne({ _id: id, user: req.user._id });
+    const note = await MessageNote.findOne({ _id: id, user: req.user._id, organization: req.orgId });
 
     if (!note) {
       return res.status(404).json({ status: 'error', message: 'Note not found or unauthorized' });
@@ -74,7 +75,7 @@ exports.updateNote = async (req, res) => {
 exports.deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await MessageNote.deleteOne({ _id: id, user: req.user._id });
+    const result = await MessageNote.deleteOne({ _id: id, user: req.user._id, organization: req.orgId });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ status: 'error', message: 'Note not found or unauthorized' });
@@ -86,13 +87,15 @@ exports.deleteNote = async (req, res) => {
   }
 };
 
-// ── Wipe ALL notes (dev/admin reset) ──────────────────────
+// ── Wipe ALL notes for current organization (dev/admin reset) ──────────────────────
 exports.deleteAllNotes = async (req, res) => {
   try {
-    const result = await MessageNote.deleteMany({});
-    res.json({ status: 'ok', message: `Deleted ${result.deletedCount} notes` });
+    if (req.user.globalRole !== 'SuperAdmin') {
+      return res.status(403).json({ status: 'error', message: 'Access denied. Only platform SuperAdmins can perform this action.' });
+    }
+    const result = await MessageNote.deleteMany({ organization: req.orgId });
+    res.json({ status: 'ok', message: `Deleted ${result.deletedCount} notes in this organization` });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
-

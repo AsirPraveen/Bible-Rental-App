@@ -20,10 +20,8 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
 
     try {
       setLoading(true);
-      const userId = currentUserId || '67c13da8f8d68d19dcaec1a4';
       
       const res = await axios.post(`${BASE_URL}/api/prayer-requests`, {
-        user: userId,
         requestText,
         isAnonymous,
         visibility
@@ -44,7 +42,7 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Share a Prayer Request</Text>

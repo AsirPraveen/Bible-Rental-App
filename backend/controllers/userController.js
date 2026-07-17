@@ -22,7 +22,7 @@ exports.updateUser = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const data = await User.find({ 'memberships.organization': req.orgId });
+    const data = await User.find({ 'memberships.organization': req.orgId, globalRole: { $ne: 'SuperAdmin' } });
     res.send({ status: "Ok", data });
   } catch (error) {
     res.send({ error });
@@ -36,10 +36,11 @@ exports.deleteUser = async (req, res) => {
     // Pull organization membership instead of deleting the user's global account
     await User.updateOne(
       { _id: id },
-      { 
-        $pull: { memberships: { organization: req.orgId } },
-        $set: { activeOrganizationId: null } // Reset active org context if it was this one
-      }
+      { $pull: { memberships: { organization: req.orgId } } }
+    );
+    await User.updateOne(
+      { _id: id, activeOrganizationId: req.orgId },
+      { $set: { activeOrganizationId: null } }
     );
     res.send({ status: "Ok", data: "User removed from this organization" });
   } catch (error) {
@@ -141,6 +142,7 @@ exports.searchUsers = async (req, res) => {
   try {
     const users = await User.find({
       'memberships.organization': req.orgId,
+      globalRole: { $ne: 'SuperAdmin' },
       $or: [
         { name: { $regex: query, $options: 'i' } },
         { email: { $regex: query, $options: 'i' } }
@@ -171,6 +173,64 @@ exports.updateNotificationSettings = async (req, res) => {
 
     res.send({ status: "Ok", data: "Settings updated successfully" });
   } catch (error) {
+    res.status(500).send({ status: "error", data: error.message });
+  }
+};
+
+exports.toggleLikedVerse = async (req, res) => {
+  const { key, language, bookNumber, chapterNumber, verseNumber, text, citation } = req.body;
+  try {
+    const user = req.user;
+    if (!user.likedVerses) user.likedVerses = [];
+    const existsIndex = user.likedVerses.findIndex(v => v.key === key);
+    if (existsIndex > -1) {
+      user.likedVerses.splice(existsIndex, 1);
+      await user.save();
+      return res.send({ status: "Ok", action: "removed" });
+    } else {
+      user.likedVerses.push({
+        key,
+        language,
+        bookNumber,
+        chapterNumber,
+        verseNumber,
+        text,
+        citation,
+        likedAt: new Date()
+      });
+      await user.save();
+      return res.send({ status: "Ok", action: "added" });
+    }
+  } catch (error) {
+    console.error('Error toggling liked verse:', error);
+    res.status(500).send({ status: "error", data: error.message });
+  }
+};
+
+exports.toggleLikedSong = async (req, res) => {
+  const { songId } = req.body;
+  try {
+    const user = req.user;
+    const orgId = req.orgId;
+    if (!user.likedSongs) user.likedSongs = [];
+    const existsIndex = user.likedSongs.findIndex(
+      s => s.song.toString() === songId.toString() && s.organization.toString() === orgId.toString()
+    );
+    if (existsIndex > -1) {
+      user.likedSongs.splice(existsIndex, 1);
+      await user.save();
+      return res.send({ status: "Ok", action: "removed" });
+    } else {
+      user.likedSongs.push({
+        song: songId,
+        organization: orgId,
+        likedAt: new Date()
+      });
+      await user.save();
+      return res.send({ status: "Ok", action: "added" });
+    }
+  } catch (error) {
+    console.error('Error toggling liked song:', error);
     res.status(500).send({ status: "error", data: error.message });
   }
 };

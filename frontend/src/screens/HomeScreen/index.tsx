@@ -5,13 +5,13 @@ import getStyles from "./style";
 import { useTheme } from "../../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { TextInput, ScrollView, Alert } from "react-native";
+import { TextInput, ScrollView, Alert, Modal, Platform } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Bell, Heart } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
 import Constants from 'expo-constants';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Animated } from 'react-native';
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from '../../context/AuthContext';
@@ -132,13 +132,22 @@ const TopBookCardSkeleton = () => {
 
 const HomeView = () => {
   const navigation = useNavigation<any>();
-  const { logout } = useAuth();
-  const { activeOrg } = useOrg();
+  const { logout, isGuest } = useAuth();
+  const { activeOrg, memberships, switchOrg, loading: orgLoading } = useOrg();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
+  const [showDropdown, setShowDropdown] = useState(false);
   const [userData, setUserData] = useState("");
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
+  const [isIconFontReady, setIsIconFontReady] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsIconFontReady(true);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, []);
 
   type Book = {
     book_id: string | number;
@@ -153,6 +162,7 @@ const HomeView = () => {
 
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoadingBooks, setIsLoadingBooks] = useState(true);
+  const [shuffledBooks, setShuffledBooks] = useState<Book[]>([]);
 
   type Author = {
     author_id: string | number;
@@ -163,6 +173,7 @@ const HomeView = () => {
 
   const [authors, setAuthors] = useState<Author[]>([]);
   const [isLoadingAuthors, setIsLoadingAuthors] = useState(true);
+  const [shuffledAuthors, setShuffledAuthors] = useState<Author[]>([]);
   const [topBooks, setTopBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -219,42 +230,13 @@ const HomeView = () => {
 
   const categoryItemWidth = 120; // adjust based on your button width
 
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          onPress: async () => {
-            try {
-              await logout(); // Clears AuthContext state + AsyncStorage (user, token, isGuest)
-              await AsyncStorage.removeItem('userType');
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Onboarding' }],
-              });
-            } catch (error) {
-              console.error('Error during logout:', error);
-              Alert.alert('Error', 'An error occurred during logout.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   async function fetchBooks() {
     try {
       setIsLoadingBooks(true);
       const res = await axios.get(`${API_URL}/api/books`);
       const data = Array.isArray(res.data.data) ? res.data.data : [];
       setBooks(data);
+      setShuffledBooks([...data].sort(() => 0.5 - Math.random()).slice(0, 5));
 
       const sortedBooks = [...data].sort((a, b) =>
         (b.rent_count || 0) - (a.rent_count || 0)
@@ -273,7 +255,9 @@ const HomeView = () => {
       setIsLoadingAuthors(true);
       const res = await axios.get(`${API_URL}/api/authors`);
       if (res.data.status === 'Ok') {
-        setAuthors(res.data.data);
+        const data = Array.isArray(res.data.data) ? res.data.data : [];
+        setAuthors(data);
+        setShuffledAuthors([...data].sort(() => 0.5 - Math.random()).slice(0, 5));
       } else {
         console.error('Error fetching authors:', res.data.data);
       }
@@ -321,9 +305,23 @@ const HomeView = () => {
                 </Pressable>
               )}
             </View>
-            <Pressable onPress={handleLogout} style={{ marginLeft: 10 }}>
-              <Ionicons name="log-out-outline" size={24} color={colors.theme === 'dark' ? colors.tint : "#AFD3E2"} />
-            </Pressable>
+            {!isGuest && !orgLoading && isIconFontReady && memberships && memberships.length > 0 && (
+              <Pressable
+                onPress={() => setShowDropdown(true)}
+                style={{
+                  marginLeft: 10,
+                  padding: 6,
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="swap-horizontal"
+                  size={20}
+                  color={colors.theme === 'dark' ? colors.tint : "#F6F1F1"}
+                />
+              </Pressable>
+            )}
           </View>
           <View style={styles.searchWrapper}>
             <View style={styles.searchContainer}>
@@ -434,36 +432,33 @@ const HomeView = () => {
                   <BookCardSkeleton key={index} />
                 ))
               ) : (
-                books && books.length > 0 &&
-                [...books]
-                  .sort(() => 0.5 - Math.random())
-                  .slice(0, 5)
-                  .map((book) => (
-                    <Pressable
-                      key={book.book_id}
-                      style={styles.bookCard}
-                      onPress={() => navigateToBookDetails(book)}
+                shuffledBooks && shuffledBooks.length > 0 &&
+                shuffledBooks.map((book) => (
+                  <Pressable
+                    key={book.book_id}
+                    style={styles.bookCard}
+                    onPress={() => navigateToBookDetails(book)}
+                  >
+                    <Image
+                      source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
+                      style={styles.bookCover}
+                    />
+                    <Text
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                      style={styles.bookTitle}
                     >
-                      <Image
-                        source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
-                        style={styles.bookCover}
-                      />
-                      <Text
-                        numberOfLines={2}
-                        ellipsizeMode="tail"
-                        style={styles.bookTitle}
-                      >
-                        {book.book_name}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        style={styles.bookAuthor}
-                      >
-                        {book.author_name}
-                      </Text>
-                    </Pressable>
-                  ))
+                      {book.book_name}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      style={styles.bookAuthor}
+                    >
+                      {book.author_name}
+                    </Text>
+                  </Pressable>
+                ))
               )}
             </ScrollView>
           </View>
@@ -485,29 +480,26 @@ const HomeView = () => {
                   <AuthorCardSkeleton key={index} />
                 ))
               ) : (
-                authors && authors.length > 0 &&
-                [...authors]
-                  .sort(() => 0.5 - Math.random())
-                  .slice(0, 5)
-                  .map((author) => (
-                    <Pressable
-                      key={author.author_id}
-                      style={styles.authorCard}
-                      onPress={() => navigateToAuthorBooks(author.author_id)}
+                shuffledAuthors && shuffledAuthors.length > 0 &&
+                shuffledAuthors.map((author) => (
+                  <Pressable
+                    key={author.author_id}
+                    style={styles.authorCard}
+                    onPress={() => navigateToAuthorBooks(author.author_id)}
+                  >
+                    <Image
+                      source={{ uri: author.photo || 'https://plus.unsplash.com/premium_photo-1770559520599-881a099cc6e9?q=80&w=1976&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
+                      style={styles.authorPhoto}
+                    />
+                    <Text
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                      style={styles.authorName}
                     >
-                      <Image
-                        source={{ uri: author.photo || 'https://plus.unsplash.com/premium_photo-1770559520599-881a099cc6e9?q=80&w=1976&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
-                        style={styles.authorPhoto}
-                      />
-                      <Text
-                        numberOfLines={2}
-                        ellipsizeMode="tail"
-                        style={styles.authorName}
-                      >
-                        {author.name}
-                      </Text>
-                    </Pressable>
-                  ))
+                      {author.name}
+                    </Text>
+                  </Pressable>
+                ))
               )}
             </ScrollView>
           </View>
@@ -544,6 +536,90 @@ const HomeView = () => {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Switch Organization Dropdown Modal */}
+      <Modal
+        visible={showDropdown}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setShowDropdown(false)}
+        >
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownTitle}>Switch Workspace</Text>
+
+            {memberships.map((item: any) => {
+              const org = item.organization;
+              const isCurrent = org._id === activeOrg?._id;
+
+              return (
+                <TouchableOpacity
+                  key={org._id}
+                  style={[styles.dropdownItem, isCurrent && styles.dropdownItemActive]}
+                  onPress={async () => {
+                    setShowDropdown(false);
+                    if (isCurrent) return;
+
+                    const success = await switchOrg(org._id);
+                    if (success) {
+                      if (item.role === 'Admin') {
+                        navigation.reset({
+                          index: 0,
+                          routes: [{ name: 'AdminScreen' }]
+                        });
+                      } else {
+                        // Re-render MainApp to update contexts
+                        navigation.reset({
+                          index: 0,
+                          routes: [{ name: 'MainApp' }]
+                        });
+                      }
+                    } else {
+                      Alert.alert('Error', 'Failed to switch organization.');
+                    }
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="office-building"
+                    size={20}
+                    color={isCurrent ? colors.tint : colors.textSecondary}
+                    style={{ marginRight: 10 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.dropdownItemText, isCurrent && styles.dropdownItemTextActive]}>
+                      {org.name}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 1 }}>
+                      Role: {item.role}
+                    </Text>
+                  </View>
+                  {isCurrent && (
+                    <Ionicons name="checkmark-circle" size={18} color={colors.tint} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+
+            <TouchableOpacity
+              style={[styles.dropdownItem, { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 12 }]}
+              onPress={() => {
+                setShowDropdown(false);
+                navigation.navigate('OrgSelection');
+              }}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={colors.tint} style={{ marginRight: 10 }} />
+              <Text style={[styles.dropdownItemText, { color: colors.tint }]}>
+                Add Workspace
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </LinearGradient>
   );
 };

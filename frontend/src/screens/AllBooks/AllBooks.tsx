@@ -171,6 +171,7 @@ const AllBooks = () => {
         animationType="fade"
         transparent={true}
         visible={filterModalVisible}
+        statusBarTranslucent={true}
         onRequestClose={() => setFilterModalVisible(false)}
       >
         <View style={styles.modalContainer}>

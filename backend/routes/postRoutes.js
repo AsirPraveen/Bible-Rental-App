@@ -12,8 +12,8 @@ router.get('/posts', orgScope, postController.getAllPosts);
 router.put('/posts/:postId/likes', auth, orgScope, postController.toggleLike);
 
 // Admin only
-router.post('/posts', adminAuth, postController.createPost);
-router.get('/admin/posts', adminAuth, postController.adminGetAllPosts);
-router.delete('/posts/:postId', adminAuth, postController.deletePost);
+router.post('/posts', auth, orgScope, adminAuth, postController.createPost);
+router.get('/admin/posts', auth, orgScope, adminAuth, postController.adminGetAllPosts);
+router.delete('/posts/:postId', auth, orgScope, adminAuth, postController.deletePost);
 
 module.exports = router;

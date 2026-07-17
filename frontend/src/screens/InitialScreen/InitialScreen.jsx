@@ -1,10 +1,10 @@
-import { View, Text, Image, TouchableOpacity, Dimensions, StyleSheet, SafeAreaView, ImageBackground } from "react-native";
+import { View, Text, Image, TouchableOpacity, Dimensions, StyleSheet, SafeAreaView, ImageBackground, ActivityIndicator, Platform } from "react-native";
 import React from "react";
 import { useFonts, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import { getStyles } from "./style";
 import { useTheme } from "../../context/ThemeContext";
 
-export default function OnboardingView({ onGetStarted }) {
+export default function OnboardingView({ onGetStarted, loading }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -44,8 +44,17 @@ export default function OnboardingView({ onGetStarted }) {
           style={[styles.button, { width: width * 0.8 }]} // Button width is 80% of screen width
           onPress={onGetStarted}
           activeOpacity={0.8}
+          disabled={loading}
         >
-          <Text style={styles.button_text}>Get Started</Text>
+          {loading ? (
+            <ActivityIndicator 
+              size={Platform.OS === 'ios' ? 'small' : 24} 
+              color={colors.theme === 'dark' ? '#fff' : 'rgba(0,0,0,0.7)'} 
+              style={Platform.OS === 'ios' ? { transform: [{ scale: 1.25 }] } : {}}
+            />
+          ) : (
+            <Text style={styles.button_text}>Get Started</Text>
+          )}
         </TouchableOpacity>
       </ImageBackground>
     </SafeAreaView>

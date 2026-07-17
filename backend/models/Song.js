@@ -1,28 +1,35 @@
 const mongoose = require('mongoose');
 
 const songSchema = new mongoose.Schema({
-  organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
-  titleTamil: { type: String, required: true },
+  organizations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Organization', index: true }],
+  titleTamil: { type: String, required: false },
   titleEnglish: { type: String, default: '' },
-  lyricsTamil: { type: String, required: true },
+  lyricsTamil: { type: String, required: false },
   lyricsEnglish: { type: String, required: true },
   topics: [{ 
-    type: String, 
-    required: true
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'SongTopic',
+    index: true
   }],
-  author: { type: String, default: '' },
+  songbooks: [{
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'SongBook',
+    index: true
+  }],
+  author: { type: mongoose.Schema.Types.ObjectId, ref: 'SongAuthor', index: true },
   youtubeLink: { type: String, default: '' },
-  likes: { type: Number, default: 0 }
+  likes: { type: Number, default: 0 },
+  isGlobal: { type: Boolean, default: false, index: true },
+  sqliteId: { type: Number, index: true }
 }, { timestamps: true });
 
 // Create text indexes for searching within the organization context
 songSchema.index({ 
-  organization: 1,
+  organizations: 1,
   titleTamil: 'text', 
   titleEnglish: 'text', 
   lyricsTamil: 'text', 
-  lyricsEnglish: 'text', 
-  topics: 'text' 
+  lyricsEnglish: 'text'
 });
 
 module.exports = mongoose.model('Song', songSchema);

@@ -17,6 +17,11 @@ import NoteDetailScreen from '../screens/MessageNotes/NoteDetailScreen';
 import NoteFormScreen from '../screens/MessageNotes/NoteFormScreen';
 import AllBooks from '../screens/AllBooks/AllBooks';
 import AdminTabsNavigation from './AdminTabsNavigation';
+import AdminDrawerNavigator from './AdminDrawerNavigator';
+import ChatScreen from '../screens/Chat/ChatScreen';
+import FellowshipDetailsScreen from '../screens/Chat/FellowshipDetailsScreen';
+import CreateFellowshipScreen from '../screens/Chat/CreateFellowshipScreen';
+import AddFellowshipMembersScreen from '../screens/Chat/AddFellowshipMembersScreen';
 import PendingRequestsTab from '../screens/AdminScreen/PendingRequestsTab';
 import RequestHistoryTab from '../screens/AdminScreen/RequestHistoryTab';
 import ForgotPassword from '../screens/Login&Register/ForgotPassword';
@@ -50,11 +55,15 @@ import AppSettingsTab from '../screens/AdminScreen/components/AppSettingsTab';
 import ManageSongsTab from '../screens/AdminScreen/ManageSongsTab';
 import GuestSettingsTab from '../screens/AdminScreen/GuestSettingsTab';
 import OrgSelectionScreen from '../screens/OrgSelection/OrgSelectionScreen';
-import CreateOrgScreen from '../screens/CreateOrg/CreateOrgScreen';
 import OrgSettingsScreen from '../screens/OrgSettings/OrgSettingsScreen';
 import MemberManagementScreen from '../screens/MemberManagement/MemberManagementScreen';
+import SuperAdminDrawerNavigator from './SuperAdminDrawerNavigator';
 import SuperAdminDashboard from '../screens/SuperAdminDashboard/SuperAdminDashboard';
 import SuperAdminOrgDetail from '../screens/SuperAdminDashboard/SuperAdminOrgDetail';
+import SuperAdminSongsTab from '../screens/SuperAdminDashboard/SuperAdminSongsTab';
+import SongPdfGenerator from '../screens/Songs/SongPdfGenerator';
+import GeneratedPdfsScreen from '../screens/Songs/GeneratedPdfsScreen';
+import SongSelectionScreen from '../screens/Songs/SongSelectionScreen';
 
 const Stack = createStackNavigator();
 
@@ -92,11 +101,6 @@ const StackNavigation = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="CreateOrg"
-        component={CreateOrgScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
         name="OrgSettings"
         component={OrgSettingsScreen}
         options={{ headerShown: false }}
@@ -108,7 +112,7 @@ const StackNavigation = () => {
       />
       <Stack.Screen
         name="SuperAdmin"
-        component={SuperAdminDashboard}
+        component={SuperAdminDrawerNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -117,8 +121,28 @@ const StackNavigation = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="SuperAdminSongs"
+        component={SuperAdminSongsTab}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SongSelectionScreen"
+        component={SongSelectionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SongPdfGenerator"
+        component={SongPdfGenerator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="GeneratedPdfs"
+        component={GeneratedPdfsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="AdminScreen"
-        component={AdminTabsNavigation}
+        component={AdminDrawerNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -340,6 +364,26 @@ const StackNavigation = () => {
           headerStyle: { backgroundColor: '#146C94' },
           headerTintColor: '#F6F1F1'
         }}
+      />
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FellowshipDetails"
+        component={FellowshipDetailsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CreateFellowship"
+        component={CreateFellowshipScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AddFellowshipMembers"
+        component={AddFellowshipMembersScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

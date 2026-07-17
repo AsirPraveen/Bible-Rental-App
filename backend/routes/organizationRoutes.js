@@ -9,7 +9,6 @@ const organizationController = require('../controllers/organizationController');
 router.get('/public-directory', organizationController.listPublicOrgs);
 
 // User membership routes
-router.post('/create', authMiddleware, organizationController.createOrganization);
 router.post('/join-invite', authMiddleware, organizationController.joinByInviteCode);
 router.post('/join-request', authMiddleware, organizationController.requestToJoin);
 router.post('/switch', authMiddleware, organizationController.switchActiveOrg);

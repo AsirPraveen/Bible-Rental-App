@@ -18,5 +18,8 @@ router.get('/songs', superAdminAuth, superAdminController.getGlobalSongs);
 router.post('/songs', superAdminAuth, superAdminController.createGlobalSong);
 router.put('/songs/:id', superAdminAuth, superAdminController.updateGlobalSong);
 router.delete('/songs/:id', superAdminAuth, superAdminController.deleteGlobalSong);
+router.post('/songs/:id/toggle-allow', superAdminAuth, superAdminController.toggleGlobalSongAllowed);
+router.get('/songs-filters-metadata', superAdminAuth, superAdminController.getFiltersMetadata);
+router.post('/songs-filters-metadata/toggle-allow', superAdminAuth, superAdminController.toggleFilterMetadataAllowed);
 
 module.exports = router;

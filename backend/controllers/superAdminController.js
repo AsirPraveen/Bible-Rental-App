@@ -2,6 +2,9 @@ const Organization = require('../models/Organization');
 const User = require('../models/UserDetails');
 const Book = require('../models/Book');
 const Song = require('../models/Song');
+const SongAuthor = require('../models/SongAuthor');
+const SongBook = require('../models/SongBook');
+const SongTopic = require('../models/SongTopic');
 const ForumQuestion = require('../models/ForumQuestion');
 const PrayerRequest = require('../models/PrayerRequest');
 const Invite = require('../models/Invite');
@@ -404,6 +407,59 @@ exports.deleteGlobalSong = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Global song not found' });
     }
     res.status(200).json({ status: 'Ok', data: 'Global song deleted' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// POST toggle global song allowed status
+exports.toggleGlobalSongAllowed = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const song = await Song.findById(id);
+    if (!song) {
+      return res.status(404).json({ status: 'error', message: 'Song not found' });
+    }
+    song.allowed = song.allowed === false ? true : false;
+    await song.save();
+    res.status(200).json({ status: 'Ok', data: songController.serializeSong(song) });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// GET all categories, songbooks, and authors (including allowed status) for SuperAdmin
+exports.getFiltersMetadata = async (req, res) => {
+  try {
+    const topics = await SongTopic.find().sort({ name: 1 });
+    const songbooks = await SongBook.find().sort({ name: 1 });
+    const authors = await SongAuthor.find().sort({ name: 1 });
+    res.status(200).json({
+      status: 'Ok',
+      data: { topics, songbooks, authors }
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// POST toggle allow status for a category/topic, songbook, or author
+exports.toggleFilterMetadataAllowed = async (req, res) => {
+  try {
+    const { type, id } = req.body;
+    let model;
+    if (type === 'topic') model = SongTopic;
+    else if (type === 'songbook') model = SongBook;
+    else if (type === 'author') model = SongAuthor;
+    else return res.status(400).json({ status: 'error', message: 'Invalid filter type' });
+
+    const doc = await model.findById(id);
+    if (!doc) {
+      return res.status(404).json({ status: 'error', message: 'Item not found' });
+    }
+    doc.allowed = doc.allowed === false ? true : false;
+    await doc.save();
+    res.status(200).json({ status: 'Ok', data: doc });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }

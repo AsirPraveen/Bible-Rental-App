@@ -4,7 +4,7 @@ export default {
   expo: {
     name: process.env.APP_NAME || "Youth Room",
     slug: "youth-room",
-    owner: "asir_praveen",
+    owner: process.env.EXPO_OWNER || "youthrooms-team",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./src/assets/jesus-holding-bible.jpg",
@@ -15,7 +15,7 @@ export default {
       supportsTablet: true,
     },
     android: {
-      package: "com.asirpraveen.youthroom",
+      package: process.env.ANDROID_PACKAGE || "com.asirpraveen.youthroom",
       googleServicesFile: "./google-services.json",
       versionCode: 1,
       permissions: [
@@ -38,7 +38,7 @@ export default {
       appName: process.env.APP_NAME,
       secretText: process.env.SECRET_TEXT,
       eas: {
-        projectId: "dc5bfe26-226c-478d-b178-14a74d6a4194",
+        projectId: process.env.EAS_PROJECT_ID || "d79a1585-525b-4dcc-baab-34f1253ee623",
       },
       cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
       uploadPresentPosts: process.env.UPLOAD_PRESENT_POSTS,

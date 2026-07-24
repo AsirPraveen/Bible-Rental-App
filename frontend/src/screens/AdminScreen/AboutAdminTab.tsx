@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useOrg } from '../../context/OrganizationContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -25,6 +26,7 @@ type RootStackParamList = {
 
 const AboutAdminTab = () => {
   const navigation = useNavigation<any>();
+  const { logout } = useAuth();
   const { memberships, activeOrg, switchOrg } = useOrg();
   const { theme, colors } = useTheme();
   const styles = getStyles(colors);
@@ -120,8 +122,8 @@ const AboutAdminTab = () => {
           text: 'Logout',
           onPress: async () => {
             try {
-              // Clear all stored data
-              await AsyncStorage.multiRemove(['token', 'isLoggedIn', 'userType']);
+              await logout();
+              await AsyncStorage.removeItem('userType');
               
               // Reset navigation stack and navigate to Onboarding
               navigation.reset({

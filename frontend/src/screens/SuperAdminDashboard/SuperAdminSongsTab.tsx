@@ -19,6 +19,14 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
 
+  // New tab and filters management state
+  const [activeTab, setActiveTab] = useState<'songs' | 'categories' | 'songbooks' | 'authors'>('songs');
+  const [topicsList, setTopicsList] = useState<any[]>([]);
+  const [songbooksList, setSongbooksList] = useState<any[]>([]);
+  const [authorsList, setAuthorsList] = useState<any[]>([]);
+  const [metadataLoading, setMetadataLoading] = useState(false);
+  const [filterSearchQuery, setFilterSearchQuery] = useState('');
+
   // Form State
   const [formData, setFormData] = useState({
     titleTamil: '',
@@ -50,6 +58,52 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
     }
   };
 
+  const fetchDetailedMetadata = async () => {
+    try {
+      setMetadataLoading(true);
+      const res = await axios.get(`${BASE_URL}/api/superadmin/songs-filters-metadata`);
+      if (res.data.status === 'Ok') {
+        setTopicsList(res.data.data.topics || []);
+        setSongbooksList(res.data.data.songbooks || []);
+        setAuthorsList(res.data.data.authors || []);
+      }
+    } catch (err) {
+      console.error('Error fetching detailed metadata:', err);
+    } finally {
+      setMetadataLoading(false);
+    }
+  };
+
+  const toggleSongAllow = async (id: string) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/api/superadmin/songs/${id}/toggle-allow`);
+      if (res.data.status === 'Ok') {
+        setSongs(prevSongs => prevSongs.map(s => s._id === id ? { ...s, allowed: res.data.data.allowed } : s));
+      }
+    } catch (error) {
+      console.error('Error toggling song allow status:', error);
+      Alert.alert('Error', 'Failed to toggle song allow status');
+    }
+  };
+
+  const toggleFilterAllow = async (type: 'topic' | 'songbook' | 'author', id: string) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/api/superadmin/songs-filters-metadata/toggle-allow`, { type, id });
+      if (res.data.status === 'Ok') {
+        if (type === 'topic') {
+          setTopicsList(prev => prev.map(item => item._id === id ? { ...item, allowed: res.data.data.allowed } : item));
+        } else if (type === 'songbook') {
+          setSongbooksList(prev => prev.map(item => item._id === id ? { ...item, allowed: res.data.data.allowed } : item));
+        } else if (type === 'author') {
+          setAuthorsList(prev => prev.map(item => item._id === id ? { ...item, allowed: res.data.data.allowed } : item));
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling filter allow status:', error);
+      Alert.alert('Error', 'Failed to toggle status');
+    }
+  };
+
   const fetchGlobalSongs = async () => {
     try {
       setLoading(true);
@@ -73,14 +127,23 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
 
   useEffect(() => {
     fetchMetadata();
+    fetchDetailedMetadata();
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchGlobalSongs();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    if (activeTab === 'songs') {
+      const timer = setTimeout(() => {
+        fetchGlobalSongs();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'songs') {
+      fetchDetailedMetadata();
+    }
+  }, [activeTab]);
 
   const handleAddTopic = () => {
     if (newTopic.trim()) {
@@ -191,6 +254,16 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
     );
   };
 
+  const filteredTopicsList = topicsList.filter(item =>
+    item.name && item.name.toLowerCase().includes(filterSearchQuery.toLowerCase())
+  );
+  const filteredSongbooksList = songbooksList.filter(item =>
+    item.name && item.name.toLowerCase().includes(filterSearchQuery.toLowerCase())
+  );
+  const filteredAuthorsList = authorsList.filter(item =>
+    item.name && item.name.toLowerCase().includes(filterSearchQuery.toLowerCase())
+  );
+
   const renderSongItem = ({ item }: { item: any }) => (
     <Card style={styles.songCard}>
       <Card.Content>
@@ -205,12 +278,58 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
           </View>
         </View>
         <View style={styles.cardMeta}>
-          <Text style={styles.cardMetaText}>Author: {item.author || 'Unknown'}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <Text style={styles.cardMetaText}>Author: {item.author || 'Unknown'}</Text>
+            <TouchableOpacity 
+              activeOpacity={0.7}
+              style={[
+                styles.allowToggleBtn, 
+                item.allowed !== false ? styles.allowToggleBtnActive : styles.allowToggleBtnBlocked
+              ]}
+              onPress={() => toggleSongAllow(item._id)}
+            >
+              <Text 
+                style={[
+                  styles.allowToggleBtnText, 
+                  { color: item.allowed !== false ? '#059669' : '#DC2626' }
+                ]}
+              >
+                {item.allowed !== false ? 'Allowed' : 'Blocked'}
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.cardTopics}>
             {item.topics.map((t: string, i: number) => (
               <Text key={i} style={styles.miniTopicTag}>{t}</Text>
             ))}
           </View>
+        </View>
+      </Card.Content>
+    </Card>
+  );
+
+  const renderMetadataItem = (item: any, type: 'topic' | 'songbook' | 'author') => (
+    <Card style={styles.songCard}>
+      <Card.Content>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            style={[
+              styles.allowToggleBtn, 
+              item.allowed !== false ? styles.allowToggleBtnActive : styles.allowToggleBtnBlocked
+            ]}
+            onPress={() => toggleFilterAllow(type, item._id)}
+          >
+            <Text 
+              style={[
+                styles.allowToggleBtnText, 
+                { color: item.allowed !== false ? '#059669' : '#DC2626' }
+              ]}
+            >
+              {item.allowed !== false ? 'Allowed' : 'Blocked'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </Card.Content>
     </Card>
@@ -227,35 +346,122 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
           <Text style={styles.headerTitle}>Manage Global Songs</Text>
         </View>
         <Searchbar
-          placeholder="Search global songs..."
+          placeholder={
+            activeTab === 'songs' ? "Search global songs..." :
+            activeTab === 'categories' ? "Search categories..." :
+            activeTab === 'songbooks' ? "Search song books..." : "Search authors..."
+          }
           placeholderTextColor={colors.textSecondary}
           iconColor={colors.textSecondary}
           inputStyle={{ color: colors.text }}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
+          onChangeText={(text) => {
+            if (activeTab === 'songs') {
+              setSearchQuery(text);
+            } else {
+              setFilterSearchQuery(text);
+            }
+          }}
+          value={activeTab === 'songs' ? searchQuery : filterSearchQuery}
           style={styles.searchBar}
           elevation={0}
         />
+        
+        {/* Tab Switcher */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.tabScroll}
+          contentContainerStyle={styles.tabScrollContent}
+        >
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            style={[styles.tabButton, activeTab === 'songs' && styles.tabButtonActive]}
+            onPress={() => { setActiveTab('songs'); setFilterSearchQuery(''); }}
+          >
+            <Text style={[styles.tabButtonText, activeTab === 'songs' && styles.tabButtonTextActive]}>Songs</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            style={[styles.tabButton, activeTab === 'categories' && styles.tabButtonActive]}
+            onPress={() => { setActiveTab('categories'); setFilterSearchQuery(''); }}
+          >
+            <Text style={[styles.tabButtonText, activeTab === 'categories' && styles.tabButtonTextActive]}>Categories</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            style={[styles.tabButton, activeTab === 'songbooks' && styles.tabButtonActive]}
+            onPress={() => { setActiveTab('songbooks'); setFilterSearchQuery(''); }}
+          >
+            <Text style={[styles.tabButtonText, activeTab === 'songbooks' && styles.tabButtonTextActive]}>Song Books</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            style={[styles.tabButton, activeTab === 'authors' && styles.tabButtonActive]}
+            onPress={() => { setActiveTab('authors'); setFilterSearchQuery(''); }}
+          >
+            <Text style={[styles.tabButtonText, activeTab === 'authors' && styles.tabButtonTextActive]}>Authors</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
-      <FlatList
-        data={songs}
-        keyExtractor={(item) => item._id}
-        renderItem={renderSongItem}
-        contentContainerStyle={styles.listContent}
-        refreshing={loading}
-        onRefresh={fetchGlobalSongs}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No global songs found. Add the first one!</Text>
-        }
-      />
+      {activeTab === 'songs' ? (
+        <FlatList
+          data={songs}
+          keyExtractor={(item) => item._id}
+          renderItem={renderSongItem}
+          contentContainerStyle={styles.listContent}
+          refreshing={loading}
+          onRefresh={fetchGlobalSongs}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No global songs found. Add the first one!</Text>
+          }
+        />
+      ) : activeTab === 'categories' ? (
+        <FlatList
+          data={filteredTopicsList}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => renderMetadataItem(item, 'topic')}
+          contentContainerStyle={styles.listContent}
+          refreshing={metadataLoading}
+          onRefresh={fetchDetailedMetadata}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No categories found.</Text>
+          }
+        />
+      ) : activeTab === 'songbooks' ? (
+        <FlatList
+          data={filteredSongbooksList}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => renderMetadataItem(item, 'songbook')}
+          contentContainerStyle={styles.listContent}
+          refreshing={metadataLoading}
+          onRefresh={fetchDetailedMetadata}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No song books found.</Text>
+          }
+        />
+      ) : (
+        <FlatList
+          data={filteredAuthorsList}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => renderMetadataItem(item, 'author')}
+          contentContainerStyle={styles.listContent}
+          refreshing={metadataLoading}
+          onRefresh={fetchDetailedMetadata}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No authors found.</Text>
+          }
+        />
+      )}
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={openAddModal}
-        color="#fff"
-      />
+      {activeTab === 'songs' && (
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={openAddModal}
+          color="#fff"
+        />
+      )}
 
       <Modal
         visible={modalVisible}
@@ -630,6 +836,49 @@ const getStyles = (colors: any, theme: string) => StyleSheet.create({
   },
   horizontalScroll: {
     flexDirection: 'row',
+  },
+  tabScroll: {
+    marginTop: 12,
+    flexDirection: 'row',
+  },
+  tabScrollContent: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  tabButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  tabButtonActive: {
+    backgroundColor: '#fff',
+  },
+  tabButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  tabButtonTextActive: {
+    color: colors.primary,
+  },
+  allowToggleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  allowToggleBtnActive: {
+    backgroundColor: '#E2F7F0',
+  },
+  allowToggleBtnBlocked: {
+    backgroundColor: '#FFEBEB',
+  },
+  allowToggleBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
   }
 });
 

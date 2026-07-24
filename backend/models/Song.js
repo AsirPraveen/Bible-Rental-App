@@ -20,7 +20,8 @@ const songSchema = new mongoose.Schema({
   youtubeLink: { type: String, default: '' },
   likes: { type: Number, default: 0 },
   isGlobal: { type: Boolean, default: false, index: true },
-  sqliteId: { type: Number, index: true }
+  sqliteId: { type: Number, index: true },
+  allowed: { type: Boolean, default: true, index: true }
 }, { timestamps: true });
 
 // Create text indexes for searching within the organization context

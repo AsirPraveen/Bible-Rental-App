@@ -3,10 +3,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import axios from 'axios';
 import Constants from 'expo-constants';
-import { Alert } from 'react-native';
+import { Alert, NativeModules } from 'react-native';
 import { navigationRef } from '../app/index';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+
+let GoogleSignin: any = null;
+try {
+  const mod = require('@react-native-google-signin/google-signin');
+  GoogleSignin = mod.GoogleSignin;
+} catch (e) {
+  console.log('[Auth] Native Google Sign-In not available in this environment');
+}
 
 axios.interceptors.request.use(
   async (config) => {
@@ -122,6 +130,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem('isGuest', 'false');
       await AsyncStorage.removeItem('activeOrgId');
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => { });
+
+      // Native Google Sign-Out
+      try {
+        if (GoogleSignin) {
+          const isSignedIn = await GoogleSignin.isSignedIn();
+          if (isSignedIn) {
+            await GoogleSignin.signOut();
+            console.log('[Auth] Native Google Sign-Out completed successfully.');
+          }
+        } else {
+          console.log('[Auth] Native Google Sign-In not loaded (bypassed).');
+        }
+      } catch (googleError) {
+        console.log('[Auth] Google Sign-Out bypassed:', googleError);
+      }
     } catch (e) {
       console.error('Error during logout', e);
     }

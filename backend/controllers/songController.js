@@ -79,15 +79,30 @@ exports.getSongs = async (req, res) => {
   const { search = '', topic, author, songbook, page, limit, scope = 'all' } = req.query;
 
   try {
+    // Resolve blocked filters
+    const [blockedTopics, blockedSongbooks, blockedAuthors] = await Promise.all([
+      SongTopic.find({ allowed: false }).distinct('_id'),
+      SongBook.find({ allowed: false }).distinct('_id'),
+      SongAuthor.find({ allowed: false }).distinct('_id')
+    ]);
+
+    const allowedGlobalQuery = {
+      isGlobal: true,
+      allowed: { $ne: false },
+      topics: { $nin: blockedTopics },
+      songbooks: { $nin: blockedSongbooks },
+      author: { $nin: blockedAuthors }
+    };
+
     let scopeQuery = {};
     if (scope === 'global') {
-      scopeQuery = { isGlobal: true };
+      scopeQuery = allowedGlobalQuery;
     } else if (scope === 'org') {
       scopeQuery = { organizations: req.orgId };
     } else {
       scopeQuery = {
         $or: [
-          { isGlobal: true },
+          allowedGlobalQuery,
           { organizations: req.orgId }
         ]
       };
@@ -180,11 +195,25 @@ exports.getSongs = async (req, res) => {
 exports.getSongById = async (req, res) => {
   const { id } = req.params;
   try {
+    const [blockedTopics, blockedSongbooks, blockedAuthors] = await Promise.all([
+      SongTopic.find({ allowed: false }).distinct('_id'),
+      SongBook.find({ allowed: false }).distinct('_id'),
+      SongAuthor.find({ allowed: false }).distinct('_id')
+    ]);
+
+    const allowedGlobalQuery = {
+      isGlobal: true,
+      allowed: { $ne: false },
+      topics: { $nin: blockedTopics },
+      songbooks: { $nin: blockedSongbooks },
+      author: { $nin: blockedAuthors }
+    };
+
     const song = await Song.findOne({
       _id: id,
       $or: [
         { organizations: req.orgId },
-        { isGlobal: true }
+        allowedGlobalQuery
       ]
     }).populate('author topics songbooks');
 
@@ -200,9 +229,9 @@ exports.getSongById = async (req, res) => {
 
 exports.getSongsMetadata = async (req, res) => {
   try {
-    const topics = await SongTopic.distinct('name');
-    const songbooks = await SongBook.distinct('name');
-    const authors = await SongAuthor.distinct('name');
+    const topics = await SongTopic.distinct('name', { allowed: { $ne: false } });
+    const songbooks = await SongBook.distinct('name', { allowed: { $ne: false } });
+    const authors = await SongAuthor.distinct('name', { allowed: { $ne: false } });
 
     res.status(200).json({
       status: "Ok",

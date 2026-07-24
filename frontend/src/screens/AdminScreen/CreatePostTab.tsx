@@ -61,7 +61,7 @@ const CreatePostTab = () => {
       }
     };
   }, []);
-  
+
   // Targeting fields
   const [audienceType, setAudienceType] = useState<'all' | 'specific'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,7 +70,7 @@ const CreatePostTab = () => {
   const [showInNotification, setShowInNotification] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-  
+
   // Post Management state
   const [isManageModalVisible, setIsManageModalVisible] = useState(false);
   const [adminPosts, setAdminPosts] = useState<any[]>([]);
@@ -130,8 +130,8 @@ const CreatePostTab = () => {
       'Are you sure you want to delete this post permanentley?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -330,10 +330,10 @@ const CreatePostTab = () => {
             <View style={styles.headerRow}>
               <View style={{ width: 40 }} />
               <Text style={styles.headerText}>Create New Post</Text>
-              <IconButton 
-                icon="history" 
-                iconColor="#F6F1F1" 
-                size={28} 
+              <IconButton
+                icon="history"
+                iconColor="#F6F1F1"
+                size={28}
                 onPress={() => {
                   fetchAdminPosts();
                   setIsManageModalVisible(true);
@@ -365,14 +365,14 @@ const CreatePostTab = () => {
               {/* Targeting Section */}
               <Text style={styles.label}>Target Audience</Text>
               <View style={styles.audienceContainer}>
-                <TouchableOpacity 
-                  onPress={() => setAudienceType('all')} 
+                <TouchableOpacity
+                  onPress={() => setAudienceType('all')}
                   style={[styles.audienceButton, audienceType === 'all' && styles.audienceButtonActive]}
                 >
                   <Text style={[styles.audienceButtonText, audienceType === 'all' && styles.audienceButtonTextActive]}>All Users</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => setAudienceType('specific')} 
+                <TouchableOpacity
+                  onPress={() => setAudienceType('specific')}
                   style={[styles.audienceButton, audienceType === 'specific' && styles.audienceButtonActive]}
                 >
                   <Text style={[styles.audienceButtonText, audienceType === 'specific' && styles.audienceButtonTextActive]}>Specific Users</Text>
@@ -390,12 +390,12 @@ const CreatePostTab = () => {
                     placeholderTextColor="#999"
                   />
                   {isSearching && <ActivityIndicator size="small" color="#146C94" style={{ marginBottom: 10 }} />}
-                  
+
                   {searchResults.length > 0 && (
                     <View style={styles.searchResultsContainer}>
                       {searchResults.map((user) => (
-                        <TouchableOpacity 
-                          key={user._id} 
+                        <TouchableOpacity
+                          key={user._id}
                           style={styles.searchResultItem}
                           onPress={() => toggleUserSelection(user)}
                         >
@@ -407,8 +407,8 @@ const CreatePostTab = () => {
 
                   <View style={styles.chipsContainer}>
                     {selectedUsers.map((user) => (
-                      <Chip 
-                        key={user._id} 
+                      <Chip
+                        key={user._id}
                         onClose={() => toggleUserSelection(user)}
                         style={styles.chip}
                         textStyle={styles.chipText}
@@ -425,15 +425,15 @@ const CreatePostTab = () => {
                   <Text style={styles.label}>Keep in notification history</Text>
                   <Text style={{ fontSize: 12, color: '#666' }}>Always triggers a push notification</Text>
                 </View>
-                <Switch 
-                  value={showInNotification} 
-                  onValueChange={setShowInNotification} 
+                <Switch
+                  value={showInNotification}
+                  onValueChange={setShowInNotification}
                   color="#146C94"
                 />
               </View>
 
               <Text style={styles.label}>Date (Optional)</Text>
-              <TouchableOpacity onPress={() => { console.log('Opening Date Picker'); setShowDatePicker(true); }} style={styles.dateInput}>
+              <TouchableOpacity onPress={() => { }} style={styles.dateInput}>
                 <Text style={styles.dateText}>
                   {date ? date.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }) : 'Select Date'}
                 </Text>
@@ -465,7 +465,7 @@ const CreatePostTab = () => {
               </Modal>
 
               <Text style={styles.label}>Time (Optional)</Text>
-              <TouchableOpacity onPress={() => { console.log('Opening Time Picker'); setShowTimePicker(true); }} style={styles.dateInput}>
+              <TouchableOpacity onPress={() => { setShowTimePicker(true); }} style={styles.dateInput}>
                 <Text style={styles.dateText}>
                   {time ? time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Select Time'}
                 </Text>
@@ -544,10 +544,10 @@ const CreatePostTab = () => {
           <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
           <LinearGradient colors={colors.linearGradient} style={styles.modalGradient}>
             <View style={styles.modalHeader}>
-              <IconButton 
-                icon="close" 
-                iconColor="#F6F1F1" 
-                size={28} 
+              <IconButton
+                icon="close"
+                iconColor="#F6F1F1"
+                size={28}
                 onPress={() => setIsManageModalVisible(false)}
               />
               <Text style={styles.modalHeaderText}>Manage Posts</Text>
@@ -568,7 +568,7 @@ const CreatePostTab = () => {
                         <Text style={styles.postManageDate}>
                           {item.date || 'No Date'} {item.time ? `at ${item.time}` : ''}
                         </Text>
-                        
+
                         <Text style={styles.postManageDescription} numberOfLines={2}>
                           {item.description}
                         </Text>
@@ -602,11 +602,11 @@ const CreatePostTab = () => {
                           </View>
                         </View>
                       </View>
-                      
-                      <IconButton 
-                        icon="delete-outline" 
-                        iconColor="#FF5252" 
-                        size={24} 
+
+                      <IconButton
+                        icon="delete-outline"
+                        iconColor="#FF5252"
+                        size={24}
                         onPress={() => handleDeletePost(item._id)}
                       />
                     </View>

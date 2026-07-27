@@ -421,7 +421,7 @@ export default function SuperAdminDashboard({ navigation }: any) {
       <Modal
         visible={showCreateModal}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowCreateModal(false)}
       >
         <TouchableOpacity

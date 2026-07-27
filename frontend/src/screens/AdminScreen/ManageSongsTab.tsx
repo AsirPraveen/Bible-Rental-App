@@ -21,7 +21,7 @@ const ManageSongsTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
-  
+
   // Tab State
   const [activeTab, setActiveTab] = useState<'org' | 'global'>('org');
 
@@ -36,7 +36,7 @@ const ManageSongsTab = () => {
     author: '',
     youtubeLink: ''
   });
-  
+
   const [newTopic, setNewTopic] = useState('');
   const [newSongbook, setNewSongbook] = useState('');
   const [existingMetadata, setExistingMetadata] = useState<{
@@ -60,12 +60,12 @@ const ManageSongsTab = () => {
     try {
       setLoading(true);
       const res = await axios.get(`${BASE_URL}/api/songs`, {
-          params: { 
-            search: searchQuery, 
-            scope: activeTab,
-            page: 1,
-            limit: 100 
-          }
+        params: {
+          search: searchQuery,
+          scope: activeTab,
+          page: 1,
+          limit: 100
+        }
       });
       if (res.data.status === 'Ok') {
         if (res.data.data && res.data.data.songs) {
@@ -88,17 +88,17 @@ const ManageSongsTab = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-        fetchSongs();
+      fetchSongs();
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery, activeTab]);
 
   const handleAddTopic = () => {
     if (newTopic.trim()) {
-       if (!formData.topics.includes(newTopic.trim())) {
-         setFormData({ ...formData, topics: [...formData.topics, newTopic.trim()] });
-       }
-       setNewTopic('');
+      if (!formData.topics.includes(newTopic.trim())) {
+        setFormData({ ...formData, topics: [...formData.topics, newTopic.trim()] });
+      }
+      setNewTopic('');
     }
   };
 
@@ -112,10 +112,10 @@ const ManageSongsTab = () => {
 
   const handleAddSongbook = () => {
     if (newSongbook.trim()) {
-       if (!formData.songbooks.includes(newSongbook.trim())) {
-         setFormData({ ...formData, songbooks: [...formData.songbooks, newSongbook.trim()] });
-       }
-       setNewSongbook('');
+      if (!formData.songbooks.includes(newSongbook.trim())) {
+        setFormData({ ...formData, songbooks: [...formData.songbooks, newSongbook.trim()] });
+      }
+      setNewSongbook('');
     }
   };
 
@@ -186,8 +186,8 @@ const ManageSongsTab = () => {
       'Are you sure you want to delete this song?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -222,43 +222,43 @@ const ManageSongsTab = () => {
       <Card style={styles.songCard}>
         <Card.Content>
           <View style={styles.cardHeader}>
-              <View style={styles.cardTitleContainer}>
-                  <Text style={styles.cardTitle}>{item.titleTamil}</Text>
-                  {item.titleEnglish ? <Text style={styles.cardSubTitle}>{item.titleEnglish}</Text> : null}
-              </View>
-              <View style={styles.cardActions}>
-                  {item.isGlobal ? (
-                    <Button 
-                      mode={isAddedToOrg ? "contained" : "outlined"}
-                      compact
-                      onPress={() => toggleOrgAssociation(item._id)}
-                      style={styles.associationBtn}
-                      labelStyle={styles.associationBtnLabel}
-                      buttonColor={isAddedToOrg ? "#E64848" : undefined}
-                      textColor={isAddedToOrg ? "#fff" : colors.tint}
-                    >
-                      {isAddedToOrg ? "Remove" : "Add to Org"}
-                    </Button>
-                  ) : (
-                    <>
-                      <IconButton icon="pencil" size={20} iconColor={colors.tint} onPress={() => openEditModal(item)} />
-                      <IconButton icon="delete" size={20} iconColor="#FF6B6B" onPress={() => handleDelete(item._id)} />
-                    </>
-                  )}
-              </View>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitle}>{item.titleTamil}</Text>
+              {item.titleEnglish ? <Text style={styles.cardSubTitle}>{item.titleEnglish}</Text> : null}
+            </View>
+            <View style={styles.cardActions}>
+              {item.isGlobal ? (
+                <Button
+                  mode={isAddedToOrg ? "contained" : "outlined"}
+                  compact
+                  onPress={() => toggleOrgAssociation(item._id)}
+                  style={styles.associationBtn}
+                  labelStyle={styles.associationBtnLabel}
+                  buttonColor={isAddedToOrg ? "#E64848" : undefined}
+                  textColor={isAddedToOrg ? "#fff" : colors.tint}
+                >
+                  {isAddedToOrg ? "Remove" : "Add to Org"}
+                </Button>
+              ) : (
+                <>
+                  <IconButton icon="pencil" size={20} iconColor={colors.tint} onPress={() => openEditModal(item)} />
+                  <IconButton icon="delete" size={20} iconColor="#FF6B6B" onPress={() => handleDelete(item._id)} />
+                </>
+              )}
+            </View>
           </View>
           <View style={styles.cardMeta}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={styles.cardMetaText}>Author: {item.author || 'Unknown'}</Text>
-                {item.isGlobal && (
-                  <Chip compact style={styles.globalChip} textStyle={styles.globalChipText}>Global</Chip>
-                )}
-              </View>
-              <View style={styles.cardTopics}>
-                  {item.topics.map((t: string, i: number) => (
-                      <Text key={i} style={styles.miniTopicTag}>{t}</Text>
-                  ))}
-              </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.cardMetaText}>Author: {item.author || 'Unknown'}</Text>
+              {item.isGlobal && (
+                <Chip compact style={styles.globalChip} textStyle={styles.globalChipText}>Global</Chip>
+              )}
+            </View>
+            <View style={styles.cardTopics}>
+              {item.topics.map((t: string, i: number) => (
+                <Text key={i} style={styles.miniTopicTag}>{t}</Text>
+              ))}
+            </View>
           </View>
         </Card.Content>
       </Card>
@@ -284,7 +284,7 @@ const ManageSongsTab = () => {
 
       {/* Tabs Selector */}
       <View style={styles.tabsContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tabButton, activeTab === 'org' && styles.tabButtonActive]}
           onPress={() => setActiveTab('org')}
         >
@@ -292,7 +292,7 @@ const ManageSongsTab = () => {
             {activeOrg ? `${activeOrg.name} Songs` : 'Org Songs'}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tabButton, activeTab === 'global' && styles.tabButtonActive]}
           onPress={() => setActiveTab('global')}
         >
@@ -310,11 +310,11 @@ const ManageSongsTab = () => {
         refreshing={loading}
         onRefresh={fetchSongs}
         ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              {activeTab === 'org' 
-                ? 'No organization-specific songs found. Add one or associate global songs!' 
-                : 'No global songs found.'}
-            </Text>
+          <Text style={styles.emptyText}>
+            {activeTab === 'org'
+              ? 'No organization-specific songs found. Add one or associate global songs!'
+              : 'No global songs found.'}
+          </Text>
         }
       />
 
@@ -330,7 +330,7 @@ const ManageSongsTab = () => {
 
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
@@ -361,74 +361,74 @@ const ManageSongsTab = () => {
 
             <Text style={styles.inputLabel}>Topics * (Select from list or add new)</Text>
             <View style={styles.topicsWrapper}>
-                {Array.from(new Set([...PREDEFINED_TOPICS, ...(existingMetadata.topics || []).map(t => t?.trim()).filter(Boolean)])).map(topic => (
-                    <Chip
-                      key={topic}
-                      selected={formData.topics.includes(topic)}
-                      onPress={() => toggleTopic(topic)}
-                      style={styles.formChip}
-                      selectedColor={colors.tint}
-                    >
-                      {topic}
-                    </Chip>
-                ))}
-                {formData.topics.filter(t => !PREDEFINED_TOPICS.includes(t) && !(existingMetadata.topics || []).includes(t)).map(topic => (
-                    <Chip
-                      key={topic}
-                      selected={true}
-                      onPress={() => toggleTopic(topic)}
-                      style={styles.formChipCustom}
-                      selectedColor="#fff"
-                    >
-                      {topic}
-                    </Chip>
-                ))}
+              {Array.from(new Set([...PREDEFINED_TOPICS, ...(existingMetadata.topics || []).map(t => t?.trim()).filter(Boolean)])).map(topic => (
+                <Chip
+                  key={topic}
+                  selected={formData.topics.includes(topic)}
+                  onPress={() => toggleTopic(topic)}
+                  style={styles.formChip}
+                  selectedColor={colors.tint}
+                >
+                  {topic}
+                </Chip>
+              ))}
+              {formData.topics.filter(t => !PREDEFINED_TOPICS.includes(t) && !(existingMetadata.topics || []).includes(t)).map(topic => (
+                <Chip
+                  key={topic}
+                  selected={true}
+                  onPress={() => toggleTopic(topic)}
+                  style={styles.formChipCustom}
+                  selectedColor="#fff"
+                >
+                  {topic}
+                </Chip>
+              ))}
             </View>
             <View style={styles.addTopicContainer}>
-                <TextInput
-                    style={styles.miniInput}
-                    value={newTopic}
-                    onChangeText={setNewTopic}
-                    placeholder="Type new topic..."
-                    placeholderTextColor={colors.textSecondary}
-                />
-                <Button mode="contained" onPress={handleAddTopic} style={styles.addBtn}>Add</Button>
+              <TextInput
+                style={styles.miniInput}
+                value={newTopic}
+                onChangeText={setNewTopic}
+                placeholder="Type new topic..."
+                placeholderTextColor={colors.textSecondary}
+              />
+              <Button mode="contained" onPress={handleAddTopic} style={styles.addBtn}>Add</Button>
             </View>
 
             <Text style={styles.inputLabel}>Songbooks (Select from list or add new)</Text>
             <View style={styles.topicsWrapper}>
-                {(existingMetadata.songbooks || []).map(sb => (
-                    <Chip
-                      key={sb}
-                      selected={formData.songbooks.includes(sb)}
-                      onPress={() => toggleSongbook(sb)}
-                      style={styles.formChip}
-                      selectedColor={colors.tint}
-                    >
-                      {sb}
-                    </Chip>
-                ))}
-                {formData.songbooks.filter(sb => !(existingMetadata.songbooks || []).includes(sb)).map(sb => (
-                    <Chip
-                      key={sb}
-                      selected={true}
-                      onPress={() => toggleSongbook(sb)}
-                      style={styles.formChipCustom}
-                      selectedColor="#fff"
-                    >
-                      {sb}
-                    </Chip>
-                ))}
+              {(existingMetadata.songbooks || []).map(sb => (
+                <Chip
+                  key={sb}
+                  selected={formData.songbooks.includes(sb)}
+                  onPress={() => toggleSongbook(sb)}
+                  style={styles.formChip}
+                  selectedColor={colors.tint}
+                >
+                  {sb}
+                </Chip>
+              ))}
+              {formData.songbooks.filter(sb => !(existingMetadata.songbooks || []).includes(sb)).map(sb => (
+                <Chip
+                  key={sb}
+                  selected={true}
+                  onPress={() => toggleSongbook(sb)}
+                  style={styles.formChipCustom}
+                  selectedColor="#fff"
+                >
+                  {sb}
+                </Chip>
+              ))}
             </View>
             <View style={styles.addTopicContainer}>
-                <TextInput
-                    style={styles.miniInput}
-                    value={newSongbook}
-                    onChangeText={setNewSongbook}
-                    placeholder="Type new songbook..."
-                    placeholderTextColor={colors.textSecondary}
-                />
-                <Button mode="contained" onPress={handleAddSongbook} style={styles.addBtn}>Add</Button>
+              <TextInput
+                style={styles.miniInput}
+                value={newSongbook}
+                onChangeText={setNewSongbook}
+                placeholder="Type new songbook..."
+                placeholderTextColor={colors.textSecondary}
+              />
+              <Button mode="contained" onPress={handleAddSongbook} style={styles.addBtn}>Add</Button>
             </View>
 
             <Text style={styles.inputLabel}>Author</Text>
@@ -492,13 +492,13 @@ const ManageSongsTab = () => {
               placeholderTextColor={colors.textSecondary}
             />
 
-            <Button 
-                mode="contained" 
-                onPress={handleSubmit} 
-                style={styles.submitBtn}
-                contentStyle={styles.submitBtnContent}
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
+              style={styles.submitBtn}
+              contentStyle={styles.submitBtnContent}
             >
-                {editingSongId ? 'Update Song' : 'Create Song'}
+              {editingSongId ? 'Update Song' : 'Create Song'}
             </Button>
             <View style={{ height: 40 }} />
           </ScrollView>

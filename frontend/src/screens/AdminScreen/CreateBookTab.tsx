@@ -127,14 +127,14 @@ const CreateBookTab = () => {
         setAuthorsList(prev => [...prev, newlyCreated]);
         setAuthorId(newlyCreated.author_id.toString());
         setAuthorName(newlyCreated.name);
-        
+
         // Reset states and close modals
         setNewAuthorName('');
         setNewAuthorBio('');
         setNewAuthorMinistry('');
         setShowAddAuthorModal(false);
         setShowAuthorSelectModal(false);
-        
+
         Alert.alert('Success', 'Author created successfully!');
       } else {
         Alert.alert('Error', 'Failed to create author.');
@@ -177,7 +177,7 @@ const CreateBookTab = () => {
   };
 
   // Function to upload image to Cloudinary
-  const uploadImage = async (uri:any, imageType:any) => {
+  const uploadImage = async (uri: any, imageType: any) => {
     setUploadingImage(imageType);
     try {
       // If replacing an existing image, delete the old one first
@@ -257,7 +257,7 @@ const CreateBookTab = () => {
   };
 
   // Function to pick an image
-  const pickImage = async (imageType:any) => {
+  const pickImage = async (imageType: any) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'We need permission to access your photos to select an image.');
@@ -316,7 +316,7 @@ const CreateBookTab = () => {
       };
 
       const response = await axios.post(`${API_URL}/api/add-book`, newBook);
-      
+
       if (response.data.status === 'Ok') {
         Alert.alert('Success', 'Book added successfully!');
         // Reset form
@@ -349,7 +349,7 @@ const CreateBookTab = () => {
     }
   };
 
-  const renderImagePicker = (imageType:any, uri:any, label:any) => (
+  const renderImagePicker = (imageType: any, uri: any, label: any) => (
     <View style={styles.imageSection}>
       <Text style={styles.label}>{label}</Text>
       <Button
@@ -473,7 +473,7 @@ const CreateBookTab = () => {
               {/* Author Select Modal */}
               <Modal
                 visible={showAuthorSelectModal}
-                animationType="slide"
+                animationType="fade"
                 transparent={true}
                 onRequestClose={() => setShowAuthorSelectModal(false)}
               >

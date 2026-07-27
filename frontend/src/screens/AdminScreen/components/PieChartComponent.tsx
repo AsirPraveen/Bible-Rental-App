@@ -1,24 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
-import { BarChart, PieChart, LineChart } from 'react-native-chart-kit';
-import { LinearGradient } from 'expo-linear-gradient';
+import { PieChart } from 'react-native-chart-kit';
+import { useTheme } from '../../../context/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
-
-const Colors = {
-  primary: '#146C94',
-  secondary: '#AFD3E2',
-  background: '#F6F1F1',
-  white: '#FFFFFF',
-  glow: '#00d2ff',
-  accent: '#667eea',
-};
 
 interface PieChartComponentProps {
   data: Array<{ book_name: string; rent_count?: number }>;
 }
 
 const PieChartComponent = ({ data }: PieChartComponentProps) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [animatedValue] = useState(new Animated.Value(0));
 
   useEffect(() => {
@@ -32,11 +25,11 @@ const PieChartComponent = ({ data }: PieChartComponentProps) => {
   const chartData = data.map((book, index) => ({
     name: book.book_name.length > 10 ? book.book_name.slice(0, 10) + '...' : book.book_name,
     population: book.rent_count || 0,
-    color: index % 4 === 0 ? Colors.primary : 
-           index % 4 === 1 ? Colors.secondary :
-           index % 4 === 2 ? Colors.glow :
-           Colors.accent,
-    legendFontColor: '#333',
+    color: index % 4 === 0 ? colors.primary : 
+           index % 4 === 1 ? colors.secondary :
+           index % 4 === 2 ? colors.tint :
+           '#667eea',
+    legendFontColor: colors.text,
     legendFontSize: 12,
   }));
 
@@ -63,8 +56,8 @@ const PieChartComponent = ({ data }: PieChartComponentProps) => {
         width={screenWidth - 80}
         height={220}
         chartConfig={{
-          color: (opacity = 1) => Colors.primary,
-          labelColor: (opacity = 1) => '#333',
+          color: (opacity = 1) => colors.tint,
+          labelColor: (opacity = 1) => colors.text,
         }}
         accessor="population"
         backgroundColor="transparent"
@@ -76,7 +69,7 @@ const PieChartComponent = ({ data }: PieChartComponentProps) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   chartContainer: {
     position: 'relative',
     alignItems: 'center',
@@ -93,7 +86,7 @@ const styles = StyleSheet.create({
     bottom: -5,
     borderRadius: 20,
     backgroundColor: 'transparent',
-    shadowColor: Colors.primary,
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 15,

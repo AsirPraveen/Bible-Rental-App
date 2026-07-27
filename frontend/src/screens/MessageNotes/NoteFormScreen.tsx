@@ -12,7 +12,7 @@ import Slider from '@react-native-community/slider';
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
   TouchableOpacity, Alert, Platform, KeyboardAvoidingView, Modal,
-  ActivityIndicator, StatusBar, SafeAreaView
+  ActivityIndicator, StatusBar, SafeAreaView, Pressable
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,7 +30,6 @@ import {
 import { MessageNote, NoteCategory, HighlightColor } from './types/MessageNote';
 import { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -148,7 +147,7 @@ export default function NoteFormScreen() {
   const [rmRepeat, setRmRepeat] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const accentColor = CATEGORY_META[category]?.color ?? '#1565C0';
+  const accentColor = colors.theme === 'dark' ? colors.tint : (CATEGORY_META[category]?.color ?? '#1565C0');
   const autoTitle = generateTitle(category, date);
 
   // ── Rich Text Helpers ─────────────────────────
@@ -182,8 +181,8 @@ export default function NoteFormScreen() {
           .filter(c => c.bookNumber === selectedBookNum)
           .map(c => c.chapterNumber)
       ))
-      .sort((a, b) => a - b)
-      .map(c => ({ label: `Chapter ${c}`, value: c }));
+        .sort((a, b) => a - b)
+        .map(c => ({ label: `Chapter ${c}`, value: c }));
       setAvailableChapters(chaptersArr);
       setSelectedChapterNum(null);
       setSelectedVerseNum(null);
@@ -419,7 +418,7 @@ export default function NoteFormScreen() {
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
       {/* Header */}
-      <LinearGradient colors={colors.linearGradient} style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -439,14 +438,14 @@ export default function NoteFormScreen() {
             <Ionicons name="earth" size={16} color="rgba(255,255,255,0.9)" />
             <Text style={styles.toggleText}>Share with community</Text>
           </View>
-          <TouchableOpacity 
-            style={[styles.switch, isPublic && styles.switchActive]} 
+          <TouchableOpacity
+            style={[styles.switch, isPublic && styles.switchActive]}
             onPress={() => setIsPublic(!isPublic)}
           >
             <View style={[styles.switchThumb, isPublic && styles.switchThumbActive]} />
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -457,14 +456,18 @@ export default function NoteFormScreen() {
           {CATEGORIES.map(cat => {
             const m = CATEGORY_META[cat];
             const active = category === cat;
+            const activeBg = colors.theme === 'dark' ? colors.tint : m.color;
+            const activeTxt = colors.theme === 'dark' ? '#12161A' : '#fff';
+            const inactiveTxt = colors.textSecondary;
+            const iconColor = active ? activeTxt : (colors.theme === 'dark' ? colors.tint : m.color);
             return (
               <TouchableOpacity key={cat}
                 style={[styles.catChip,
-                active ? { backgroundColor: m.color, borderColor: m.color }
+                active ? { backgroundColor: activeBg, borderColor: activeBg }
                   : { backgroundColor: colors.cardBg, borderColor: colors.border }]}
                 onPress={() => setCategory(cat)}>
-                <Ionicons name={m.icon} size={11} color={active ? '#fff' : m.color} />
-                <Text style={[styles.catChipText, { color: active ? '#fff' : colors.textSecondary }]}>{cat}</Text>
+                <Ionicons name={m.icon} size={11} color={iconColor} />
+                <Text style={[styles.catChipText, { color: active ? activeTxt : inactiveTxt }]}>{cat}</Text>
               </TouchableOpacity>
             );
           })}
@@ -483,10 +486,10 @@ export default function NoteFormScreen() {
 
         {/* ── Rich Text Toolbar ── */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, marginBottom: 8 }}>
-            <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>Notes / Content </Text>
-            <TouchableOpacity onPress={() => setIsFullScreen(true)}>
-                <Ionicons name="expand" size={18} color={accentColor} />
-            </TouchableOpacity>
+          <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>Notes / Content </Text>
+          <TouchableOpacity onPress={() => setIsFullScreen(true)}>
+            <Ionicons name="expand" size={18} color={accentColor} />
+          </TouchableOpacity>
         </View>
 
         {/* ── Content TextInput ── */}
@@ -567,31 +570,31 @@ export default function NoteFormScreen() {
               <Ionicons name={playingId === vn.id ? 'pause' : 'play'} size={16} color="#fff" />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <TextInput 
-                style={styles.voiceLabelInput} 
-                value={vn.label} 
+              <TextInput
+                style={styles.voiceLabelInput}
+                value={vn.label}
                 onChangeText={(txt) => setVoiceNotes(prev => prev.map(v => v.id === vn.id ? { ...v, label: txt } : v))}
-                placeholder="Recording name" 
+                placeholder="Recording name"
                 placeholderTextColor="#94a3b8"
               />
               <Text style={styles.voiceDur}>
-                  {playingId === vn.id
-                    ? `${Math.floor(playTime / 60)}:${String(playTime % 60).padStart(2, '0')}`
-                    : fmtDuration(vn.durationMs)}
-                </Text>
-                {playingId === vn.id && (
-                    <Slider
-                        minimumValue={0}
-                        maximumValue={duration || 1}
-                        value={playTime}
-                        onSlidingComplete={async (value) => {
-                            if (soundRef.current) {
-                                await soundRef.current.setPositionAsync(value * 1000);
-                            }
-                        }}
-                        style={{ height: 20, width: '100%' }}
-                    />
-                )}
+                {playingId === vn.id
+                  ? `${Math.floor(playTime / 60)}:${String(playTime % 60).padStart(2, '0')}`
+                  : fmtDuration(vn.durationMs)}
+              </Text>
+              {playingId === vn.id && (
+                <Slider
+                  minimumValue={0}
+                  maximumValue={duration || 1}
+                  value={playTime}
+                  onSlidingComplete={async (value) => {
+                    if (soundRef.current) {
+                      await soundRef.current.setPositionAsync(value * 1000);
+                    }
+                  }}
+                  style={{ height: 20, width: '100%' }}
+                />
+              )}
             </View>
             <TouchableOpacity onPress={() => handleRemoveVoiceNote(vn)}>
               <Ionicons name="trash-outline" size={16} color="#C62828" />
@@ -602,10 +605,10 @@ export default function NoteFormScreen() {
         {/* (Reminders removed from view per request) */}
 
         {/* ── Save Button ── */}
-        <TouchableOpacity 
-            style={[styles.bigSaveBtn, { backgroundColor: colors.primary }]}
-            onPress={handleSave} 
-            disabled={saving}
+        <TouchableOpacity
+          style={[styles.bigSaveBtn, { backgroundColor: colors.primary }]}
+          onPress={handleSave}
+          disabled={saving}
         >
           <Ionicons name={isEdit ? 'checkmark-done' : 'save'} size={20} color="#fff" />
           <Text style={styles.bigSaveBtnText}>{saving ? 'Saving...' : isEdit ? 'Update My Note' : 'Create Note'}</Text>
@@ -613,9 +616,9 @@ export default function NoteFormScreen() {
       </ScrollView>
 
       {/* ══ VERSE LOOKUP MODAL ══ */}
-      <Modal visible={showVerseModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+      <Modal visible={showVerseModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowVerseModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowVerseModal(false)}>
+          <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>📖 Holy Bible Picker</Text>
               <TouchableOpacity onPress={() => setShowVerseModal(false)}>
@@ -640,8 +643,8 @@ export default function NoteFormScreen() {
                 <Text style={styles.selectionLabel}>Book</Text>
                 <ScrollView style={styles.selectorScroll} showsVerticalScrollIndicator={false}>
                   {availableBooks.map(b => (
-                    <TouchableOpacity 
-                      key={`vl-bk-${b.value}`} 
+                    <TouchableOpacity
+                      key={`vl-bk-${b.value}`}
                       style={[styles.selectBtn, selectedBookNum === b.value && styles.selectBtnActive]}
                       onPress={() => setSelectedBookNum(b.value)}
                     >
@@ -655,7 +658,7 @@ export default function NoteFormScreen() {
                 <Text style={styles.selectionLabel}>Ch.</Text>
                 <ScrollView style={styles.selectorScroll} showsVerticalScrollIndicator={false}>
                   {availableChapters.map(c => (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       key={`vl-ch-${c.value}`}
                       style={[styles.selectBtn, selectedChapterNum === c.value && styles.selectBtnActive]}
                       onPress={() => setSelectedChapterNum(c.value)}
@@ -670,7 +673,7 @@ export default function NoteFormScreen() {
                 <Text style={styles.selectionLabel}>Vs.</Text>
                 <ScrollView style={styles.selectorScroll} showsVerticalScrollIndicator={false}>
                   {availableVerses.map(v => (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       key={`vl-vs-${v.value}`}
                       style={[styles.selectBtn, selectedVerseNum === v.value && styles.selectBtnActive]}
                       onPress={() => setSelectedVerseNum(v.value)}
@@ -682,8 +685,8 @@ export default function NoteFormScreen() {
               </View>
             </View>
 
-            <TouchableOpacity 
-              style={[styles.modalActionBtn, { backgroundColor: colors.primary, opacity: selectedVerseNum ? 1 : 0.6 }]} 
+            <TouchableOpacity
+              style={[styles.modalActionBtn, { backgroundColor: colors.primary, opacity: selectedVerseNum ? 1 : 0.6 }]}
               onPress={handleVerseSearch}
               disabled={!selectedVerseNum || verseLooking}
             >
@@ -693,23 +696,23 @@ export default function NoteFormScreen() {
             {verseResult ? (
               <View style={styles.verseResultBox}>
                 <Text style={styles.verseResultText} numberOfLines={4}>{verseResult}</Text>
-                <TouchableOpacity onPress={() => { 
-                    const bookName = availableBooks.find(b => b.value === selectedBookNum)?.label || '';
-                    setVerse(`${bookName} ${selectedChapterNum}:${selectedVerseNum}`); 
-                    setShowVerseModal(false); 
+                <TouchableOpacity onPress={() => {
+                  const bookName = availableBooks.find(b => b.value === selectedBookNum)?.label || '';
+                  setVerse(`${bookName} ${selectedChapterNum}:${selectedVerseNum}`);
+                  setShowVerseModal(false);
                 }}>
                   <Text style={[styles.useVerseBtn, { color: colors.tint }]}>Insert Reference ✓</Text>
                 </TouchableOpacity>
               </View>
             ) : null}
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* ══ HIGHLIGHT MODAL ══ (Simplified to use the same picker logic) */}
-      <Modal visible={showHlModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+      <Modal visible={showHlModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowHlModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowHlModal(false)}>
+          <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>✨ Highlight Verse</Text>
               <TouchableOpacity onPress={() => setShowHlModal(false)}>
@@ -723,8 +726,8 @@ export default function NoteFormScreen() {
                 <Text style={styles.selectionLabel}>Book</Text>
                 <ScrollView style={styles.selectorScroll} showsVerticalScrollIndicator={false}>
                   {availableBooks.map(b => (
-                    <TouchableOpacity 
-                      key={`hl-bk-${b.value}`} 
+                    <TouchableOpacity
+                      key={`hl-bk-${b.value}`}
                       style={[styles.smallSelectBtn, selectedBookNum === b.value && styles.selectBtnActive]}
                       onPress={() => setSelectedBookNum(b.value)}
                     >
@@ -770,45 +773,45 @@ export default function NoteFormScreen() {
             <TextInput style={[styles.input, { marginTop: 12 }]} placeholder="Your personal reflection (optional)"
               value={hlNote} onChangeText={setHlNote} placeholderTextColor="#bbb" />
 
-            <TouchableOpacity 
-                style={[styles.modalActionBtn, { backgroundColor: colors.primary, marginTop: 15 }]} 
-                onPress={async () => {
-                    const bookName = availableBooks.find(b => b.value === selectedBookNum)?.label || '';
-                    const hlText = availableVerses.find(v => v.value === selectedVerseNum)?.text || '';
-                    const newHl = {
-                        id: `hl_${Date.now()}`,
-                        book: bookName, chapter: selectedChapterNum!, verse: selectedVerseNum!,
-                        verseText: hlText, color: hlColor, note: hlNote, language: verseLang,
-                    };
-                    setHighlights(prev => [...prev, newHl]);
-                    setShowHlModal(false);
-                }}
-                disabled={!selectedVerseNum}
+            <TouchableOpacity
+              style={[styles.modalActionBtn, { backgroundColor: colors.primary, marginTop: 15 }]}
+              onPress={async () => {
+                const bookName = availableBooks.find(b => b.value === selectedBookNum)?.label || '';
+                const hlText = availableVerses.find(v => v.value === selectedVerseNum)?.text || '';
+                const newHl = {
+                  id: `hl_${Date.now()}`,
+                  book: bookName, chapter: selectedChapterNum!, verse: selectedVerseNum!,
+                  verseText: hlText, color: hlColor, note: hlNote, language: verseLang,
+                };
+                setHighlights(prev => [...prev, newHl]);
+                setShowHlModal(false);
+              }}
+              disabled={!selectedVerseNum}
             >
               <Text style={styles.modalActionText}>Add Highlight</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* ══ FULLSCREEN EDITOR ══ */}
-      <Modal visible={isFullScreen} animationType="slide">
+      <Modal visible={isFullScreen} statusBarTranslucent={false} animationType="slide" onRequestClose={() => setIsFullScreen(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 15, alignItems: 'center', borderBottomWidth: 1, borderColor: colors.border }}>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Write Note</Text>
-                <TouchableOpacity onPress={() => setIsFullScreen(false)}>
-                    <Text style={{ fontSize: 16, color: colors.tint, fontWeight: '700' }}>Done</Text>
-                </TouchableOpacity>
-            </View>
-            <TextInput
-                style={{ flex: 1, padding: 20, fontSize: 16, color: colors.text, backgroundColor: colors.background, textAlignVertical: 'top', lineHeight: 28 }}
-                placeholder="Write your notes here…"
-                placeholderTextColor={colors.textSecondary}
-                value={content}
-                onChangeText={setContent}
-                multiline
-                autoFocus
-            />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 15, alignItems: 'center', borderBottomWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Write Note</Text>
+            <TouchableOpacity onPress={() => setIsFullScreen(false)}>
+              <Text style={{ fontSize: 16, color: colors.tint, fontWeight: '700' }}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            style={{ flex: 1, padding: 20, fontSize: 16, color: colors.text, backgroundColor: colors.background, textAlignVertical: 'top', lineHeight: 28 }}
+            placeholder="Write your notes here…"
+            placeholderTextColor={colors.textSecondary}
+            value={content}
+            onChangeText={setContent}
+            multiline
+            autoFocus
+          />
         </SafeAreaView>
       </Modal>
     </KeyboardAvoidingView>
@@ -828,11 +831,11 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
   saveHeaderBtn: { backgroundColor: colors.theme === 'dark' ? colors.surface : '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, elevation: 2 },
   saveBtnText: { color: colors.theme === 'dark' ? colors.tint : '#146C94', fontWeight: '800', fontSize: 14 },
-  
+
   headerToggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)', padding: 10, borderRadius: 15 },
   toggleInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   toggleText: { fontSize: 13, color: '#fff', fontWeight: '600' },
-  
+
   switch: { width: 44, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.3)', padding: 2 },
   switchActive: { backgroundColor: '#4ADE80' },
   switchThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
@@ -841,7 +844,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 60 },
   label: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, marginTop: 15, textTransform: 'uppercase', letterSpacing: 1 },
-  
+
   input: {
     backgroundColor: colors.cardBg, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
     fontSize: 15, color: colors.text, borderWidth: 1, borderColor: colors.border,
@@ -849,14 +852,14 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   textarea: { minHeight: 180, lineHeight: 24, textAlignVertical: 'top' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  
+
   catChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6, width: 140, height: 45,
     borderRadius: 25, borderWidth: 1.5, marginRight: 8, marginBottom: 5, backgroundColor: colors.cardBg, elevation: 2,
     justifyContent: 'center'
   },
   catChipText: { fontSize: 12, fontWeight: '800' },
-  
+
   iconActionBtn: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25, marginBottom: 12 },
@@ -868,11 +871,11 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   hlRef: { fontSize: 14, fontWeight: '800', marginBottom: 4, color: colors.text },
   hlText: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 20 },
   hlNote: { fontSize: 12, color: colors.tint, marginTop: 5, fontWeight: '600' },
-  
+
   recordingBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.theme === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2', borderRadius: 16, padding: 15, marginBottom: 10 },
   recordingDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#ef4444' },
   recordingText: { color: colors.theme === 'dark' ? '#fca5a5' : '#b91c1c', fontWeight: '800', fontSize: 14 },
-  
+
   voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.cardBg, borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: colors.border, elevation: 2 },
   playBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   voiceLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
@@ -889,7 +892,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   modalBox: { backgroundColor: colors.cardBg, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: 40, maxHeight: '90%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '900', color: colors.text },
-  
+
   pickerRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   langChip: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
   langChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -910,11 +913,11 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
 
   modalActionBtn: { borderRadius: 16, paddingVertical: 16, alignItems: 'center', elevation: 3 },
   modalActionText: { color: '#fff', fontWeight: '900', fontSize: 16 },
-  
+
   verseResultBox: { backgroundColor: colors.inputBg, borderRadius: 16, padding: 15, marginTop: 15, borderWidth: 1, borderColor: colors.border },
   verseResultText: { fontSize: 14, color: colors.text, lineHeight: 22, fontStyle: 'italic' },
   useVerseBtn: { fontWeight: '800', marginTop: 10, fontSize: 14, textAlign: 'right' },
-  
+
   hlColorBtn: { flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
   hlColorActive: { borderColor: colors.text },
 
@@ -922,7 +925,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   modalClose: { marginTop: 15, padding: 10, alignItems: 'center' },
   modalCloseText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
   voiceLabelInput: {
-    fontSize: 14, fontWeight: '700', color: colors.text, 
-    backgroundColor: colors.inputBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 
+    fontSize: 14, fontWeight: '700', color: colors.text,
+    backgroundColor: colors.inputBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4
   }
 });

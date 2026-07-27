@@ -248,7 +248,7 @@ const GeneratedPdfsScreen = () => {
       {/* Full-screen WebView PDF Preview Modal */}
       <Modal
         visible={previewHtml !== null}
-        animationType="slide"
+        animationType="fade"
         transparent={false}
         onRequestClose={() => setPreviewHtml(null)}
       >

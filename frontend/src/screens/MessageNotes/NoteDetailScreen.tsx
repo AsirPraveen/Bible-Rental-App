@@ -9,7 +9,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, Share, Platform, ActivityIndicator, Linking, Modal, StatusBar
+  Alert, Share, Platform, ActivityIndicator, Linking, Modal, StatusBar,
+  Pressable
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +24,12 @@ import { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import LoadingScreen from '../../components/LoadingScreen';
+import Constants from 'expo-constants';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
 export default function NoteDetailScreen() {
   const { colors } = useTheme();
@@ -37,6 +44,20 @@ export default function NoteDetailScreen() {
   const soundRef = useRef<Audio.Sound | null>(null);
   const { isGuest, user } = useAuth();
   const [selectedHighlight, setSelectedHighlight] = useState<VerseHighlight | null>(null);
+
+  // ── Cloudinary cleanup helper ─────────────────
+  const deleteVoiceNoteFromCloudinary = async (publicId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      await axios.post(`${API_URL}/api/cloudinary/delete`, {
+        token,
+        publicId,
+        resourceType: 'video'
+      });
+    } catch (err) {
+      console.log('Error deleting voice note from Cloudinary:', err);
+    }
+  };
 
   const isOwner = user && note && (
     note.authorEmail === user.email ||
@@ -72,9 +93,43 @@ export default function NoteDetailScreen() {
     if (!note) return;
     try {
       const title = generateTitle(note.category, note.date);
-      let message = `📖 *${title}*\n\n${note.content.replace(/\*\*/g, '*').replace(/==/g, '')}`;
-      if (note.verse) message += `\n\n📌 *Reference:* ${note.verse}`;
-      message += `\n\n_Shared via Bible Rental App_`;
+      const dateStr = new Date(note.date).toLocaleDateString('en-IN', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+
+      let message = `══════════════════════════════\n`;
+      message += `📖 *${title}*\n`;
+      message += `📅 ${dateStr}\n`;
+      if (note.verse) message += `📌 *Reference:* ${note.verse}\n`;
+      if (note.isPublic) message += `🌍 _Shared publicly_\n`;
+      message += `══════════════════════════════\n\n`;
+
+      // Content
+      message += `✍️ *Notes:*\n${note.content.replace(/\*\*/g, '*').replace(/==/g, '')}\n`;
+
+      // Highlights
+      if (note.highlights && note.highlights.length > 0) {
+        message += `\n─── ✨ *Linked Verses* ───\n`;
+        for (const h of note.highlights) {
+          const emoji = h.color === 'yellow' ? '⭐' : h.color === 'blue' ? '💙' : '🔴';
+          const label = h.color === 'yellow' ? 'Important' : h.color === 'blue' ? 'Promise' : 'Warning';
+          message += `${emoji} *${h.book} ${h.chapter}:${h.verse}* (${label})\n`;
+          if (h.verseText) message += `  _"${h.verseText}"_\n`;
+          if (h.note) message += `  ✍️ ${h.note}\n`;
+        }
+      }
+
+      // Voice Recordings
+      if (note.voiceNotes && note.voiceNotes.length > 0) {
+        message += `\n─── 🎙️ *Voice Recordings* ───\n`;
+        for (const vn of note.voiceNotes) {
+          const dur = Math.round(vn.durationMs / 1000);
+          message += `🎧 ${vn.label || 'Recording'} (${dur}s)\n`;
+          message += `  🔗 ${vn.uri}\n`;
+        }
+      }
+
+      message += `\n──────────────────────────────\n_✨ Shared via Bible Rental App_`;
       await Share.share({ title, message });
     } catch (error) {
       Alert.alert('Error', 'Could not share note');
@@ -102,6 +157,14 @@ export default function NoteDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Delete voice notes from Cloudinary first
+              if (note?.voiceNotes?.length) {
+                for (const vn of note.voiceNotes) {
+                  if ((vn as any).publicId) {
+                    await deleteVoiceNoteFromCloudinary((vn as any).publicId);
+                  }
+                }
+              }
               await deleteNote((note as any)._id || noteId);
               navigation.goBack();
             } catch {
@@ -167,31 +230,57 @@ export default function NoteDetailScreen() {
   const handleEmail = async () => {
     if (!note) return;
     const title = generateTitle(note.category, note.date);
-    let message = `📖 *${title}*\n\n${note.content.replace(/\*\*/g, '*').replace(/==/g, '')}`;
-    if (note.verse) message += `\n\n📌 *Reference:* ${note.verse}`;
-    message += `\n\n_Shared via Bible Rental App_`;
+    const dateStr = new Date(note.date).toLocaleDateString('en-IN', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+
+    let message = `📖 ${title}\n`;
+    message += `📅 ${dateStr}\n`;
+    if (note.verse) message += `📌 Reference: ${note.verse}\n`;
+    message += `\n--- Notes ---\n${note.content.replace(/\*\*/g, '').replace(/==/g, '')}\n`;
+
+    // Highlights
+    if (note.highlights && note.highlights.length > 0) {
+      message += `\n--- Linked Verses ---\n`;
+      for (const h of note.highlights) {
+        const emoji = h.color === 'yellow' ? '⭐' : h.color === 'blue' ? '💙' : '🔴';
+        const label = h.color === 'yellow' ? 'Important' : h.color === 'blue' ? 'Promise' : 'Warning';
+        message += `${emoji} ${h.book} ${h.chapter}:${h.verse} (${label})\n`;
+        if (h.verseText) message += `  "${h.verseText}"\n`;
+        if (h.note) message += `  Note: ${h.note}\n`;
+      }
+    }
+
+    // Voice Recordings
+    if (note.voiceNotes && note.voiceNotes.length > 0) {
+      message += `\n--- Voice Recordings ---\n`;
+      for (const vn of note.voiceNotes) {
+        const dur = Math.round(vn.durationMs / 1000);
+        message += `🎙️ ${vn.label || 'Recording'} (${dur}s): ${vn.uri}\n`;
+      }
+    }
+
+    message += `\n---\nShared via Bible Rental App`;
     const url = `mailto:?subject=${encodeURIComponent('Bible Note: ' + title)}&body=${encodeURIComponent(message)}`;
     Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open email app'));
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.loader} />
-      </View>
-    );
+    return <LoadingScreen message="Loading note..." />;
   }
 
   if (!note) return null;
 
   const meta = CATEGORY_META[note.category];
   const displayTitle = generateTitle(note.category, note.date);
+  const metaColor = colors.theme === 'dark' ? colors.tint : (meta?.color || colors.primary);
+  const metaBg = colors.theme === 'dark' ? colors.inputBg : (meta?.bg || '#F6F1F1');
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       {/* Header */}
-      <LinearGradient colors={colors.linearGradient} style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -203,7 +292,7 @@ export default function NoteDetailScreen() {
             </Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Action Bar */}
@@ -238,10 +327,10 @@ export default function NoteDetailScreen() {
 
         {/* Content Card */}
         <View style={styles.mainCard}>
-          <View style={[styles.statusRow, { borderBottomColor: meta.color + '20' }]}>
-            <View style={[styles.badge, { backgroundColor: meta.bg }]}>
-              <Ionicons name={meta.icon} size={12} color={meta.color} />
-              <Text style={[styles.badgeText, { color: meta.color }]}>{note.category}</Text>
+          <View style={[styles.statusRow, { borderBottomColor: metaColor + '20' }]}>
+            <View style={[styles.badge, { backgroundColor: metaBg }]}>
+              <Ionicons name={meta.icon} size={12} color={metaColor} />
+              <Text style={[styles.badgeText, { color: metaColor }]}>{note.category}</Text>
             </View>
             {note.isPublic && (
               <View style={[styles.badge, { backgroundColor: colors.theme === 'dark' ? 'rgba(46, 125, 50, 0.2)' : '#E8F5E9' }]}>
@@ -252,9 +341,9 @@ export default function NoteDetailScreen() {
           </View>
 
           {note.verse && (
-            <View style={[styles.verseBox, { borderLeftColor: meta.color }]}>
-              <Text style={[styles.verseRef, { color: meta.color }]}>{note.verse}</Text>
-              <Ionicons name="bookmark" size={16} color={meta.color} />
+            <View style={[styles.verseBox, { borderLeftColor: metaColor }]}>
+              <Text style={[styles.verseRef, { color: metaColor }]}>{note.verse}</Text>
+              <Ionicons name="bookmark" size={16} color={metaColor} />
             </View>
           )}
 
@@ -355,11 +444,12 @@ export default function NoteDetailScreen() {
       <Modal
         visible={!!selectedHighlight}
         transparent
-        animationType="slide"
+        statusBarTranslucent={true}
+        animationType="fade"
         onRequestClose={() => setSelectedHighlight(null)}
       >
-        <View style={styles.verseModalOverlay}>
-          <View style={styles.verseModalBox}>
+        <Pressable style={styles.verseModalOverlay} onPress={() => setSelectedHighlight(null)}>
+          <Pressable style={styles.verseModalBox} onPress={(e) => e.stopPropagation()}>
             {selectedHighlight && (
               <>
                 {/* Accent header */}
@@ -397,8 +487,8 @@ export default function NoteDetailScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -485,10 +575,10 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   verseModalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.75)', justifyContent: 'flex-end' },
   verseModalBox: { backgroundColor: colors.cardBg, borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden', paddingBottom: 30 },
   verseModalHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  verseModalRef: { fontSize: 20, fontWeight: '900', color: colors.text },
-  verseModalLang: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', marginTop: 2 },
-  verseColorBadge: { backgroundColor: colors.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  verseColorBadgeText: { fontSize: 11, fontWeight: '800', color: colors.text },
+  verseModalRef: { fontSize: 20, fontWeight: '900', color: '#1E293B' },
+  verseModalLang: { fontSize: 12, color: '#475569', fontWeight: '600', marginTop: 2 },
+  verseColorBadge: { backgroundColor: 'rgba(0,0,0,0.06)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  verseColorBadgeText: { fontSize: 11, fontWeight: '800', color: '#1E293B' },
   verseModalText: { fontSize: 18, color: colors.text, lineHeight: 30, fontStyle: 'italic', fontWeight: '500' },
   verseNoteBox: { marginTop: 20, backgroundColor: colors.inputBg, padding: 15, borderRadius: 14, borderLeftWidth: 4, borderLeftColor: colors.primary },
   verseNoteLabel: { fontSize: 12, fontWeight: '800', color: colors.tint, marginBottom: 6 },

@@ -36,18 +36,11 @@ type RootStackParamList = {
 const { width, height } = Dimensions.get('window');
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
-const Colors = {
-  primary: '#146C94',
-  secondary: '#AFD3E2',
-  background: '#F6F1F1',
-  white: '#FFFFFF',
-  dark: '#1a1a2e',
-  accent: '#16213e',
-  glow: '#00d2ff',
-  purple: '#667eea',
-};
+import { useTheme } from '../../context/ThemeContext';
 
 const BookAnalyticsTab = () => {
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [analytics, setAnalytics] = useState<{ totalBooks: number; totalRented: number; popularBooks: any[] }>({ totalBooks: 0, totalRented: 0, popularBooks: [] });
   const [isLoading, setIsLoading] = useState(true);
@@ -207,12 +200,12 @@ const BookAnalyticsTab = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       
       {/* Header with gradient */}
       <LinearGradient
-        colors={['#146C94', '#19A7CE']}
+        colors={colors.linearGradient}
         style={styles.header}
       >
         <BlurView intensity={20} style={styles.headerBlur}>
@@ -290,7 +283,7 @@ const BookAnalyticsTab = () => {
                     styles.indicator,
                     {
                       backgroundColor: currentChartIndex === index 
-                        ? Colors.white 
+                        ? colors.textLight 
                         : 'rgba(255,255,255,0.3)'
                     }
                   ]}
@@ -384,10 +377,10 @@ const BookAnalyticsTab = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -401,7 +394,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 15,
     fontSize: 18,
-    color: Colors.white,
+    color: colors.textLight,
     fontWeight: '600',
   },
   cardBorder: {
@@ -419,7 +412,7 @@ const styles = StyleSheet.create({
   loadingProgress: {
     width: '70%',
     height: '100%',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.textLight,
     borderRadius: 2,
   },
   header: {
@@ -458,7 +451,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: Colors.white,
+    color: colors.textLight,
     textAlign: 'center',
   },
   headerSubtitle: {
@@ -478,9 +471,9 @@ const styles = StyleSheet.create({
     bottom: -20,
     width: 100,
     height: 4,
-    backgroundColor: Colors.glow,
+    backgroundColor: '#00d2ff',
     borderRadius: 2,
-    shadowColor: Colors.glow,
+    shadowColor: '#00d2ff',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 10,
@@ -505,7 +498,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: Colors.white,
+    color: colors.textLight,
     marginBottom: 15,
     textAlign: 'left',
     marginTop: 10,
@@ -521,10 +514,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   chartContainer: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     padding: 20,
-    shadowColor: Colors.primary,
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 15,
@@ -543,7 +536,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.primary,
+    color: colors.text,
     textAlign: 'center',
   },
   indicatorContainer: {
@@ -587,11 +580,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   noDataContainer: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 15,
@@ -599,13 +592,13 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: 18,
-    color: Colors.primary,
+    color: colors.text,
     fontWeight: '600',
     textAlign: 'center',
   },
   noDataSubtext: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 5,
   },
@@ -623,21 +616,21 @@ const styles = StyleSheet.create({
   circle1: {
     width: 100,
     height: 100,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     top: 100,
     right: -50,
   },
   circle2: {
     width: 150,
     height: 150,
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.secondary,
     bottom: 200,
     left: -75,
   },
   circle3: {
     width: 80,
     height: 80,
-    backgroundColor: Colors.glow,
+    backgroundColor: '#00d2ff',
     top: 300,
     left: 50,
   },

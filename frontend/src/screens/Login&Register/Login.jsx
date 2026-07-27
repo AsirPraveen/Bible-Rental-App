@@ -203,10 +203,10 @@ function LoginPage() {
           const activeOrgId = res.data.activeOrganizationId;
           const userType = res.data.userType;
 
-          await login({ 
-            email, 
-            name: dbName, 
-            globalRole: res.data.globalRole 
+          await login({
+            email,
+            name: dbName,
+            globalRole: res.data.globalRole
           }, token);
           await AsyncStorage.setItem('userType', userType);
           if (activeOrgId) {
@@ -217,7 +217,7 @@ function LoginPage() {
           if (pushToken) syncPushTokenWithBackend(pushToken);
 
           Alert.alert('Welcome!', `Signed in as ${dbName || email}`);
-          
+
           if (res.data.globalRole === 'SuperAdmin') {
             navigation.replace('SuperAdmin');
           } else if (activeOrgId) {
@@ -274,11 +274,11 @@ function LoginPage() {
           const activeOrgId = res.data.activeOrganizationId;
           const userType = res.data.userType;
 
-          await login({ 
-            email: emailOrPhone, 
-            globalRole: res.data.globalRole 
+          await login({
+            email: emailOrPhone,
+            globalRole: res.data.globalRole
           }, token);
-          
+
           if (activeOrgId) {
             await AsyncStorage.setItem('activeOrgId', activeOrgId);
           }
@@ -453,7 +453,7 @@ function LoginPage() {
       {/* ── Google OAuth WebView Modal (Expo Go fallback) ─────────────────────── */}
       <Modal
         visible={showGoogleWebView}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowGoogleWebView(false)}>
         <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'android' ? 30 : 0, backgroundColor: colors.background }}>
           {/* Close button */}

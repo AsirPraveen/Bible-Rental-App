@@ -1370,7 +1370,7 @@ export default function ChatScreen() {
       <Modal
         visible={showCreationMenu}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowCreationMenu(false)}
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowCreationMenu(false)}>
@@ -1419,7 +1419,7 @@ export default function ChatScreen() {
       <Modal
         visible={showPollModal}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowPollModal(false)}
       >
         <KeyboardAvoidingView
@@ -1517,7 +1517,7 @@ export default function ChatScreen() {
       <Modal
         visible={showQnaModal}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowQnaModal(false)}
       >
         <KeyboardAvoidingView
@@ -1597,7 +1597,7 @@ export default function ChatScreen() {
       <Modal
         visible={showQnaAnswersModal}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowQnaAnswersModal(false)}
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowQnaAnswersModal(false)}>

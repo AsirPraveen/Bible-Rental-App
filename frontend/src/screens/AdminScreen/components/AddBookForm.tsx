@@ -129,14 +129,14 @@ const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }: AddB
           author_id: newlyCreated.author_id.toString(),
           author_name: newlyCreated.name
         });
-        
+
         // Reset states and close modals
         setNewAuthorName('');
         setNewAuthorBio('');
         setNewAuthorMinistry('');
         setShowAddAuthorModal(false);
         setShowAuthorSelectModal(false);
-        
+
         Alert.alert('Success', 'Author created successfully!');
       } else {
         Alert.alert('Error', 'Failed to create author.');
@@ -281,7 +281,7 @@ const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }: AddB
       {/* Author Select Modal */}
       <Modal
         visible={showAuthorSelectModal}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setShowAuthorSelectModal(false)}
       >

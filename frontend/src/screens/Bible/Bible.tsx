@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, SafeAreaView, Platform, StatusBar, Animated } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, SafeAreaView, Platform, StatusBar, Animated, FlatList, Pressable } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -22,7 +22,7 @@ import * as Speech from 'expo-speech';
 import Svg, { Rect, Path } from 'react-native-svg';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
-const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? ''; 
+const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? '';
 const STABILITY_API_URL = Constants.expoConfig?.extra?.stabilityApiUrl ?? '';
 
 const HIGHLIGHT_COLORS = [
@@ -41,35 +41,38 @@ const BibleComponent = () => {
 
   // State for Dropdowns
   const [language, setLanguage] = useState('Tamil');
-  const [availableLanguages, setAvailableLanguages] = useState<{label: string, value: string}[]>([]);
-  
-  const [books, setBooks] = useState<{label: string, value: number, chapterCount: number}[]>([]);
+  const [availableLanguages, setAvailableLanguages] = useState<{ label: string, value: string }[]>([]);
+
+  const [books, setBooks] = useState<{ label: string, value: number, chapterCount: number }[]>([]);
   const [selectedBookNumber, setSelectedBookNumber] = useState(0); // Genesis default
-  
-  const [chapters, setChapters] = useState<{label: string, value: number}[]>([]);
+
+  const [chapters, setChapters] = useState<{ label: string, value: number }[]>([]);
   const [selectedChapter, setSelectedChapter] = useState(1); // Chapter 1 default
-  
-  // Data State
-  const [chapterVerses, setChapterVerses] = useState<{verseNumber: number, text: string}[]>([]);
+
+  // Data State — versesCache stores fetched verses keyed by chapter number
+  const [chapterVerses, setChapterVerses] = useState<{ verseNumber: number, text: string }[]>([]);
+  const versesCache = useRef<Map<string, { verseNumber: number, text: string }[]>>(new Map());
+  const [chapterListData, setChapterListData] = useState<number[]>([1]);
   const [loading, setLoading] = useState(true);
-  
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
   // Restoring persistent state flag
   const [isRestoring, setIsRestoring] = useState(true);
-  
+
   // UI State for Modals & Dropdowns
   const [openLanguage, setOpenLanguage] = useState(false);
   const [openBook, setOpenBook] = useState(false);
   const [openChapter, setOpenChapter] = useState(false);
-  
-  const [selectedVerse, setSelectedVerse] = useState<{verseNumber: number, text: string, citation: string} | null>(null);
+
+  const [selectedVerse, setSelectedVerse] = useState<{ verseNumber: number, text: string, citation: string } | null>(null);
   const [isVerseModalVisible, setIsVerseModalVisible] = useState(false);
-  
+
   // Compare State
   const [isCompareModalVisible, setIsCompareModalVisible] = useState(false);
   const [compareLanguage, setCompareLanguage] = useState('English');
-  const [compareVerseData, setCompareVerseData] = useState<{text: string} | null>(null);
+  const [compareVerseData, setCompareVerseData] = useState<{ text: string } | null>(null);
   const [openCompareLanguage, setOpenCompareLanguage] = useState(false);
-  
+
   // Custom Dictionary Modal State
   const [isDictModalVisible, setIsDictModalVisible] = useState(false);
   const [dictWord, setDictWord] = useState('');
@@ -77,7 +80,7 @@ const BibleComponent = () => {
   const [dictSource, setDictSource] = useState('');
   const [confirmWord, setConfirmWord] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
-  
+
   // Generate Image State
   const [verseImage, setVerseImage] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -89,14 +92,18 @@ const BibleComponent = () => {
   const [verseFontSize, setVerseFontSize] = useState<number>(18);
   const [isImageGenEnabled, setIsImageGenEnabled] = useState(true);
   const [showProgressBarSetting, setShowProgressBarSetting] = useState(true);
-  
+
   // Copied state
   const [isCopied, setIsCopied] = useState(false);
-  
+
   // Local saved generated images state
   const [localImageVerses, setLocalImageVerses] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<Record<string, string>>({});
   const [likedVerses, setLikedVerses] = useState<any[]>([]);
+
+  // FlatList Swipe Paging Ref
+  const flatListRef = useRef<FlatList>(null);
+  const lastScrolledChapterRef = useRef(1);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollPositionRef = useRef(0);
@@ -117,7 +124,7 @@ const BibleComponent = () => {
   const autoPlayPendingRef = useRef(false); // signals next chapter should auto-start
   const playerBarAnim = useRef(new Animated.Value(100)).current;
   // stable ref so handleVerseSelect can call speakVerse before it's declared
-  const speakVerseRef = useRef<((verses: {verseNumber: number; text: string}[], index: number) => void) | null>(null);
+  const speakVerseRef = useRef<((verses: { verseNumber: number; text: string }[], index: number) => void) | null>(null);
   // stores real Y position of each verse row measured via onLayout
   const verseLayoutsRef = useRef<number[]>([]);
   const scrollViewHeightRef = useRef(400); // visible height of the reader card
@@ -150,13 +157,13 @@ const BibleComponent = () => {
           const langRes = await axios.get(`${API_URL}/api/bible/languages`);
           if (langRes.data.status === 'Ok') {
             const rawLangs = Array.isArray(langRes.data.data) ? langRes.data.data : [];
-            const langs = rawLangs.map((l:any) => ({ label: l === 'Tamil' ? 'Tamil (Offline)' : l, value: l }));
-            
+            const langs = rawLangs.map((l: any) => ({ label: l === 'Tamil' ? 'Tamil (Offline)' : l, value: l }));
+
             // Always ensure Tamil (Offline) is present in the list
             if (!langs.some((l: any) => l.value === 'Tamil')) {
               langs.push({ label: 'Tamil (Offline)', value: 'Tamil' });
             }
-            
+
             langs.sort((a: any, b: any) => {
               const valA = a.value;
               const valB = b.value;
@@ -236,7 +243,7 @@ const BibleComponent = () => {
     }, [])
   );
 
-  const fetchUserData = async (token:any) => {
+  const fetchUserData = async (token: any) => {
     try {
       const response = await axios.post(`${API_URL}/api/auth/userdata`, { token });
       if (response.data.status === 'Ok') {
@@ -254,11 +261,14 @@ const BibleComponent = () => {
 
   // Logic: When language changes -> Reset book to Genesis, chapter to 1 
   // ONLY if not restoring from AsyncStorage
-  const handleLanguageChange = (val:any) => {
+  const handleLanguageChange = (val: any) => {
     if (val !== language && !isRestoring) {
+      versesCache.current.clear();
       setLanguage(val);
       setSelectedBookNumber(0);
       setSelectedChapter(1);
+      setChapterListData([1]);
+      lastScrolledChapterRef.current = 1;
       scrollPositionRef.current = 0; // Reset scroll
     } else {
       setLanguage(val);
@@ -266,10 +276,13 @@ const BibleComponent = () => {
   };
 
   // Logic: When book changes -> Reset chapter to 1
-  const handleBookChange = (val:any) => {
+  const handleBookChange = (val: any) => {
     if (val !== selectedBookNumber && !isRestoring) {
+      versesCache.current.clear();
       setSelectedBookNumber(val);
       setSelectedChapter(1);
+      setChapterListData([1]);
+      lastScrolledChapterRef.current = 1;
       scrollPositionRef.current = 0; // Reset scroll
     } else {
       setSelectedBookNumber(val);
@@ -339,69 +352,154 @@ const BibleComponent = () => {
           value: i + 1,
         }));
         setChapters(chapterList);
+        // Build array of chapter numbers for FlatList
+        setChapterListData(Array.from({ length: selectedBook.chapterCount }, (_, i) => i + 1));
       }
     }
   }, [selectedBookNumber, books]);
 
   // Fetch verses
   useEffect(() => {
+    let active = true;
     const fetchChapter = async () => {
       if (isRestoring) return;
 
       if (language && selectedBookNumber !== null && selectedChapter !== null) {
-        // Clear old verses while loading to show fresh state
-        setLoading(true);
+        const cacheKey = (ch: number) => `${language}_${selectedBookNumber}_${ch}`;
+        
+        // Only show loading if we don't have cached data for the current chapter
+        const cachedCurrent = versesCache.current.get(cacheKey(selectedChapter));
+        if (!cachedCurrent) {
+          if (language !== 'Tamil') {
+            setLoading(true);
+            setChapterVerses([]); // Clear verses so spinner displays instantly
+          }
+        } else {
+          // Use cached data immediately
+          setChapterVerses(cachedCurrent);
+        }
 
         if (language === 'Tamil') {
+          // Current chapter
           const chapter = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === selectedChapter);
-          if (chapter) {
-            setChapterVerses(chapter.verses || []);
-            setSelectedVerse(null);
-          } else {
-            setChapterVerses([]);
+          const currentVerses = chapter ? chapter.verses || [] : [];
+          if (!active) return;
+          versesCache.current.set(cacheKey(selectedChapter), currentVerses);
+          setChapterVerses(currentVerses);
+
+          // Previous chapter
+          if (selectedChapter > 1) {
+            const prevCh = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === selectedChapter - 1);
+            versesCache.current.set(cacheKey(selectedChapter - 1), prevCh ? prevCh.verses || [] : []);
           }
+
+          // Next chapter
+          const selectedBook = books.find((b: any) => b.value === selectedBookNumber);
+          if (selectedBook && selectedChapter < selectedBook.chapterCount) {
+            const nextCh = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === selectedChapter + 1);
+            versesCache.current.set(cacheKey(selectedChapter + 1), nextCh ? nextCh.verses || [] : []);
+          }
+
+          setSelectedVerse(null);
           setLoading(false);
+          setInitialLoadDone(true);
           setTimeout(() => {
-            if (scrollViewRef.current && scrollPositionRef.current > 0) {
-              scrollViewRef.current.scrollTo({ y: scrollPositionRef.current, animated: false });
+            if (scrollViewRef.current) {
+              scrollViewRef.current.scrollTo({ y: scrollPositionRef.current || 0, animated: false });
             }
           }, 100);
           return;
         }
 
         try {
-          const res = await axios.get(`${API_URL}/api/bible/chapter`, {
-            params: {
-              language,
-              bookNumber: selectedBookNumber,
-              chapterNumber: selectedChapter
-            }
-          });
-          if (res.data.status === 'Ok') {
-            setChapterVerses(res.data.data.verses || []);
-            setSelectedVerse(null); // Clear selected verse on chapter switch
+          // Build requests — skip already-cached adjacent chapters
+          const reqs: Promise<any>[] = [
+            cachedCurrent
+              ? Promise.resolve('__cached__')
+              : axios.get(`${API_URL}/api/bible/chapter`, {
+                  params: { language, bookNumber: selectedBookNumber, chapterNumber: selectedChapter }
+                })
+          ];
+
+          if (selectedChapter > 1 && !versesCache.current.has(cacheKey(selectedChapter - 1))) {
+            reqs.push(
+              axios.get(`${API_URL}/api/bible/chapter`, {
+                params: { language, bookNumber: selectedBookNumber, chapterNumber: selectedChapter - 1 }
+              }).catch(() => null)
+            );
+          } else {
+            reqs.push(Promise.resolve(null));
           }
-        } catch (error) {
-          console.error('Error fetching chapter:', error);
-          setChapterVerses([]);
-        } finally {
-          setLoading(false);
-          // Restore scroll position if any is pending
-          setTimeout(() => {
-            if (scrollViewRef.current && scrollPositionRef.current > 0) {
-              scrollViewRef.current.scrollTo({ y: scrollPositionRef.current, animated: false });
+
+          const selectedBook = books.find((b: any) => b.value === selectedBookNumber);
+          if (selectedBook && selectedChapter < selectedBook.chapterCount && !versesCache.current.has(cacheKey(selectedChapter + 1))) {
+            reqs.push(
+              axios.get(`${API_URL}/api/bible/chapter`, {
+                params: { language, bookNumber: selectedBookNumber, chapterNumber: selectedChapter + 1 }
+              }).catch(() => null)
+            );
+          } else {
+            reqs.push(Promise.resolve(null));
+          }
+
+          const results = await Promise.all(reqs);
+          if (!active) return;
+
+          // Current
+          if (results[0] !== '__cached__') {
+            if (results[0] && results[0].data && results[0].data.status === 'Ok') {
+              const verses = results[0].data.data.verses || [];
+              versesCache.current.set(cacheKey(selectedChapter), verses);
+              setChapterVerses(verses);
+            } else {
+              versesCache.current.set(cacheKey(selectedChapter), []);
+              setChapterVerses([]);
             }
-          }, 100);
+          }
+
+          // Prev
+          if (results[1] && results[1].data && results[1].data.status === 'Ok') {
+            versesCache.current.set(cacheKey(selectedChapter - 1), results[1].data.data.verses || []);
+          }
+
+          // Next
+          if (results[2] && results[2].data && results[2].data.status === 'Ok') {
+            versesCache.current.set(cacheKey(selectedChapter + 1), results[2].data.data.verses || []);
+          }
+
+          setSelectedVerse(null); // Clear selected verse on chapter switch
+        } catch (error) {
+          console.error('Error fetching chapters:', error);
+          if (active) {
+            setChapterVerses([]);
+          }
+        } finally {
+          if (active) {
+            setLoading(false);
+            setInitialLoadDone(true);
+            // Restore scroll position if any is pending
+            setTimeout(() => {
+              if (scrollViewRef.current) {
+                scrollViewRef.current.scrollTo({ y: scrollPositionRef.current || 0, animated: false });
+              }
+            }, 100);
+          }
         }
       } else {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+          setInitialLoadDone(true);
+        }
       }
     };
     fetchChapter();
+    return () => {
+      active = false;
+    };
   }, [language, selectedBookNumber, selectedChapter, isRestoring]);
 
   // Save current progress to AsyncStorage
-  const saveProgress = async (scrollY:any) => {
+  const saveProgress = async (scrollY: any) => {
     if (language && selectedBookNumber !== null && selectedChapter !== null) {
       try {
         const progress = {
@@ -417,11 +515,56 @@ const BibleComponent = () => {
     }
   };
 
-  const handleScroll = (event:any) => {
+  const stateRef = useRef({ language, selectedBookNumber, selectedChapter });
+  useEffect(() => {
+    stateRef.current = { language, selectedBookNumber, selectedChapter };
+  }, [language, selectedBookNumber, selectedChapter]);
+
+  // Automatically save progress instantly whenever the reader state changes (e.g. on horizontal swipe)
+  useEffect(() => {
+    if (language && selectedBookNumber !== null && selectedChapter !== null && !isRestoring) {
+      const saveStateProgress = async () => {
+        try {
+          const progress = {
+            language,
+            bookNumber: selectedBookNumber,
+            chapterNumber: selectedChapter,
+            scrollY: scrollPositionRef.current || 0
+          };
+          await AsyncStorage.setItem('@bible_last_reading', JSON.stringify(progress));
+        } catch (e) {
+          console.error('Failed to save progress on change', e);
+        }
+      };
+
+      saveStateProgress();
+    }
+  }, [language, selectedBookNumber, selectedChapter, isRestoring]);
+
+  // Save progress one final time on component unmount to catch any unsaved vertical scrolls
+  useEffect(() => {
+    return () => {
+      const { language: currentLang, selectedBookNumber: currentBook, selectedChapter: currentCh } = stateRef.current;
+      if (currentLang && currentBook !== null && currentCh !== null) {
+        const progress = {
+          language: currentLang,
+          bookNumber: currentBook,
+          chapterNumber: currentCh,
+          scrollY: scrollPositionRef.current || 0
+        };
+        AsyncStorage.setItem('@bible_last_reading', JSON.stringify(progress)).catch((e) =>
+          console.error('Failed to save progress on unmount', e)
+        );
+      }
+    };
+  }, []);
+
+  const handleScroll = (event: any) => {
     const scrollY = event.nativeEvent.contentOffset.y;
+    scrollPositionRef.current = scrollY; // Update ref immediately with latest scroll position
     const contentHeight = event.nativeEvent.contentSize.height;
     const containerHeight = event.nativeEvent.layoutMeasurement.height;
-    
+
     if (contentHeight > containerHeight) {
       const progress = (scrollY / (contentHeight - containerHeight)) * 100;
       setScrollProgress(Math.max(0, Math.min(100, progress)));
@@ -473,7 +616,7 @@ const BibleComponent = () => {
   };
 
   const openSavedImage = (verse: any) => {
-    const savedImg = localImageVerses.find(img => 
+    const savedImg = localImageVerses.find(img =>
       img.language === language &&
       img.bookNumber === selectedBookNumber &&
       img.chapterNumber === selectedChapter &&
@@ -534,7 +677,7 @@ const BibleComponent = () => {
             try {
               setIsGeneratingImage(true);
               const apiKey = STABILITY_API_KEY;
-              
+
               let promptText = selectedVerse.text;
               if (language.toLowerCase() !== 'english') {
                 try {
@@ -542,11 +685,11 @@ const BibleComponent = () => {
                     params: { language: 'English', bookNumber: selectedBookNumber, chapterNumber: selectedChapter, verseNumber: selectedVerse.verseNumber }
                   });
                   if (enRes.data.status === 'Ok') promptText = enRes.data.data.text;
-                } catch (e) {}
+                } catch (e) { }
               }
 
               const prompt = `A professional and detailed illustration of a biblical scene inspired by the verse "${promptText}" (${selectedVerse.citation}) from the Holy Bible.`;
-              
+
               const response = await axios.post(
                 STABILITY_API_URL,
                 {
@@ -560,14 +703,14 @@ const BibleComponent = () => {
 
               const imageBase64 = response.data.artifacts[0].base64;
               const imageUrl = `data:image/png;base64,${imageBase64}`;
-              
+
               const creditDeducted = await deductCredit();
               if (creditDeducted) {
                 // Save to local FileSystem
                 const fileName = `verse_img_${Date.now()}.png`;
                 const fileUri = FileSystem.documentDirectory + fileName;
                 await FileSystem.writeAsStringAsync(fileUri, imageBase64, { encoding: FileSystem.EncodingType.Base64 });
-                
+
                 const newGenImage = {
                   id: Date.now().toString(),
                   citation: selectedVerse.citation,
@@ -579,7 +722,7 @@ const BibleComponent = () => {
                   chapterNumber: selectedChapter,
                   verseNumber: selectedVerse.verseNumber
                 };
-                
+
                 const existingStr = await AsyncStorage.getItem('@bible_generated_images');
                 const existing = existingStr ? JSON.parse(existingStr) : [];
                 const updated = [newGenImage, ...existing];
@@ -641,7 +784,7 @@ const BibleComponent = () => {
 
   const fetchCompareVerse = async (lang: string) => {
     if (!selectedVerse || selectedBookNumber === null || selectedChapter === null) return;
-    
+
     if (lang === 'Tamil') {
       const chapter = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === selectedChapter);
       if (chapter) {
@@ -680,7 +823,7 @@ const BibleComponent = () => {
   };
 
   const toggleWordUnderline = (index: number) => {
-    setUnderlinedWordIndices(prev => 
+    setUnderlinedWordIndices(prev =>
       prev.includes(index) ? [] : [index]
     );
   };
@@ -688,7 +831,7 @@ const BibleComponent = () => {
   const handleZoomIn = () => {
     setVerseFontSize(prev => {
       const newSize = Math.min(prev + 2, 40);
-      AsyncStorage.setItem('@bible_font_size', newSize.toString()).catch(() => {});
+      AsyncStorage.setItem('@bible_font_size', newSize.toString()).catch(() => { });
       return newSize;
     });
   };
@@ -696,7 +839,7 @@ const BibleComponent = () => {
   const handleZoomOut = () => {
     setVerseFontSize(prev => {
       const newSize = Math.max(prev - 2, 12);
-      AsyncStorage.setItem('@bible_font_size', newSize.toString()).catch(() => {});
+      AsyncStorage.setItem('@bible_font_size', newSize.toString()).catch(() => { });
       return newSize;
     });
   };
@@ -788,7 +931,7 @@ const BibleComponent = () => {
       text: selectedVerse.text,
       citation: selectedVerse.citation,
     };
-    
+
     let updatedList = [...likedVerses];
     const exists = updatedList.some((v: any) => v.key === key);
     if (exists) {
@@ -851,7 +994,7 @@ const BibleComponent = () => {
     }
   }, [chapterVerses]);
 
-  const speakVerse = useCallback((verses: {verseNumber: number; text: string}[], index: number) => {
+  const speakVerse = useCallback((verses: { verseNumber: number; text: string }[], index: number) => {
     if (!playRequestRef.current) return;
     if (index >= verses.length) {
       // Chapter finished
@@ -950,6 +1093,37 @@ const BibleComponent = () => {
     setCurrentVerseIndex(0);
   }, [stopReading, books, selectedBookNumber]);
 
+  const selectedChapterRef = useRef(selectedChapter);
+  const selectedBookNumberRef = useRef(selectedBookNumber);
+  const booksRef = useRef(books);
+  const handlePrevChapterRef = useRef(handlePrevChapter);
+  const handleNextChapterRef = useRef(handleNextChapter);
+
+  useEffect(() => {
+    selectedChapterRef.current = selectedChapter;
+    selectedBookNumberRef.current = selectedBookNumber;
+    booksRef.current = books;
+    handlePrevChapterRef.current = handlePrevChapter;
+    handleNextChapterRef.current = handleNextChapter;
+  });
+
+  // Scroll FlatList to target chapter index when selectedChapter is changed programmatically or when list data is ready
+  useEffect(() => {
+    const panelWidth = cardLayout.width || Dimensions.get('window').width - 32;
+    const targetIndex = selectedChapter - 1;
+    if (
+      panelWidth > 0 && 
+      targetIndex >= 0 && 
+      targetIndex < chapterListData.length
+    ) {
+      if (lastScrolledChapterRef.current !== selectedChapter) {
+        lastScrolledChapterRef.current = selectedChapter;
+        flatListRef.current?.scrollToIndex({ index: targetIndex, animated: false });
+      }
+    }
+  }, [selectedChapter, cardLayout.width, chapterListData.length]);
+
+
   const handleClosePlayer = useCallback(() => {
     stopReading();
     Animated.timing(playerBarAnim, { toValue: 100, duration: 250, useNativeDriver: true }).start(() => {
@@ -983,7 +1157,7 @@ const BibleComponent = () => {
     }
   }, [chapterVerses, speakVerse]);
 
-  if (loading && !chapterVerses.length) {
+  if (!initialLoadDone) {
     return <LoadingScreen message="Loading Bible..." />;
   }
 
@@ -997,13 +1171,13 @@ const BibleComponent = () => {
   const currentBook = books.find((b: any) => b.value === selectedBookNumber);
   const totalVerses = chapterVerses.length;
   const progressPercent = totalVerses > 0 ? ((currentVerseIndex + 1) / totalVerses) * 100 : 0;
-  
+
   const currentKey = selectedVerse && selectedBookNumber !== null && selectedChapter !== null
     ? `${language}_${selectedBookNumber}_${selectedChapter}_${selectedVerse.verseNumber}`
     : '';
   const currentHighlight = highlights[currentKey] || null;
   const isVerseLiked = likedVerses.some((v: any) => v.key === currentKey);
-  
+
   const insetWidth = cardLayout.width > 8 ? cardLayout.width - 8 : 0;
   const insetHeight = cardLayout.height > 8 ? cardLayout.height - 8 : 0;
   const insetR = 8;
@@ -1028,12 +1202,36 @@ const BibleComponent = () => {
   const strokeOpacityGlowMed = 0.4;
   const strokeOpacityCore = 1.0;
   const shadowOpacityValue = 0.8;
+  const selectedLangIdx = availableLanguages.findIndex(item => item.value === language);
+  const safeLangIdx = selectedLangIdx >= 0 ? selectedLangIdx : 0;
+
+  const selectedBookIdx = books.findIndex(item => item.value === selectedBookNumber);
+  const safeBookIdx = selectedBookIdx >= 0 ? selectedBookIdx : 0;
+
+  const selectedChapterIdx = chapters.findIndex(item => item.value === selectedChapter);
+  const safeChapterIdx = selectedChapterIdx >= 0 ? selectedChapterIdx : 0;
+
+  const compareItems = availableLanguages.filter(l => l.value !== language);
+  const selectedCompareIdx = compareItems.findIndex(item => item.value === compareLanguage);
+  const safeCompareIdx = selectedCompareIdx >= 0 ? selectedCompareIdx : 0;
 
   return (
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
-          
+
+          {/* Transparent click-outside overlay to close open dropdowns */}
+          {(openLanguage || openBook || openChapter) && (
+            <Pressable
+              style={[StyleSheet.absoluteFillObject, { zIndex: 999 }]}
+              onPress={() => {
+                setOpenLanguage(false);
+                setOpenBook(false);
+                setOpenChapter(false);
+              }}
+            />
+          )}
+
           <View style={styles.headerRow}>
             {/* 🔊 Audio Mode Toggle — Top Left */}
             <TouchableOpacity
@@ -1068,9 +1266,9 @@ const BibleComponent = () => {
 
           {/* Top Controls: Dropdowns */}
           {/* Fix for Android touch overflow blocking Dropdown scrolls by artificially inflating container height */}
-          <View 
+          <View
             style={[
-              styles.dropdownContainer, 
+              styles.dropdownContainer,
               { zIndex: 5000, elevation: 5000 },
               Platform.OS === 'android' && (openLanguage || openBook || openChapter) ? { height: 300, marginBottom: -239 } : {}
             ]}
@@ -1080,15 +1278,31 @@ const BibleComponent = () => {
               <DropDownPicker
                 open={openLanguage}
                 value={language}
-                items={availableLanguages}
+                items={availableLanguages.map(item => ({ ...item, disabled: item.value === language }))}
                 setOpen={setOpenLanguage}
                 setValue={handleLanguageChange}
                 placeholder="Language"
                 style={styles.dropdown}
                 textStyle={styles.dropdownText}
+                labelProps={{ numberOfLines: 1, ellipsizeMode: 'tail' }}
+                disabledItemContainerStyle={styles.dropdownSelectedItemContainer}
+                disabledItemLabelStyle={styles.dropdownSelectedItemLabel}
                 dropDownContainerStyle={styles.dropdownMenu}
-                listMode="SCROLLVIEW"
-                scrollViewProps={{ nestedScrollEnabled: true, keyboardShouldPersistTaps: 'handled' }}
+                listMode="FLATLIST"
+                listItemContainerStyle={{ height: 50 }}
+                flatListProps={{
+                  nestedScrollEnabled: true,
+                  keyboardShouldPersistTaps: 'handled',
+                  initialScrollIndex: safeLangIdx,
+                  getItemLayout: (data, index) => ({ length: 50, offset: 50 * index, index })
+                }}
+                showTickIcon={false}
+                ArrowDownIconComponent={({ style }) => (
+                  <Icon name="chevron-down" size={18} color={colors.text} style={style as any} />
+                )}
+                ArrowUpIconComponent={({ style }) => (
+                  <Icon name="chevron-up" size={18} color={colors.text} style={style as any} />
+                )}
                 zIndex={3000}
                 zIndexInverse={1000}
               />
@@ -1097,15 +1311,31 @@ const BibleComponent = () => {
               <DropDownPicker
                 open={openBook}
                 value={selectedBookNumber}
-                items={books}
+                items={books.map(item => ({ ...item, disabled: item.value === selectedBookNumber }))}
                 setOpen={setOpenBook}
                 setValue={handleBookChange}
                 placeholder="Book"
                 style={styles.dropdown}
                 textStyle={styles.dropdownText}
+                labelProps={{ numberOfLines: 1, ellipsizeMode: 'tail' }}
+                disabledItemContainerStyle={styles.dropdownSelectedItemContainer}
+                disabledItemLabelStyle={styles.dropdownSelectedItemLabel}
                 dropDownContainerStyle={styles.dropdownMenu}
-                listMode="SCROLLVIEW"
-                scrollViewProps={{ nestedScrollEnabled: true, keyboardShouldPersistTaps: 'handled' }}
+                listMode="FLATLIST"
+                listItemContainerStyle={{ height: 50 }}
+                flatListProps={{
+                  nestedScrollEnabled: true,
+                  keyboardShouldPersistTaps: 'handled',
+                  initialScrollIndex: safeBookIdx,
+                  getItemLayout: (data, index) => ({ length: 50, offset: 50 * index, index })
+                }}
+                showTickIcon={false}
+                ArrowDownIconComponent={({ style }) => (
+                  <Icon name="chevron-down" size={18} color={colors.text} style={style as any} />
+                )}
+                ArrowUpIconComponent={({ style }) => (
+                  <Icon name="chevron-up" size={18} color={colors.text} style={style as any} />
+                )}
                 zIndex={2000}
                 zIndexInverse={2000}
               />
@@ -1114,7 +1344,7 @@ const BibleComponent = () => {
               <DropDownPicker
                 open={openChapter}
                 value={selectedChapter}
-                items={chapters}
+                items={chapters.map(item => ({ ...item, disabled: item.value === selectedChapter }))}
                 setOpen={setOpenChapter}
                 setValue={(val) => {
                   setSelectedChapter(val);
@@ -1122,14 +1352,48 @@ const BibleComponent = () => {
                 }}
                 placeholder="Ch."
                 style={styles.dropdown}
+                labelStyle={{ color: 'transparent' }}
+                placeholderStyle={{ color: 'transparent' }}
                 textStyle={styles.dropdownText}
+                disabledItemContainerStyle={styles.dropdownSelectedItemContainer}
+                disabledItemLabelStyle={styles.dropdownSelectedItemLabel}
                 dropDownContainerStyle={styles.dropdownMenu}
-                listMode="SCROLLVIEW"
-                scrollViewProps={{ nestedScrollEnabled: true, keyboardShouldPersistTaps: 'handled' }}
+                listMode="FLATLIST"
+                listItemContainerStyle={{ height: 50 }}
+                flatListProps={{
+                  nestedScrollEnabled: true,
+                  keyboardShouldPersistTaps: 'handled',
+                  initialScrollIndex: safeChapterIdx,
+                  getItemLayout: (data, index) => ({ length: 50, offset: 50 * index, index })
+                }}
+                showTickIcon={false}
+                ArrowDownIconComponent={({ style }) => (
+                  <Icon name="chevron-down" size={18} color={colors.text} style={style as any} />
+                )}
+                ArrowUpIconComponent={({ style }) => (
+                  <Icon name="chevron-up" size={18} color={colors.text} style={style as any} />
+                )}
                 zIndex={1000}
                 zIndexInverse={3000}
                 disabled={selectedBookNumber === null || chapters.length === 0}
               />
+              <View 
+                pointerEvents="none" 
+                style={{ 
+                  position: 'absolute', 
+                  left: 12, 
+                  right: 35,
+                  top: 0, 
+                  height: 45,
+                  justifyContent: 'center',
+                  zIndex: 2000,
+                  elevation: 2000,
+                }}
+              >
+                <Text style={styles.dropdownText}>
+                  {selectedChapter ? `Ch. ${selectedChapter}` : 'Ch.'}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -1143,13 +1407,13 @@ const BibleComponent = () => {
             }}
           >
             {showProgressBarSetting && cardLayout.width > 0 && cardLayout.height > 0 && (
-              <Svg 
+              <Svg
                 width={cardLayout.width}
                 height={cardLayout.height}
                 style={[
-                  StyleSheet.absoluteFill, 
-                  { 
-                    zIndex: 10, 
+                  StyleSheet.absoluteFill,
+                  {
+                    zIndex: 10,
                     pointerEvents: 'none',
                     shadowColor: strokeColorGlow,
                     shadowOffset: { width: 0, height: 0 },
@@ -1220,74 +1484,162 @@ const BibleComponent = () => {
               </Svg>
             )}
 
-            <ScrollView 
-              ref={scrollViewRef}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.readerScrollContent}
-              onScroll={handleScroll}
-              scrollEventThrottle={16} // smooth tracking
-            >
-              {loading && chapterVerses.length > 0 && (
-                <View style={{ padding: 10 }}>
-                  <ActivityIndicator size="small" color={colors.tint} />
-                </View>
-              )}
-              
-              <TouchableOpacity activeOpacity={1} onPress={clearSelection}>
-                {chapterVerses.length > 0 ? (
-                  chapterVerses.map((verse, index) => {
-                    const isSelected = selectedVerse?.verseNumber === verse.verseNumber;
-                    
-                    const hasImage = localImageVerses.some(img => 
-                      img.language === language &&
-                      img.bookNumber === selectedBookNumber &&
-                      img.chapterNumber === selectedChapter &&
-                      img.verseNumber === verse.verseNumber
-                    );
+            <FlatList
+              key={`flatlist_${language}_${selectedBookNumber}_${chapterListData.length}`}
+              ref={flatListRef}
+              data={chapterListData}
+              keyExtractor={(item) => `chapter_${selectedBookNumber}_${item}`}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              initialNumToRender={1}
+              maxToRenderPerBatch={1}
+              windowSize={3}
+              removeClippedSubviews={Platform.OS === 'android'}
+              initialScrollIndex={
+                selectedChapter - 1 >= 0 && selectedChapter - 1 < chapterListData.length
+                  ? selectedChapter - 1
+                  : 0
+              }
+              getItemLayout={(_data, index) => ({
+                length: cardLayout.width || Dimensions.get('window').width - 32,
+                offset: (cardLayout.width || Dimensions.get('window').width - 32) * index,
+                index,
+              })}
+              onMomentumScrollEnd={(e) => {
+                const panelWidth = cardLayout.width || Dimensions.get('window').width - 32;
+                if (panelWidth <= 0) return;
+                const newIndex = Math.round(e.nativeEvent.contentOffset.x / panelWidth);
+                const newChapter = newIndex + 1;
+                if (newChapter !== lastScrolledChapterRef.current && newChapter >= 1 && newChapter <= chapterListData.length) {
+                  lastScrolledChapterRef.current = newChapter;
+                  scrollPositionRef.current = 0;
+                  scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+                  // Update selectedChapter — this triggers fetchChapter useEffect which populates cache
+                  const cacheKey = `${language}_${selectedBookNumber}_${newChapter}`;
+                  let cached = versesCache.current.get(cacheKey);
+                  if (language === 'Tamil' && !cached) {
+                    const chapter = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === newChapter);
+                    cached = chapter ? chapter.verses || [] : [];
+                  }
+                  if (cached) {
+                    setChapterVerses(cached);
+                  }
+                  setSelectedChapter(newChapter);
+                  setSelectedVerse(null);
+                  setCurrentVerseIndex(0);
+                }
+              }}
+              style={{ flex: 1 }}
+              renderItem={({ item: chapterNum }) => {
+                const panelWidth = cardLayout.width || Dimensions.get('window').width - 32;
+                const isCurrentChapter = chapterNum === selectedChapter;
+                const cacheKey = `${language}_${selectedBookNumber}_${chapterNum}`;
+                let cachedVerses = versesCache.current.get(cacheKey) || [];
+                if (language === 'Tamil' && cachedVerses.length === 0) {
+                  const chapter = tamilBibleData.find((c: any) => c.language === 'Tamil' && c.bookNumber === selectedBookNumber && c.chapterNumber === chapterNum);
+                  cachedVerses = chapter ? chapter.verses || [] : [];
+                }
 
-                    const isSpeaking = isPlaying && currentVerseIndex === index;
-
-                    const verseHighlightKey = `${language}_${selectedBookNumber}_${selectedChapter}_${verse.verseNumber}`;
-                    const highlightColor = highlights[verseHighlightKey];
-                    const isLiked = likedVerses.some((v: any) => v.key === verseHighlightKey);
-
-                    return (
-                      <TouchableOpacity 
-                        key={`${selectedBookNumber}_${selectedChapter}_${index}`} 
-                        onPress={() => handleVerseSelect(verse, index)}
-                        onLongPress={() => handleVerseLongPress(verse)}
-                        onLayout={(e) => { verseLayoutsRef.current[index] = e.nativeEvent.layout.y; }}
-                        style={[
-                          styles.verseRow,
-                          highlightColor && { backgroundColor: highlightColor },
-                          isSelected && !highlightColor && styles.selectedVerseRow,
-                          isSpeaking && styles.speakingVerseRow,
-                        ]}
+                // Current chapter — full interactive rendering
+                if (isCurrentChapter) {
+                  return (
+                    <View style={{ width: panelWidth, height: '100%' }}>
+                      <ScrollView
+                        ref={scrollViewRef}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.readerScrollContent}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
                       >
-                        <Text style={[styles.verseNumberText, isLiked && { color: '#ff4757' }]}>{verse.verseNumber}</Text>
-                        <Text style={[
-                          styles.verseBodyText,
-                          isSelected && styles.selectedVerseText,
-                          { fontSize: verseFontSize, lineHeight: verseFontSize * 1.5 }
-                        ]}>
-                          {verse.text}
-                        </Text>
-                        {hasImage && (
-                          <TouchableOpacity 
-                            style={{ marginLeft: 6, alignSelf: 'flex-start', marginTop: 2, padding: 4 }}
-                            onPress={() => openSavedImage(verse)}
-                          >
-                            <Icon name="image-outline" size={20} color={colors.secondary} />
-                          </TouchableOpacity>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })
-                ) : (
-                  <Text style={styles.placeholder}>Select a book and chapter to read</Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
+                        <TouchableOpacity activeOpacity={1} onPress={clearSelection}>
+                          {chapterVerses.length > 0 ? (
+                            chapterVerses.map((verse, index) => {
+                              const isSelected = selectedVerse?.verseNumber === verse.verseNumber;
+
+                              const hasImage = localImageVerses.some(img =>
+                                img.language === language &&
+                                img.bookNumber === selectedBookNumber &&
+                                img.chapterNumber === selectedChapter &&
+                                img.verseNumber === verse.verseNumber
+                              );
+
+                              const isSpeaking = isPlaying && currentVerseIndex === index;
+
+                              const verseHighlightKey = `${language}_${selectedBookNumber}_${selectedChapter}_${verse.verseNumber}`;
+                              const highlightColor = highlights[verseHighlightKey];
+                              const isLiked = likedVerses.some((v: any) => v.key === verseHighlightKey);
+
+                              return (
+                                <TouchableOpacity
+                                  key={`${selectedBookNumber}_${selectedChapter}_${index}`}
+                                  onPress={() => handleVerseSelect(verse, index)}
+                                  onLongPress={() => handleVerseLongPress(verse)}
+                                  onLayout={(e) => { verseLayoutsRef.current[index] = e.nativeEvent.layout.y; }}
+                                  style={[
+                                    styles.verseRow,
+                                    highlightColor && { backgroundColor: highlightColor },
+                                    isSelected && !highlightColor && styles.selectedVerseRow,
+                                    isSpeaking && styles.speakingVerseRow,
+                                  ]}
+                                >
+                                  <Text style={[styles.verseNumberText, isLiked && { color: '#ff4757' }]}>{verse.verseNumber}</Text>
+                                  <Text style={[
+                                    styles.verseBodyText,
+                                    isSelected && styles.selectedVerseText,
+                                    { fontSize: verseFontSize, lineHeight: verseFontSize * 1.5 }
+                                  ]}>
+                                    {verse.text}
+                                  </Text>
+                                  {hasImage && (
+                                    <TouchableOpacity
+                                      style={{ marginLeft: 6, alignSelf: 'flex-start', marginTop: 2, padding: 4 }}
+                                      onPress={() => openSavedImage(verse)}
+                                    >
+                                      <Icon name="image-outline" size={20} color={colors.secondary} />
+                                    </TouchableOpacity>
+                                  )}
+                                </TouchableOpacity>
+                              );
+                            })
+                          ) : (
+                            selectedBookNumber !== null && selectedChapter !== null ? (
+                              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+                                <ActivityIndicator size="large" color={colors.tint} />
+                              </View>
+                            ) : (
+                              <Text style={styles.placeholder}>Select a book and chapter to read</Text>
+                            )
+                          )}
+                        </TouchableOpacity>
+                      </ScrollView>
+                    </View>
+                  );
+                }
+
+                // Adjacent / non-current chapter — read-only preview from cache
+                return (
+                  <View style={{ width: panelWidth, height: '100%' }}>
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.readerScrollContent}>
+                      {cachedVerses.length > 0 ? (
+                        cachedVerses.map((verse, index) => (
+                          <View key={`ch${chapterNum}_${index}`} style={styles.verseRow}>
+                            <Text style={styles.verseNumberText}>{verse.verseNumber}</Text>
+                            <Text style={[styles.verseBodyText, { fontSize: verseFontSize, lineHeight: verseFontSize * 1.5 }]}>
+                              {verse.text}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+                          <ActivityIndicator size="large" color={colors.tint} />
+                        </View>
+                      )}
+                    </ScrollView>
+                  </View>
+                );
+              }}
+            />
           </View>
 
           {/* ──────── TTS Audio Player Bar ──────── */}
@@ -1399,21 +1751,21 @@ const BibleComponent = () => {
                   <View style={styles.modalHeaderRow}>
                     <Text style={styles.modalCitation}>{selectedVerse.citation}</Text>
                     <TouchableOpacity onPress={toggleLikeVerse} style={styles.modalLikeBtn}>
-                      <Icon 
-                        name={isVerseLiked ? "heart" : "heart-outline"} 
-                        size={24} 
-                        color={isVerseLiked ? "#ff4757" : colors.textSecondary} 
+                      <Icon
+                        name={isVerseLiked ? "heart" : "heart-outline"}
+                        size={24}
+                        color={isVerseLiked ? "#ff4757" : colors.textSecondary}
                       />
                     </TouchableOpacity>
                   </View>
-                  
+
                   {/* Wrapping the text to allow individual word long-press interaction */}
                   <View style={styles.modalVerseTextWrapper}>
                     {selectedVerse.text.split(' ').map((word: string, index: number) => {
                       const isUnderlined = underlinedWordIndices.includes(index);
                       return (
-                        <Text 
-                          key={index} 
+                        <Text
+                          key={index}
                           style={[
                             styles.modalVerseWord,
                             isUnderlined && { textDecorationLine: 'underline', color: colors.tint, fontWeight: 'bold' }
@@ -1427,7 +1779,7 @@ const BibleComponent = () => {
                       );
                     })}
                   </View>
-                  
+
                   <View style={styles.buttonContainer}>
                     {(isImageGenEnabled || isGuest) && (
                       <Button
@@ -1487,14 +1839,14 @@ const BibleComponent = () => {
 
                   {/* Thumbnail Image display when generated */}
                   {verseImage && (
-                    <TouchableOpacity 
-                      onPress={() => setIsFullScreen(true)} 
+                    <TouchableOpacity
+                      onPress={() => setIsFullScreen(true)}
                       style={styles.thumbnailContainer}
                     >
-                      <Image 
-                        source={{ uri: verseImage }} 
-                        style={styles.thumbnailImage} 
-                        resizeMode="cover" 
+                      <Image
+                        source={{ uri: verseImage }}
+                        style={styles.thumbnailImage}
+                        resizeMode="cover"
                       />
                       <Text style={styles.thumbnailHint}>Tap to view full screen</Text>
                     </TouchableOpacity>
@@ -1506,10 +1858,10 @@ const BibleComponent = () => {
             {/* Custom Word Confirmation Dialog inside the same native Modal window */}
             {confirmWord && (
               <View style={[StyleSheet.absoluteFillObject, styles.confirmOverlay]}>
-                <TouchableOpacity 
-                  style={styles.modalDismissArea} 
-                  activeOpacity={1} 
-                  onPress={() => setConfirmWord(null)} 
+                <TouchableOpacity
+                  style={styles.modalDismissArea}
+                  activeOpacity={1}
+                  onPress={() => setConfirmWord(null)}
                 />
                 <View style={styles.confirmCard}>
                   <Text style={styles.confirmTitle}>Dictionary Lookup</Text>
@@ -1517,14 +1869,14 @@ const BibleComponent = () => {
                     Find the biblical meaning of "{confirmWord}"?
                   </Text>
                   <View style={styles.confirmButtons}>
-                    <TouchableOpacity 
-                      style={[styles.confirmBtn, styles.confirmBtnCancel]} 
+                    <TouchableOpacity
+                      style={[styles.confirmBtn, styles.confirmBtnCancel]}
                       onPress={() => setConfirmWord(null)}
                     >
                       <Text style={styles.confirmBtnTextCancel}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.confirmBtn, styles.confirmBtnYes]} 
+                    <TouchableOpacity
+                      style={[styles.confirmBtn, styles.confirmBtnYes]}
                       onPress={() => {
                         const wordToFetch = confirmWord;
                         setConfirmWord(null);
@@ -1541,18 +1893,18 @@ const BibleComponent = () => {
             {/* Custom Error Dialog overlay inside the same native Modal window */}
             {lookupError && (
               <View style={[StyleSheet.absoluteFillObject, styles.confirmOverlay]}>
-                <TouchableOpacity 
-                  style={styles.modalDismissArea} 
-                  activeOpacity={1} 
-                  onPress={() => setLookupError(null)} 
+                <TouchableOpacity
+                  style={styles.modalDismissArea}
+                  activeOpacity={1}
+                  onPress={() => setLookupError(null)}
                 />
                 <View style={styles.confirmCard}>
                   <Text style={[styles.confirmTitle, { color: '#ef4444' }]}>Error</Text>
                   <Text style={styles.confirmMessage}>
                     {lookupError}
                   </Text>
-                  <TouchableOpacity 
-                    style={[styles.confirmBtn, styles.confirmBtnYes, { backgroundColor: colors.primary, width: '100%', marginTop: 10 }]} 
+                  <TouchableOpacity
+                    style={[styles.confirmBtn, styles.confirmBtnYes, { backgroundColor: colors.primary, width: '100%', marginTop: 10 }]}
                     onPress={() => setLookupError(null)}
                   >
                     <Text style={styles.confirmBtnTextYes}>OK</Text>
@@ -1564,10 +1916,10 @@ const BibleComponent = () => {
             {/* Dictionary View (Rendered inside parent modal to bypass native Modal conflict bugs) */}
             {isDictModalVisible && (
               <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay]}>
-                <TouchableOpacity 
-                  style={styles.modalDismissArea} 
-                  activeOpacity={1} 
-                  onPress={() => setIsDictModalVisible(false)} 
+                <TouchableOpacity
+                  style={styles.modalDismissArea}
+                  activeOpacity={1}
+                  onPress={() => setIsDictModalVisible(false)}
                 />
                 <View style={styles.dictModalContainer}>
                   {/* Blue AI Tag in the top-right corner */}
@@ -1578,13 +1930,13 @@ const BibleComponent = () => {
                   )}
 
                   <Text style={styles.dictModalTitle}>Meaning of "{dictWord}"</Text>
-                  
+
                   <ScrollView style={styles.dictModalScroll} showsVerticalScrollIndicator={true}>
                     <Text style={styles.dictModalText}>{dictMeaning}</Text>
                   </ScrollView>
 
-                  <TouchableOpacity 
-                    style={styles.dictCloseButton} 
+                  <TouchableOpacity
+                    style={styles.dictCloseButton}
                     onPress={() => setIsDictModalVisible(false)}
                   >
                     <Text style={styles.dictCloseButtonText}>Close</Text>
@@ -1614,11 +1966,11 @@ const BibleComponent = () => {
                   <Text style={styles.compareCloseButtonText}>✕</Text>
                 </TouchableOpacity>
               </View>
-              
+
               {selectedVerse && (
                 <View style={{ paddingHorizontal: 20, marginBottom: 15 }}>
                   <Text style={styles.compareCitationText}>{selectedVerse.citation}</Text>
-                  
+
                   {/* Primary Version */}
                   <View style={[styles.compareVersionContainer, { marginBottom: 0 }]}>
                     <Text style={styles.compareVersionTitle}>{language}</Text>
@@ -1630,7 +1982,7 @@ const BibleComponent = () => {
               )}
 
               {/* Dropdown in between with Android Touch/Scroll fix */}
-              <View 
+              <View
                 style={[
                   { marginHorizontal: 20, zIndex: 4000, elevation: 4000 },
                   Platform.OS === 'android' && openCompareLanguage ? { height: 200, marginBottom: -150 } : { marginBottom: 15 }
@@ -1639,15 +1991,31 @@ const BibleComponent = () => {
                 <DropDownPicker
                   open={openCompareLanguage}
                   value={compareLanguage}
-                  items={availableLanguages.filter(l => l.value !== language)}
+                  items={availableLanguages.filter(l => l.value !== language).map(item => ({ ...item, disabled: item.value === compareLanguage }))}
                   setOpen={setOpenCompareLanguage}
                   setValue={setCompareLanguage}
                   placeholder="Select Language to Compare"
                   style={styles.dropdown}
                   textStyle={styles.dropdownText}
+                  labelProps={{ numberOfLines: 1, ellipsizeMode: 'tail' }}
+                  disabledItemContainerStyle={styles.dropdownSelectedItemContainer}
+                  disabledItemLabelStyle={styles.dropdownSelectedItemLabel}
                   dropDownContainerStyle={[styles.dropdownMenu, { maxHeight: 150 }]}
-                  listMode="SCROLLVIEW"
-                  scrollViewProps={{ nestedScrollEnabled: true, keyboardShouldPersistTaps: 'handled' }}
+                  listMode="FLATLIST"
+                  listItemContainerStyle={{ height: 50 }}
+                  flatListProps={{
+                    nestedScrollEnabled: true,
+                    keyboardShouldPersistTaps: 'handled',
+                    initialScrollIndex: safeCompareIdx,
+                    getItemLayout: (data, index) => ({ length: 50, offset: 50 * index, index })
+                  }}
+                  showTickIcon={false}
+                  ArrowDownIconComponent={({ style }) => (
+                    <Icon name="chevron-down" size={18} color={colors.text} style={style as any} />
+                  )}
+                  ArrowUpIconComponent={({ style }) => (
+                    <Icon name="chevron-up" size={18} color={colors.text} style={style as any} />
+                  )}
                   zIndex={4000}
                   zIndexInverse={1000}
                 />
@@ -1709,7 +2077,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
-  },  
+  },
   gradient: {
     flex: 1,
   },
@@ -1820,7 +2188,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     backgroundColor: colors.inputBg,
     borderRadius: 8,
     borderWidth: 0,
-    minHeight: 45,
+    height: 45,
   },
   dropdownText: {
     fontSize: 14,
@@ -1834,23 +2202,32 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     elevation: 10,
     zIndex: 4000,
   },
+  dropdownSelectedItemContainer: {
+    backgroundColor: colors.tint + '15',
+  },
+  dropdownSelectedItemLabel: {
+    color: colors.tint,
+    fontWeight: 'bold',
+  },
   modalTitle: {
     color: colors.primary,
     fontWeight: 'bold'
   },
   readerCard: {
     flex: 1,
-    backgroundColor: colors.cardBg, 
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
-    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+    overflow: 'hidden', // Prevent swipe translation from rendering outside boundaries
   },
 
   readerScrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 20,
   },
   verseRow: {

@@ -537,7 +537,7 @@ const CreatePostTab = () => {
       {/* Post Management Modal */}
       <Modal
         visible={isManageModalVisible}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setIsManageModalVisible(false)}
       >
         <SafeAreaView style={styles.modalFullContainer}>

@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, Dimensions, StyleSheet, SafeAreaView, ImageBackground, ActivityIndicator, Platform } from "react-native";
+import { View, Text, Image, TouchableOpacity, Dimensions, StyleSheet, SafeAreaView, ImageBackground, ActivityIndicator, Platform, StatusBar } from "react-native";
 import React from "react";
 import { useFonts, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import { getStyles } from "./style";
@@ -20,6 +20,10 @@ export default function OnboardingView({ onGetStarted, loading }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar 
+        barStyle={colors.theme === 'dark' ? 'light-content' : 'dark-content'} 
+        backgroundColor={colors.theme === 'dark' ? '#12161A' : '#C6D2EA'} 
+      />
       <ImageBackground
         source={require("../../assets/background.jpg")}
         style={{ width, height, justifyContent: "center", alignItems: "center" }}

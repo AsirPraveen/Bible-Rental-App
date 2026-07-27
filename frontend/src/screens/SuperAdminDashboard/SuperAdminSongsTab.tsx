@@ -238,8 +238,8 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
       'Are you sure you want to delete this global song? This will remove it from all associated organizations.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -280,17 +280,17 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
         <View style={styles.cardMeta}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <Text style={styles.cardMetaText}>Author: {item.author || 'Unknown'}</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.7}
               style={[
-                styles.allowToggleBtn, 
+                styles.allowToggleBtn,
                 item.allowed !== false ? styles.allowToggleBtnActive : styles.allowToggleBtnBlocked
               ]}
               onPress={() => toggleSongAllow(item._id)}
             >
-              <Text 
+              <Text
                 style={[
-                  styles.allowToggleBtnText, 
+                  styles.allowToggleBtnText,
                   { color: item.allowed !== false ? '#059669' : '#DC2626' }
                 ]}
               >
@@ -313,17 +313,17 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
       <Card.Content>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.7}
             style={[
-              styles.allowToggleBtn, 
+              styles.allowToggleBtn,
               item.allowed !== false ? styles.allowToggleBtnActive : styles.allowToggleBtnBlocked
             ]}
             onPress={() => toggleFilterAllow(type, item._id)}
           >
-            <Text 
+            <Text
               style={[
-                styles.allowToggleBtnText, 
+                styles.allowToggleBtnText,
                 { color: item.allowed !== false ? '#059669' : '#DC2626' }
               ]}
             >
@@ -348,8 +348,8 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
         <Searchbar
           placeholder={
             activeTab === 'songs' ? "Search global songs..." :
-            activeTab === 'categories' ? "Search categories..." :
-            activeTab === 'songbooks' ? "Search song books..." : "Search authors..."
+              activeTab === 'categories' ? "Search categories..." :
+                activeTab === 'songbooks' ? "Search song books..." : "Search authors..."
           }
           placeholderTextColor={colors.textSecondary}
           iconColor={colors.textSecondary}
@@ -365,36 +365,36 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
           style={styles.searchBar}
           elevation={0}
         />
-        
+
         {/* Tab Switcher */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
           style={styles.tabScroll}
           contentContainerStyle={styles.tabScrollContent}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.7}
             style={[styles.tabButton, activeTab === 'songs' && styles.tabButtonActive]}
             onPress={() => { setActiveTab('songs'); setFilterSearchQuery(''); }}
           >
             <Text style={[styles.tabButtonText, activeTab === 'songs' && styles.tabButtonTextActive]}>Songs</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.7}
             style={[styles.tabButton, activeTab === 'categories' && styles.tabButtonActive]}
             onPress={() => { setActiveTab('categories'); setFilterSearchQuery(''); }}
           >
             <Text style={[styles.tabButtonText, activeTab === 'categories' && styles.tabButtonTextActive]}>Categories</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.7}
             style={[styles.tabButton, activeTab === 'songbooks' && styles.tabButtonActive]}
             onPress={() => { setActiveTab('songbooks'); setFilterSearchQuery(''); }}
           >
             <Text style={[styles.tabButtonText, activeTab === 'songbooks' && styles.tabButtonTextActive]}>Song Books</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.7}
             style={[styles.tabButton, activeTab === 'authors' && styles.tabButtonActive]}
             onPress={() => { setActiveTab('authors'); setFilterSearchQuery(''); }}
@@ -465,7 +465,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
 
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
@@ -627,9 +627,9 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
               placeholderTextColor={colors.textSecondary}
             />
 
-            <Button 
-              mode="contained" 
-              onPress={handleSubmit} 
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
               style={styles.submitBtn}
               contentStyle={styles.submitBtnContent}
             >

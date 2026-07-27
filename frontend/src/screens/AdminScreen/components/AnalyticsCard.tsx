@@ -1,16 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
-
-const Colors = {
-  primary: '#146C94',
-  secondary: '#AFD3E2',
-  background: '#F6F1F1',
-  white: '#FFFFFF',
-  glow: '#00d2ff',
-};
 
 interface AnalyticsCardProps {
   title: string;
@@ -19,6 +12,8 @@ interface AnalyticsCardProps {
 }
 
 const AnalyticsCard = ({ title, value, delay = 0 }: AnalyticsCardProps) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [scaleAnim] = useState(new Animated.Value(0.8));
   const [fadeAnim] = useState(new Animated.Value(0));
   const [pulseAnim] = useState(new Animated.Value(1));
@@ -75,7 +70,7 @@ const AnalyticsCard = ({ title, value, delay = 0 }: AnalyticsCardProps) => {
       ]}
     >
       <LinearGradient
-        colors={[Colors.white, Colors.background]}
+        colors={[colors.cardBg, colors.background]}
         style={styles.gradient}
       >
         <View style={styles.glowEffect} />
@@ -95,12 +90,12 @@ const AnalyticsCard = ({ title, value, delay = 0 }: AnalyticsCardProps) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     width: (width - 45) / 2,
     height: 140,
     borderRadius: 20,
-    shadowColor: Colors.primary,
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
@@ -117,8 +112,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: Colors.primary,
-    shadowColor: Colors.primary,
+    backgroundColor: colors.tint,
+    shadowColor: colors.tint,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 10,
@@ -133,7 +128,7 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 17.5,
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#AFD3E2',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -144,26 +139,26 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: colors.tint,
     marginBottom: 4,
   },
   label: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     fontWeight: '600',
   },
   progressBar: {
     width: '80%',
     height: 3,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.theme === 'dark' ? colors.border : '#E0E0E0',
     borderRadius: 1.5,
     marginTop: 8,
     overflow: 'hidden',
   },
   progress: {
     height: '100%',
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.tint,
     borderRadius: 1.5,
   },
   cornerDecoration: {
@@ -173,7 +168,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.theme === 'dark' ? colors.border : '#AFD3E2',
     opacity: 0.3,
   },
 });

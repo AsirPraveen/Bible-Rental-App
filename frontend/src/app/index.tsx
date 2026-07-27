@@ -113,7 +113,10 @@ function ThemedStatusBar() {
   let barStyle: 'light' | 'dark' = 'dark';
   let backgroundColor = 'transparent';
 
-  if (isDarkTheme) {
+  if (currentRoute === 'Onboarding') {
+    barStyle = isDarkTheme ? 'light' : 'dark';
+    backgroundColor = isDarkTheme ? '#12161A' : '#C6D2EA';
+  } else if (isDarkTheme) {
     barStyle = 'light';
     backgroundColor = 'transparent';
   } else {

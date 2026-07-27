@@ -477,6 +477,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showReadingModal}
           transparent={true}
+          statusBarTranslucent={true}
           animationType="fade"
           onRequestClose={() => setShowReadingModal(false)}
         >
@@ -568,6 +569,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showScopeModal}
           transparent={true}
+          statusBarTranslucent={true}
           animationType="fade"
           onRequestClose={() => setShowScopeModal(false)}
         >
@@ -638,6 +640,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showNewPlanModal}
           transparent={true}
+          statusBarTranslucent={true}
           animationType="fade"
           onRequestClose={() => setShowNewPlanModal(false)}
         >
@@ -673,6 +676,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showPlanTypeModal}
           transparent={true}
+          statusBarTranslucent={true}
           animationType="fade"
           onRequestClose={() => {
             setShowPlanTypeModal(false);
@@ -733,6 +737,7 @@ const ReadingPlannerComponent = () => {
         <Modal
           visible={showHistoryModal}
           transparent={true}
+          statusBarTranslucent={true}
           animationType="fade"
           onRequestClose={() => setShowHistoryModal(false)}
         >

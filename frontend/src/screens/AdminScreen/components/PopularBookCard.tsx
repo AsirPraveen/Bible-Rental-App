@@ -3,20 +3,13 @@ import { View, Text, StyleSheet, Animated, Dimensions, Pressable } from 'react-n
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { BookOpen, Users, Calendar, TrendingUp } from 'lucide-react-native';
+import { useTheme } from '../../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
-const Colors = {
-  primary: '#146C94',
-  secondary: '#AFD3E2',
-  background: '#F6F1F1',
-  white: '#FFFFFF',
-  glow: '#00d2ff',
-  success: '#4CAF50',
-  warning: '#FF9800',
-};
-
 const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [scaleAnim] = useState(new Animated.Value(0.9));
   const [slideAnim] = useState(new Animated.Value(50));
   const [glowAnim] = useState(new Animated.Value(0));
@@ -77,9 +70,9 @@ const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
   };
 
   const getRentCountColor = (count:any) => {
-    if (count > 50) return Colors.success;
-    if (count > 20) return Colors.warning;
-    return Colors.primary;
+    if (count > 50) return '#4CAF50';
+    if (count > 20) return '#FF9800';
+    return colors.tint;
   };
 
   // Fixed: Use index (rank position) instead of rent count for ranking
@@ -125,7 +118,7 @@ const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
     >
       <Pressable onPress={handlePress} style={styles.pressable}>
         <LinearGradient
-          colors={[Colors.white, Colors.background]}
+          colors={[colors.cardBg, colors.background]}
           style={styles.gradient}
         >
           {/* Animated glow effect */}
@@ -149,7 +142,7 @@ const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
                 <Text style={styles.rankText}>#{index + 1}</Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: getRentCountColor(book.rent_count) }]}>
-                <TrendingUp size={12} color={Colors.white} />
+                <TrendingUp size={12} color="#FFFFFF" />
                 <Text style={styles.statusText}>Trending</Text>
               </View>
             </View>
@@ -157,7 +150,7 @@ const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
             {/* Book info */}
             <View style={styles.bookInfo}>
               <View style={styles.titleSection}>
-                <BookOpen size={20} color={Colors.primary} />
+                <BookOpen size={20} color={colors.tint} />
                 <Text style={styles.bookTitle} numberOfLines={2}>
                   {book.book_name || 'Unknown Title'}
                 </Text>
@@ -171,7 +164,7 @@ const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
             {/* Stats */}
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Users size={16} color={Colors.primary} />
+                <Users size={16} color={colors.tint} />
                 <Text style={styles.statValue}>{book.rent_count || 0}</Text>
                 <Text style={styles.statLabel}>Rentals</Text>
               </View>
@@ -179,7 +172,7 @@ const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
               <View style={styles.statDivider} />
               
               <View style={styles.statItem}>
-                <Calendar size={16} color={Colors.primary} />
+                <Calendar size={16} color={colors.tint} />
                 <Text style={styles.statValue}>{book.year_of_publication || 'N/A'}</Text>
                 <Text style={styles.statLabel}>Year</Text>
               </View>
@@ -225,11 +218,11 @@ const PopularBookCard = ({ book, totalRented, index = 0 }:any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     marginBottom: 15,
     borderRadius: 20,
-    shadowColor: Colors.primary,
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
@@ -250,7 +243,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: Colors.glow,
+    backgroundColor: '#00d2ff',
     borderRadius: 20,
   },
   content: {
@@ -274,7 +267,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: colors.tint,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -284,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   statusText: {
-    color: Colors.white,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '600',
     marginLeft: 4,
@@ -300,14 +293,14 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: colors.text,
     marginLeft: 8,
     flex: 1,
     lineHeight: 22,
   },
   author: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     marginLeft: 28,
   },
@@ -317,7 +310,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
     paddingVertical: 10,
-    backgroundColor: 'rgba(20, 108, 148, 0.05)',
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : 'rgba(20, 108, 148, 0.05)',
     borderRadius: 12,
     paddingHorizontal: 15,
   },
@@ -328,18 +321,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: colors.tint,
     marginTop: 4,
   },
   statLabel: {
     fontSize: 10,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: 'rgba(20, 108, 148, 0.2)',
+    backgroundColor: colors.theme === 'dark' ? colors.border : 'rgba(20, 108, 148, 0.2)',
     marginHorizontal: 10,
   },
   pageIcon: {
@@ -356,11 +349,11 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
   },
   progressBar: {
     height: 6,
-    backgroundColor: 'rgba(20, 108, 148, 0.1)',
+    backgroundColor: colors.theme === 'dark' ? colors.border : 'rgba(20, 108, 148, 0.1)',
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 4,
@@ -371,12 +364,12 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    color: Colors.primary,
+    color: colors.tint,
     fontWeight: '600',
   },
   popularityDetail: {
     fontSize: 9,
-    color: '#888',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 2,
   },
@@ -387,7 +380,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.secondary,
     opacity: 0.2,
   },
   decorativeCircle2: {
@@ -397,7 +390,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     opacity: 0.1,
   },
 });

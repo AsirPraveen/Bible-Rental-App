@@ -9,22 +9,27 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, FlatList,
     ActivityIndicator, TouchableOpacity, TextInput,
-    Alert, SafeAreaView, StatusBar, Platform, Dimensions, Modal, ScrollView
+    Alert, SafeAreaView, StatusBar, Platform, Dimensions, Modal, ScrollView,
+    Pressable
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
-    getAllNotes, deleteNote,
+    getAllNotes, deleteNote, getNoteById,
     getStandaloneReminders, addStandaloneReminder, deleteStandaloneReminder,
     clearAllNotesData, syncStandaloneReminders
 } from './services/MessageNoteService';
+import axios from 'axios';
+import Constants from 'expo-constants';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 import { MessageNote, ReminderNote } from './types/MessageNote';
 import MessageNoteCard, { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -38,6 +43,20 @@ export default function MessageNotesScreen() {
     const styles = getStyles(colors);
     const navigation = useNavigation<any>();
     const { isGuest, logout, user } = useAuth();
+
+    // ── Cloudinary cleanup helper ─────────────────
+    const deleteVoiceNoteFromCloudinary = async (publicId: string) => {
+        try {
+            const token = await AsyncStorage.getItem('token');
+            await axios.post(`${API_URL}/api/cloudinary/delete`, {
+                token,
+                publicId,
+                resourceType: 'video'
+            });
+        } catch (err) {
+            console.log('Error deleting voice note from Cloudinary:', err);
+        }
+    };
 
     const [notes, setNotes] = useState<MessageNote[]>([]);
     const [filtered, setFiltered] = useState<MessageNote[]>([]);
@@ -159,7 +178,17 @@ export default function MessageNotesScreen() {
             {
                 text: 'Delete', style: 'destructive', onPress: async () => {
                     try {
-                        await deleteNote((note as any)._id || note.id);
+                        // Delete voice notes from Cloudinary first
+                        const noteId = (note as any)._id || note.id;
+                        const fullNote = await getNoteById(noteId);
+                        if (fullNote?.voiceNotes?.length) {
+                            for (const vn of fullNote.voiceNotes) {
+                                if ((vn as any).publicId) {
+                                    await deleteVoiceNoteFromCloudinary((vn as any).publicId);
+                                }
+                            }
+                        }
+                        await deleteNote(noteId);
                         load();
                     } catch (err: any) {
                         if (err?.code === 'SESSION_EXPIRED') {
@@ -200,8 +229,8 @@ export default function MessageNotesScreen() {
         <SafeAreaView style={styles.outer}>
             <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
-            {/*  ── Gradient Header ── */}
-            <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+            {/*  ── Solid Header ── */}
+            <View style={[styles.gradient, { backgroundColor: colors.primary }]}>
                 <View style={styles.headerContainer}>
                     <View style={styles.headerTop}>
                         <View>
@@ -227,7 +256,7 @@ export default function MessageNotesScreen() {
                             {/* Add Note */}
                             {!isGuest && (
                                 <TouchableOpacity style={styles.addBtn} onPress={handleAddPress}>
-                                    <Ionicons name="add" size={22} color="#146C94" />
+                                    <Ionicons name="add" size={22} color={colors.theme === 'dark' ? colors.text : colors.primary} />
                                 </TouchableOpacity>
                             )}
 
@@ -241,14 +270,26 @@ export default function MessageNotesScreen() {
                                 style={[styles.tab, activeTab === 'my' && styles.tabActive]}
                                 onPress={() => setActiveTab('my')}
                             >
-                                <Ionicons name="person" size={15} color={activeTab === 'my' ? colors.primary : '#fff'} />
+                                <Ionicons 
+                                    name="person" 
+                                    size={15} 
+                                    color={activeTab === 'my' 
+                                        ? (colors.theme === 'dark' ? colors.tint : colors.primary) 
+                                        : '#fff'} 
+                                />
                                 <Text style={[styles.tabText, activeTab === 'my' && styles.tabTextActive]}>My Notes</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.tab, activeTab === 'community' && styles.tabActive]}
                                 onPress={() => setActiveTab('community')}
                             >
-                                <Ionicons name="earth" size={15} color={activeTab === 'community' ? colors.primary : '#fff'} />
+                                <Ionicons 
+                                    name="earth" 
+                                    size={15} 
+                                    color={activeTab === 'community' 
+                                        ? (colors.theme === 'dark' ? colors.tint : colors.primary) 
+                                        : '#fff'} 
+                                />
                                 <Text style={[styles.tabText, activeTab === 'community' && styles.tabTextActive]}>Community</Text>
                             </TouchableOpacity>
                         </View>
@@ -285,13 +326,17 @@ export default function MessageNotesScreen() {
                         renderItem={({ item }) => {
                             const active = activeCategory === item;
                             const meta = item !== 'All' ? CATEGORY_META[item] : null;
+                            const activeBg = colors.theme === 'dark' ? colors.tint : colors.primary;
+                            const activeTxt = colors.theme === 'dark' ? '#12161A' : '#fff';
+                            const inactiveTxt = colors.theme === 'dark' ? colors.textSecondary : (meta?.color || colors.textSecondary);
+                            const inactiveBorder = colors.theme === 'dark' ? colors.border : (meta?.color || colors.border);
                             return (
                                 <TouchableOpacity
                                     style={[
                                         styles.catChip,
                                         active
-                                            ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                                            : { backgroundColor: colors.cardBg, borderColor: meta?.color || colors.border },
+                                            ? { backgroundColor: activeBg, borderColor: activeBg }
+                                            : { backgroundColor: colors.cardBg, borderColor: inactiveBorder },
                                     ]}
                                     onPress={() => onCategoryChange(item)}
                                 >
@@ -299,11 +344,11 @@ export default function MessageNotesScreen() {
                                         <Ionicons
                                             name={meta.icon}
                                             size={13}
-                                            color={active ? '#fff' : (meta.color || colors.textSecondary)}
+                                            color={active ? activeTxt : inactiveTxt}
                                             style={{ marginRight: 5 }}
                                         />
                                     )}
-                                    <Text style={[styles.catText, { color: active ? '#fff' : (meta?.color || colors.textSecondary) }]}>
+                                    <Text style={[styles.catText, { color: active ? activeTxt : inactiveTxt }]}>
                                         {item}
                                     </Text>
                                 </TouchableOpacity>
@@ -313,10 +358,7 @@ export default function MessageNotesScreen() {
 
                     {/* Note List */}
                     {loading ? (
-                        <View style={styles.loader}>
-                            <ActivityIndicator size="large" color="#146C94" />
-                            <Text style={styles.loaderText}>Loading notes...</Text>
-                        </View>
+                        <LoadingScreen message="Loading notes..." variant="transparent" />
                     ) : filtered.length === 0 ? (
                         <View style={styles.empty}>
                             <View style={styles.emptyIconWrap}>
@@ -354,17 +396,19 @@ export default function MessageNotesScreen() {
                         />
                     )}
                 </View>
-            </LinearGradient>
+            </View>
 
             {/* ── Standalone Reminders Modal ── */}
             <Modal
                 visible={showRmModal}
                 transparent
-                animationType="slide"
+                statusBarTranslucent={true}
+                animationType="fade"
                 onShow={loadStandaloneReminders}
+                onRequestClose={() => { setShowRmModal(false); setRmFormMode('list'); }}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalBox}>
+                <Pressable style={styles.modalOverlay} onPress={() => { setShowRmModal(false); setRmFormMode('list'); }}>
+                    <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>
                                 {rmFormMode === 'list' ? '⏰ Reminders' : editingReminder ? '✏️ Edit Reminder' : '✨ New Reminder'}
@@ -379,8 +423,6 @@ export default function MessageNotesScreen() {
                                 <ScrollView style={{ maxHeight: Dimensions.get('window').height * 0.5 }}>
                                     {standaloneReminders.length === 0 ? (
                                         <View style={{ padding: 30, alignItems: 'center' }}>
-                                            <Ionicons name="notifications-off-outline" size={48} color="#ccc" />
-                                            <Text style={{ marginTop: 12, color: '#94a3b8', fontSize: 15, fontWeight: '600' }}>No reminders yet.</Text>
                                             <Ionicons name="notifications-off-outline" size={48} color={colors.border} />
                                             <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 15, fontWeight: '600' }}>No reminders yet.</Text>
                                             <Text style={{ color: colors.border, fontSize: 13, marginTop: 4, textAlign: 'center' }}>Tap below to set your first reminder.</Text>
@@ -554,8 +596,8 @@ export default function MessageNotesScreen() {
                                 </View>
                             </View>
                         )}
-                    </View>
-                </View>
+                    </Pressable>
+                </Pressable>
             </Modal>
         </SafeAreaView>
     );
@@ -650,7 +692,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
         gap: 6,
     },
     tabActive: {
-        backgroundColor: colors.theme === 'dark' ? colors.border : '#fff',
+        backgroundColor: colors.theme === 'dark' ? colors.primary : '#fff',
         elevation: 2,
     },
     tabText: {
@@ -659,7 +701,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
         fontSize: 14,
     },
     tabTextActive: {
-        color: colors.theme === 'dark' ? colors.text : '#146C94',
+        color: colors.theme === 'dark' ? colors.tint : colors.primary,
     },
 
     // ── Content Sheet ──

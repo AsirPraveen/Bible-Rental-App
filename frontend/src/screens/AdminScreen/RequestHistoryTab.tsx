@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView, TextInput, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import HistoryCard from './components/HistoryCard';
 import Constants from 'expo-constants';
@@ -80,111 +81,115 @@ const RequestHistoryTab = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      <ScrollView style={styles.container}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Request History</Text>
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <Text style={styles.headerText}>Request History</Text>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#64748B" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by book or user..."
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close" size={20} color="#64748B" />
-            </TouchableOpacity>
-          )}
-        </View>
+          <View style={styles.formCard}>
+            <Text style={styles.sectionTitle}>History Log</Text>
 
-        {/* Status Filter Chips */}
-        <Text style={styles.filterLabel}>Filter by status:</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          <TouchableOpacity
-            style={[styles.filterChip, statusFilter === 'all' && styles.filterChipActive]}
-            onPress={() => setStatusFilter('all')}
-          >
-            <Text style={[styles.filterChipText, statusFilter === 'all' && styles.filterChipTextActive]}>
-              All
-            </Text>
-          </TouchableOpacity>
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#64748B" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by book or user..."
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close" size={20} color="#64748B" />
+                </TouchableOpacity>
+              )}
+            </View>
 
-          <TouchableOpacity
-            style={[styles.filterChip, statusFilter === 'approved' && styles.filterChipActive]}
-            onPress={() => setStatusFilter('approved')}
-          >
-            <Text style={[styles.filterChipText, statusFilter === 'approved' && styles.filterChipTextActive]}>
-              ✅ Approved
-            </Text>
-          </TouchableOpacity>
+            {/* Status Filter Chips */}
+            <Text style={styles.filterLabel}>Filter by status:</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.filterScroll}
+              contentContainerStyle={styles.filterScrollContent}
+            >
+              <TouchableOpacity
+                style={[styles.filterChip, statusFilter === 'all' && styles.filterChipActive]}
+                onPress={() => setStatusFilter('all')}
+              >
+                <Text style={[styles.filterChipText, statusFilter === 'all' && styles.filterChipTextActive]}>
+                  All
+                </Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.filterChip, statusFilter === 'rejected' && styles.filterChipActive]}
-            onPress={() => setStatusFilter('rejected')}
-          >
-            <Text style={[styles.filterChipText, statusFilter === 'rejected' && styles.filterChipTextActive]}>
-              ❌ Rejected
-            </Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, statusFilter === 'approved' && styles.filterChipActive]}
+                onPress={() => setStatusFilter('approved')}
+              >
+                <Text style={[styles.filterChipText, statusFilter === 'approved' && styles.filterChipTextActive]}>
+                  ✅ Approved
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.filterChip, statusFilter === 'rejected' && styles.filterChipActive]}
+                onPress={() => setStatusFilter('rejected')}
+              >
+                <Text style={[styles.filterChipText, statusFilter === 'rejected' && styles.filterChipTextActive]}>
+                  ❌ Rejected
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            {/* Sort Chips */}
+            <Text style={styles.filterLabel}>Sort by:</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.filterScroll}
+              contentContainerStyle={styles.filterScrollContent}
+            >
+              <TouchableOpacity
+                style={[styles.filterChip, sortBy === 'date-desc' && styles.filterChipActive]}
+                onPress={() => setSortBy('date-desc')}
+              >
+                <Text style={[styles.filterChipText, sortBy === 'date-desc' && styles.filterChipTextActive]}>
+                  📅 Date (Newest)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.filterChip, sortBy === 'date-asc' && styles.filterChipActive]}
+                onPress={() => setSortBy('date-asc')}
+              >
+                <Text style={[styles.filterChipText, sortBy === 'date-asc' && styles.filterChipTextActive]}>
+                  📅 Date (Oldest)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.filterChip, sortBy === 'book-az' && styles.filterChipActive]}
+                onPress={() => setSortBy('book-az')}
+              >
+                <Text style={[styles.filterChipText, sortBy === 'book-az' && styles.filterChipTextActive]}>
+                  📖 Book (A-Z)
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            {processed.length > 0 ? (
+              processed.map((history: any) => (
+                <HistoryCard key={`${history.userEmail}-${history.book_id}-${history.processed_at}`} history={history} />
+              ))
+            ) : (
+              <Text style={styles.noDataText}>
+                {requestHistory.length === 0 ? 'No request history available' : 'No matching history found'}
+              </Text>
+            )}
+          </View>
         </ScrollView>
-
-        {/* Sort Chips */}
-        <Text style={styles.filterLabel}>Sort by:</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          <TouchableOpacity
-            style={[styles.filterChip, sortBy === 'date-desc' && styles.filterChipActive]}
-            onPress={() => setSortBy('date-desc')}
-          >
-            <Text style={[styles.filterChipText, sortBy === 'date-desc' && styles.filterChipTextActive]}>
-              📅 Date (Newest)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, sortBy === 'date-asc' && styles.filterChipActive]}
-            onPress={() => setSortBy('date-asc')}
-          >
-            <Text style={[styles.filterChipText, sortBy === 'date-asc' && styles.filterChipTextActive]}>
-              📅 Date (Oldest)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, sortBy === 'book-az' && styles.filterChipActive]}
-            onPress={() => setSortBy('book-az')}
-          >
-            <Text style={[styles.filterChipText, sortBy === 'book-az' && styles.filterChipTextActive]}>
-              📖 Book (A-Z)
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {processed.length > 0 ? (
-          processed.map((history: any) => (
-            <HistoryCard key={`${history.userEmail}-${history.book_id}-${history.processed_at}`} history={history} />
-          ))
-        ) : (
-          <Text style={styles.noDataText}>
-            {requestHistory.length === 0 ? 'No request history available' : 'No matching history found'}
-          </Text>
-        )}
-      </View>
-    </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -193,24 +198,34 @@ const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
+  },
+  gradient: {
+    flex: 1,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  scrollContainer: {
+    padding: 16,
+    paddingBottom: 30,
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: colors.tint,
+  headerText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#F6F1F1',
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  section: {
-    padding: 15,
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   sectionTitle: {
     fontSize: 20,
@@ -227,7 +242,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
@@ -261,7 +276,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
     marginRight: 8,

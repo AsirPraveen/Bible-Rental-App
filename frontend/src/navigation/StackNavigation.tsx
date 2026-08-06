@@ -1,6 +1,7 @@
 // src/navigation/StackNavigation.tsx
 import React from 'react';
 import { createStackNavigator } from "@react-navigation/stack";
+import { useTheme } from '../context/ThemeContext';
 import OnboardingComponent from "../screens/InitialScreen/index";
 import HomeTabsNavigation from "../navigation/TabNavigator";
 import LoginPage from "../screens/Login&Register/Login";
@@ -68,6 +69,7 @@ import SongSelectionScreen from '../screens/Songs/SongSelectionScreen';
 const Stack = createStackNavigator();
 
 const StackNavigation = () => {
+  const { colors } = useTheme();
   return (
     <Stack.Navigator initialRouteName="Onboarding">
       <Stack.Screen
@@ -348,12 +350,7 @@ const StackNavigation = () => {
       <Stack.Screen
         name="AppSettings"
         component={AppSettingsTab}
-        options={{
-          headerShown: true,
-          title: 'App Configuration',
-          headerStyle: { backgroundColor: '#146C94' },
-          headerTintColor: '#F6F1F1'
-        }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Guest Settings"
@@ -361,8 +358,8 @@ const StackNavigation = () => {
         options={{
           headerShown: true,
           title: 'Guest Access Settings',
-          headerStyle: { backgroundColor: '#146C94' },
-          headerTintColor: '#F6F1F1'
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: colors.textLight
         }}
       />
       <Stack.Screen

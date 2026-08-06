@@ -23,7 +23,7 @@ router.get('/api/authors/:authorId', orgScope, async (req, res) => {
     if (!author) {
       console.warn(`Author with author_id ${req.params.authorId} not found, constructing transient fallback`);
       // Fetch books from same org to get author_name
-      const books = await Book.find({ author_id: req.params.authorId, organization: req.orgId });
+      const books = await Book.find({ author_id: req.params.authorId, organization: req.orgId, showInOrg: { $ne: false } });
       if (books.length > 0) {
         author = new Author({
           organization: req.orgId,
@@ -41,7 +41,7 @@ router.get('/api/authors/:authorId', orgScope, async (req, res) => {
     }
 
     // Update books count
-    const booksCount = await Book.countDocuments({ author_id: req.params.authorId, organization: req.orgId });
+    const booksCount = await Book.countDocuments({ author_id: req.params.authorId, organization: req.orgId, showInOrg: { $ne: false } });
     author.books = booksCount;
 
     res.json({ status: 'Ok', data: author });
@@ -53,7 +53,7 @@ router.get('/api/authors/:authorId', orgScope, async (req, res) => {
 // Get books by author_id within organization
 router.get('/api/authors/:authorId/books', orgScope, async (req, res) => {
   try {
-    const books = await Book.find({ author_id: req.params.authorId, organization: req.orgId });
+    const books = await Book.find({ author_id: req.params.authorId, organization: req.orgId, showInOrg: { $ne: false } });
     if (!books.length) return res.status(404).json({ status: 'Error', data: 'No books found' });
 
     res.json({ status: 'Ok', data: books });

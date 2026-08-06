@@ -111,7 +111,7 @@ const AppSettingsTab = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         {/* ── Header ────────────────────────────────── */}
         <View style={styles.headerContainer}>
@@ -235,7 +235,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

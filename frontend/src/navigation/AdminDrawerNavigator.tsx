@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react-navigation/drawer';
-import { Platform, View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Platform, View, TouchableOpacity, Text, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AdminTabsNavigation from './AdminTabsNavigation';
 import AppSettingsTab from '../screens/AdminScreen/components/AppSettingsTab';
@@ -58,6 +58,9 @@ const AdminCustomDrawerContent = (props: any) => {
 
   return (
     <View style={{ flex: 1 }}>
+      {drawerStatus === 'open' && (
+        <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient?.[0] || colors.primary} />
+      )}
       <DrawerContentScrollView {...props}>
         <DrawerItemList {...props} />
 
@@ -174,11 +177,11 @@ const AdminDrawerNavigator = () => {
         drawerHideStatusBarOnOpen: Platform.OS === 'ios',
         overlayColor: 'transparent',
         drawerStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: colors.linearGradient?.[0] || colors.primary,
           width: '70%',
         },
         sceneStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: colors.linearGradient?.[0] || colors.primary,
         },
       }}
     >

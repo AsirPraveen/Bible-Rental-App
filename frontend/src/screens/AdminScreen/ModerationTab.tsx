@@ -157,7 +157,7 @@ export default function ModerationTab() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.container}>
@@ -215,7 +215,7 @@ const getStyles = (colors: any, theme: string) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

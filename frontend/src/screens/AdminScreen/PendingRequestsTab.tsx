@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView, TextInput } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import RequestCard from './components/RequestCard';
 import EmailTemplateModal from './components/EmailTemplateModal';
@@ -94,102 +95,106 @@ const PendingRequestsTab = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      <ScrollView style={styles.container}>
-        <View style={styles.section}>
-          <View style={styles.headerRow}>
-            <Text style={styles.sectionTitle}>Pending Rent Requests</Text>
-            <TouchableOpacity 
-              style={styles.tuneButton} 
-              onPress={() => setIsTemplateModalVisible(true)}
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <Text style={styles.headerText}>Pending Requests</Text>
+
+          <View style={styles.formCard}>
+            <View style={styles.headerRow}>
+              <Text style={styles.sectionTitle}>Rent Requests</Text>
+              <TouchableOpacity 
+                style={styles.tuneButton} 
+                onPress={() => setIsTemplateModalVisible(true)}
+              >
+                <MaterialIcons name="email" size={20} color={colors.tint} />
+                <Text style={styles.tuneButtonText}>Edit Email</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#64748B" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by book or user..."
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close" size={20} color="#64748B" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Sort Chips */}
+            <Text style={styles.filterLabel}>Sort by:</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.filterScroll}
+              contentContainerStyle={styles.filterScrollContent}
             >
-              <MaterialIcons name="email" size={20} color={colors.tint} />
-              <Text style={styles.tuneButtonText}>Edit Email</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, sortBy === 'date-asc' && styles.filterChipActive]}
+                onPress={() => setSortBy('date-asc')}
+              >
+                <Text style={[styles.filterChipText, sortBy === 'date-asc' && styles.filterChipTextActive]}>
+                  📅 Date (Oldest)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.filterChip, sortBy === 'date-desc' && styles.filterChipActive]}
+                onPress={() => setSortBy('date-desc')}
+              >
+                <Text style={[styles.filterChipText, sortBy === 'date-desc' && styles.filterChipTextActive]}>
+                  📅 Date (Newest)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.filterChip, sortBy === 'book-az' && styles.filterChipActive]}
+                onPress={() => setSortBy('book-az')}
+              >
+                <Text style={[styles.filterChipText, sortBy === 'book-az' && styles.filterChipTextActive]}>
+                  📖 Book (A-Z)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.filterChip, sortBy === 'user-az' && styles.filterChipActive]}
+                onPress={() => setSortBy('user-az')}
+              >
+                <Text style={[styles.filterChipText, sortBy === 'user-az' && styles.filterChipTextActive]}>
+                  👤 User (A-Z)
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            {processed.length > 0 ? (
+              processed.map((request: any) => (
+                <RequestCard
+                  key={`${request.userEmail}-${request.book_id}`}
+                  request={request}
+                  onApprove={handleApproveRequest}
+                  onReject={handleRejectRequest}
+                />
+              ))
+            ) : (
+              <Text style={styles.noDataText}>
+                {pendingRequests.length === 0 ? 'No pending requests' : 'No matching requests found'}
+              </Text>
+            )}
           </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#64748B" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by book or user..."
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close" size={20} color="#64748B" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Sort Chips */}
-        <Text style={styles.filterLabel}>Sort by:</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          <TouchableOpacity
-            style={[styles.filterChip, sortBy === 'date-asc' && styles.filterChipActive]}
-            onPress={() => setSortBy('date-asc')}
-          >
-            <Text style={[styles.filterChipText, sortBy === 'date-asc' && styles.filterChipTextActive]}>
-              📅 Date (Oldest)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, sortBy === 'date-desc' && styles.filterChipActive]}
-            onPress={() => setSortBy('date-desc')}
-          >
-            <Text style={[styles.filterChipText, sortBy === 'date-desc' && styles.filterChipTextActive]}>
-              📅 Date (Newest)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, sortBy === 'book-az' && styles.filterChipActive]}
-            onPress={() => setSortBy('book-az')}
-          >
-            <Text style={[styles.filterChipText, sortBy === 'book-az' && styles.filterChipTextActive]}>
-              📖 Book (A-Z)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterChip, sortBy === 'user-az' && styles.filterChipActive]}
-            onPress={() => setSortBy('user-az')}
-          >
-            <Text style={[styles.filterChipText, sortBy === 'user-az' && styles.filterChipTextActive]}>
-              👤 User (A-Z)
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
-
-        {processed.length > 0 ? (
-          processed.map((request: any) => (
-            <RequestCard
-              key={`${request.userEmail}-${request.book_id}`}
-              request={request}
-              onApprove={handleApproveRequest}
-              onReject={handleRejectRequest}
-            />
-          ))
-        ) : (
-          <Text style={styles.noDataText}>
-            {pendingRequests.length === 0 ? 'No pending requests' : 'No matching requests found'}
-          </Text>
-        )}
-      </View>
-    </ScrollView>
-    <EmailTemplateModal 
-      isVisible={isTemplateModalVisible} 
-      onClose={() => setIsTemplateModalVisible(false)} 
-    />
+      </LinearGradient>
+      <EmailTemplateModal 
+        isVisible={isTemplateModalVisible} 
+        onClose={() => setIsTemplateModalVisible(false)} 
+      />
     </SafeAreaView>
   );
 };
@@ -198,24 +203,34 @@ const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
+  },
+  gradient: {
+    flex: 1,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  scrollContainer: {
+    padding: 16,
+    paddingBottom: 30,
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: colors.tint,
+  headerText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#F6F1F1',
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  section: {
-    padding: 15,
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   sectionTitle: {
     fontSize: 20,
@@ -231,7 +246,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   tuneButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -258,7 +273,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
@@ -292,7 +307,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
     marginRight: 8,

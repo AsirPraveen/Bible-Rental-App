@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react-navigation/drawer';
-import { Platform, View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Platform, View, TouchableOpacity, Text, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import HomeTabsNavigation from './TabNavigator';
 import History from '../screens/History/History';

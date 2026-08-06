@@ -171,7 +171,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const status = error.response?.status;
         const code = error.response?.data?.code;
 
-        if (status === 403 && code === 'ORG_SUSPENDED') {
+        if (status === 401) {
+          await logout();
+          Alert.alert(
+            'Session Expired',
+            'Your session has expired or is invalid. Please log in again.',
+            [{ text: 'OK' }]
+          );
+          if (navigationRef.isReady()) {
+            navigationRef.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }
+        } else if (status === 403 && code === 'ORG_SUSPENDED') {
           await logout();
           Alert.alert(
             'Organization freezed',

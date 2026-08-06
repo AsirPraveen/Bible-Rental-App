@@ -14,6 +14,7 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { MaterialIcons } from '@expo/vector-icons';
 import LoadingScreen from '../../../components/LoadingScreen';
+import { useTheme, ColorsType } from '../../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -28,6 +29,8 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
   const [body, setBody] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors, theme);
 
   const fetchTemplate = async () => {
     setIsLoading(true);
@@ -77,13 +80,13 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
   };
 
   return (
-    <Modal visible={isVisible} animationType="fade" transparent={true}>
+    <Modal visible={isVisible} animationType="fade" transparent={true} statusBarTranslucent={true}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Edit Email Templates</Text>
             <TouchableOpacity onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#333" />
+              <MaterialIcons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -103,7 +106,9 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
           </View>
 
           {isLoading ? (
-            <LoadingScreen message="Loading template..." />
+            <View style={styles.loadingContainer}>
+              <LoadingScreen variant="transparent" message="Loading template..." />
+            </View>
           ) : (
             <ScrollView style={styles.form}>
               <Text style={styles.label}>Email Subject</Text>
@@ -112,6 +117,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
                 value={subject}
                 onChangeText={setSubject}
                 placeholder="Enter email subject"
+                placeholderTextColor={colors.textSecondary}
               />
 
               <Text style={styles.label}>Email Body (Content)</Text>
@@ -120,6 +126,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
                 value={body}
                 onChangeText={setBody}
                 placeholder="Enter email body"
+                placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={10}
                 textAlignVertical="top"
@@ -150,7 +157,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ColorsType, theme: string) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -158,9 +165,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     borderRadius: 15,
-    maxHeight: '80%',
+    height: 640,
     overflow: 'hidden',
   },
   header: {
@@ -169,16 +176,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.inputBg,
     padding: 5,
     margin: 15,
     borderRadius: 10,
@@ -190,7 +197,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBg,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -199,11 +206,11 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#146C94',
+    color: colors.tint,
     fontWeight: 'bold',
   },
   form: {
@@ -212,42 +219,43 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginBottom: 5,
     marginTop: 10,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 10,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.inputBg,
+    color: colors.text,
   },
   textArea: {
     height: 150,
   },
   guideBox: {
-    backgroundColor: '#e7f3f7',
+    backgroundColor: theme === 'dark' ? 'rgba(56, 189, 248, 0.1)' : '#e7f3f7',
     padding: 12,
     borderRadius: 8,
     marginTop: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#146C94',
+    borderLeftColor: colors.tint,
   },
   guideTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#146C94',
+    color: colors.tint,
     marginBottom: 5,
   },
   guideText: {
     fontSize: 13,
-    color: '#555',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   saveButton: {
-    backgroundColor: '#146C94',
+    backgroundColor: colors.primary,
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
@@ -260,9 +268,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   loadingContainer: {
-    padding: 40,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
 });
 

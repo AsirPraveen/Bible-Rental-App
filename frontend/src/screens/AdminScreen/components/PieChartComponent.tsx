@@ -17,21 +17,33 @@ const PieChartComponent = ({ data }: PieChartComponentProps) => {
   useEffect(() => {
     Animated.timing(animatedValue, {
       toValue: 1,
-      duration: 1500,
+      duration: 1200,
       useNativeDriver: true,
     }).start();
   }, []);
 
-  const chartData = data.map((book, index) => ({
-    name: book.book_name.length > 10 ? book.book_name.slice(0, 10) + '...' : book.book_name,
+  const totalRentals = data.reduce((sum, item) => sum + (item.rent_count || 0), 0);
+  const topBooks = data.slice(0, 5);
+
+  const chartColors = [
+    colors.primary,
+    colors.secondary,
+    colors.tint,
+    '#38BDF8',
+    '#F472B6',
+    '#FB7185',
+  ];
+
+  const chartData = topBooks.map((book, index) => ({
+    name: book.book_name,
     population: book.rent_count || 0,
-    color: index % 4 === 0 ? colors.primary : 
-           index % 4 === 1 ? colors.secondary :
-           index % 4 === 2 ? colors.tint :
-           '#667eea',
+    color: chartColors[index % chartColors.length],
     legendFontColor: colors.text,
     legendFontSize: 12,
   }));
+
+  // Calculate the centered padding left offset dynamically
+  const paddingLeftOffset = String((screenWidth - 70) / 4);
 
   return (
     <Animated.View 
@@ -41,56 +53,101 @@ const PieChartComponent = ({ data }: PieChartComponentProps) => {
           opacity: animatedValue,
           transform: [
             {
-              rotate: animatedValue.interpolate({
+              scale: animatedValue.interpolate({
                 inputRange: [0, 1],
-                outputRange: ['-10deg', '0deg'],
+                outputRange: [0.9, 1],
               }),
             },
           ],
         },
       ]}
     >
-      <View style={styles.chartGlow} />
-      <PieChart
-        data={chartData}
-        width={screenWidth - 80}
-        height={220}
-        chartConfig={{
-          color: (opacity = 1) => colors.tint,
-          labelColor: (opacity = 1) => colors.text,
-        }}
-        accessor="population"
-        backgroundColor="transparent"
-        paddingLeft="15"
-        absolute
-        hasLegend={true}
-      />
+      <View style={styles.chartWrapper}>
+        <PieChart
+          data={chartData}
+          width={screenWidth - 70}
+          height={200}
+          chartConfig={{
+            color: (opacity = 1) => colors.tint,
+            labelColor: (opacity = 1) => colors.text,
+          }}
+          accessor="population"
+          backgroundColor="transparent"
+          paddingLeft={paddingLeftOffset}
+          absolute
+          hasLegend={false}
+        />
+      </View>
+
+      {/* Premium Custom Legend Table */}
+      <View style={styles.legendContainer}>
+        {chartData.map((item, index) => {
+          const pct = totalRentals > 0 ? Math.round((item.population / totalRentals) * 100) : 0;
+          return (
+            <View key={index} style={styles.legendItem}>
+              <View style={styles.legendLeft}>
+                <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                <Text style={styles.legendText} numberOfLines={1}>
+                  {item.name}
+                </Text>
+              </View>
+              <Text style={styles.legendValue}>
+                {item.population} ({pct}%)
+              </Text>
+            </View>
+          );
+        })}
+      </View>
     </Animated.View>
   );
 };
 
 const getStyles = (colors: any) => StyleSheet.create({
   chartContainer: {
-    position: 'relative',
+    width: '100%',
     alignItems: 'center',
     marginVertical: 10,
   },
-  chart: {
-    borderRadius: 16,
+  chartWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
   },
-  chartGlow: {
-    position: 'absolute',
-    top: -5,
-    left: -5,
-    right: -5,
-    bottom: -5,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowColor: colors.border,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+  legendContainer: {
+    width: '100%',
+    marginTop: 15,
+    paddingHorizontal: 5,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  },
+  legendLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  colorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 12,
+  },
+  legendText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text,
+    flex: 1,
+  },
+  legendValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.tint,
   },
 });
 

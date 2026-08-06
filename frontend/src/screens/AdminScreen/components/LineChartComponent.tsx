@@ -17,16 +17,18 @@ const LineChartComponent = ({ data }: LineChartComponentProps) => {
   useEffect(() => {
     Animated.timing(animatedValue, {
       toValue: 1,
-      duration: 1000,
+      duration: 1200,
       useNativeDriver: true,
     }).start();
   }, []);
 
+  const topBooks = data.slice(0, 5);
+
   const chartData = {
-    labels: data.map((book) => book.book_name.slice(0, 6) + '...'),
+    labels: topBooks.map((_, index) => `B${index + 1}`),
     datasets: [
       {
-        data: data.map((book) => book.rent_count || 0),
+        data: topBooks.map((book) => book.rent_count || 0),
         color: (opacity = 1) => colors.tint,
         strokeWidth: 3,
       },
@@ -36,28 +38,28 @@ const LineChartComponent = ({ data }: LineChartComponentProps) => {
   const chartConfig = {
     backgroundColor: colors.cardBg,
     backgroundGradientFrom: colors.cardBg,
-    backgroundGradientTo: colors.background,
+    backgroundGradientTo: colors.cardBg,
     backgroundGradientFromOpacity: 1,
-    backgroundGradientToOpacity: 0.8,
+    backgroundGradientToOpacity: 1,
     decimalPlaces: 0,
-    color: (opacity = 1) => colors.theme === 'dark' ? `rgba(56, 189, 248, ${opacity})` : `rgba(20, 108, 148, ${opacity})`,
-    labelColor: (opacity = 1) => colors.text,
+    color: (opacity = 1) => colors.tint,
+    labelColor: (opacity = 1) => colors.textSecondary,
     style: {
       borderRadius: 16,
     },
     propsForBackgroundLines: {
       strokeDasharray: '3,3',
-      stroke: colors.theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(20, 108, 148, 0.1)',
+      stroke: colors.theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(20, 108, 148, 0.08)',
       strokeWidth: 1,
     },
     propsForDots: {
-      r: '6',
-      strokeWidth: '3',
+      r: '5',
+      strokeWidth: '2',
       stroke: colors.secondary,
-      fill: colors.primary,
+      fill: colors.tint,
     },
     propsForLabels: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
     },
   };
@@ -72,54 +74,97 @@ const LineChartComponent = ({ data }: LineChartComponentProps) => {
             {
               translateY: animatedValue.interpolate({
                 inputRange: [0, 1],
-                outputRange: [20, 0],
+                outputRange: [15, 0],
               }),
             },
           ],
         },
       ]}
     >
-      <View style={styles.chartGlow} />
       <LineChart
         data={chartData}
-        width={screenWidth - 80}
-        height={220}
+        width={screenWidth - 70}
+        height={180}
         yAxisLabel=""
         chartConfig={chartConfig}
         style={styles.chart}
         bezier
         fromZero={true}
-        withShadow={false}
+        withShadow={true}
         withDots={true}
         withInnerLines={true}
         withOuterLines={false}
       />
+
+      {/* Legend / Key Table */}
+      <View style={styles.legendContainer}>
+        {topBooks.map((book, index) => (
+          <View key={index} style={styles.legendItem}>
+            <View style={styles.legendLeft}>
+              <Text style={styles.legendKey}>B{index + 1}</Text>
+              <Text style={styles.legendName} numberOfLines={1}>
+                {book.book_name}
+              </Text>
+            </View>
+            <Text style={styles.legendValue}>{book.rent_count || 0} rentals</Text>
+          </View>
+        ))}
+      </View>
     </Animated.View>
   );
 };
 
 const getStyles = (colors: any) => StyleSheet.create({
   chartContainer: {
-    position: 'relative',
+    width: '100%',
     alignItems: 'center',
     marginVertical: 10,
   },
   chart: {
     borderRadius: 16,
   },
-  chartGlow: {
-    position: 'absolute',
-    top: -5,
-    left: -5,
-    right: -5,
-    bottom: -5,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowColor: colors.border,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+  legendContainer: {
+    width: '100%',
+    marginTop: 15,
+    paddingHorizontal: 5,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  },
+  legendLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  legendKey: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: colors.tint,
+    backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(20, 108, 148, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginRight: 12,
+    minWidth: 28,
+    textAlign: 'center',
+    overflow: 'hidden',
+  },
+  legendName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text,
+    flex: 1,
+  },
+  legendValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.tint,
   },
 });
 

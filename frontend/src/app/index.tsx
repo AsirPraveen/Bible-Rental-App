@@ -54,7 +54,7 @@ const ALWAYS_LIGHT_SCREENS = [
   'GameBattle',
 ];
 
-const BLUE_STATUS_BAR_SCREENS = [
+const SOLID_BLUE_HEADER_SCREENS = [
   'Home',
   'Dashboard',
   'Wishlist',
@@ -75,13 +75,42 @@ const BLUE_STATUS_BAR_SCREENS = [
   'Guest Settings',
   'QuestionDetails',
   'SongDetails',
+  'SuperAdmin',
+  'GeneratedPdfs',
+  'SongSelectionScreen',
+  'SongPdfGenerator',
+  'Manage Songs',
+  'SuperAdminOrgDetail',
+  'SuperAdminSongs',
+  'MessageNotes',
+  'NoteDetail',
+  'NoteForm',
+  'AllBooks',
+  'AllAuthors',
+  'BookDetails',
+  'AuthorBooks',
+  'BookPdf',
+  'MapViewer',
+];
+
+const GRADIENT_OR_CHAT_HEADER_SCREENS = [
+  'Book Analytics',
+  'Pending Screen',
+  'Create',
+  'About Admin',
+  'AdminScreen',
+  'Create Post',
+  'Add Book',
+  'App Analytics',
+  'Moderation',
+  'Manage Maps',
+  'ChatScreen',
+  'FellowshipDetails',
+  'CreateFellowship',
+  'AddFellowshipMembers',
   'OrgSelection',
   'OrgSettings',
   'MemberManagement',
-  'SuperAdmin',
-  'Generated PDFs',
-  'SongSelectionScreen',
-  'SongPdfGenerator',
 ];
 
 function ThemedStatusBar() {
@@ -108,7 +137,8 @@ function ThemedStatusBar() {
 
   const isDarkTheme = theme === 'dark';
   const isAlwaysLight = ALWAYS_LIGHT_SCREENS.includes(currentRoute);
-  const isBlueStatusBar = BLUE_STATUS_BAR_SCREENS.includes(currentRoute);
+  const isSolidBlue = SOLID_BLUE_HEADER_SCREENS.includes(currentRoute);
+  const isGradientOrChat = GRADIENT_OR_CHAT_HEADER_SCREENS.includes(currentRoute);
 
   let barStyle: 'light' | 'dark' = 'dark';
   let backgroundColor = 'transparent';
@@ -121,9 +151,12 @@ function ThemedStatusBar() {
     backgroundColor = 'transparent';
   } else {
     // Light Mode
-    if (isAlwaysLight || isBlueStatusBar) {
+    if (isSolidBlue) {
       barStyle = 'light';
-      backgroundColor = isBlueStatusBar ? colors.primary : 'transparent';
+      backgroundColor = colors.primary;
+    } else if (isGradientOrChat) {
+      barStyle = 'light';
+      backgroundColor = 'transparent';
     } else {
       barStyle = 'dark';
       backgroundColor = 'transparent';

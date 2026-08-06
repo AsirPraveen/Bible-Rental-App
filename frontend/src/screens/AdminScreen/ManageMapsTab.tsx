@@ -117,7 +117,7 @@ export default function ManageMapsTab() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -277,7 +277,7 @@ const getStyles = (colors: any, theme: string) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

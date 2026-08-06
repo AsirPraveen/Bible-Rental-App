@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Text, Platform, StatusBar, SafeArea
 import { useNavigation } from '@react-navigation/native';
 import { SquarePen, BookPlus, BarChart3, ShieldAlert, Music, Users } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme, ColorsType } from '../../context/ThemeContext';
 
 export default function CreateScreen() {
   const navigation = useNavigation<any>();
@@ -49,7 +49,7 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.grid}>
@@ -72,11 +72,11 @@ export default function CreateScreen() {
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
+const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   container: {
     flex: 1,
@@ -104,6 +104,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    borderWidth: 1.5,
+    borderColor: colors.secondary,
     overflow: 'hidden',
   },
   cardContent: {

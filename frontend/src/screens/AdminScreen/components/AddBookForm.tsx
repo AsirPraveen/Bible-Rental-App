@@ -284,6 +284,7 @@ const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }: AddB
         animationType="fade"
         transparent={true}
         onRequestClose={() => setShowAuthorSelectModal(false)}
+        statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -347,6 +348,7 @@ const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }: AddB
         animationType="fade"
         transparent={true}
         onRequestClose={() => setShowAddAuthorModal(false)}
+        statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.addAuthorModalContent]}>

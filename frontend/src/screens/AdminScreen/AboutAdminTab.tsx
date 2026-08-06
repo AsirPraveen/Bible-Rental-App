@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, Modal, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -321,7 +321,8 @@ const AboutAdminTab = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#146C94', '#19A7CE']} style={styles.gradient}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         {/* Header with Switch Workspace Dropdown */}
         <View style={styles.header}>
           <View style={{ width: 60 }} />
@@ -347,6 +348,7 @@ const AboutAdminTab = () => {
           transparent={true}
           animationType="fade"
           onRequestClose={() => setShowDropdown(false)}
+          statusBarTranslucent={true}
         >
           <TouchableOpacity 
             style={styles.dropdownOverlay}
@@ -585,7 +587,7 @@ const AboutAdminTab = () => {
 const getStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

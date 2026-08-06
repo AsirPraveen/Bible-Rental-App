@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ScrollView, Modal, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Searchbar, FAB, Chip, IconButton, Button, Card, Divider } from 'react-native-paper';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -266,72 +267,77 @@ const ManageSongsTab = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Manage Songs</Text>
-        <Searchbar
-          placeholder="Search songs..."
-          placeholderTextColor={colors.textSecondary}
-          iconColor={colors.textSecondary}
-          inputStyle={{ color: colors.text }}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchBar}
-          elevation={0}
-        />
-      </View>
+    <SafeAreaView style={styles.outer_container} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
+      <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Manage Songs</Text>
+          <Searchbar
+            placeholder="Search songs..."
+            placeholderTextColor={colors.textSecondary}
+            iconColor={colors.textSecondary}
+            inputStyle={{ color: colors.text }}
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={styles.searchBar}
+            elevation={0}
+          />
+        </View>
 
-      {/* Tabs Selector */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'org' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('org')}
-        >
-          <Text style={[styles.tabText, activeTab === 'org' && styles.tabTextActive]}>
-            {activeOrg ? `${activeOrg.name} Songs` : 'Org Songs'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'global' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('global')}
-        >
-          <Text style={[styles.tabText, activeTab === 'global' && styles.tabTextActive]}>
-            Global Songs
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.formCard}>
+          {/* Tabs Selector */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'org' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('org')}
+            >
+              <Text style={[styles.tabText, activeTab === 'org' && styles.tabTextActive]}>
+                {activeOrg ? `${activeOrg.name} Songs` : 'Org Songs'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'global' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('global')}
+            >
+              <Text style={[styles.tabText, activeTab === 'global' && styles.tabTextActive]}>
+                Global Songs
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-      <FlatList
-        data={songs}
-        keyExtractor={(item) => item._id}
-        renderItem={renderSongItem}
-        contentContainerStyle={styles.listContent}
-        refreshing={loading}
-        onRefresh={fetchSongs}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {activeTab === 'org'
-              ? 'No organization-specific songs found. Add one or associate global songs!'
-              : 'No global songs found.'}
-          </Text>
-        }
-      />
+          <FlatList
+            data={songs}
+            keyExtractor={(item) => item._id}
+            renderItem={renderSongItem}
+            contentContainerStyle={styles.listContent}
+            refreshing={loading}
+            onRefresh={fetchSongs}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>
+                {activeTab === 'org'
+                  ? 'No organization-specific songs found. Add one or associate global songs!'
+                  : 'No global songs found.'}
+              </Text>
+            }
+          />
 
-      {/* FAB to add a new song is only shown for the 'org' tab */}
-      {activeTab === 'org' && (
-        <FAB
-          icon="plus"
-          style={styles.fab}
-          onPress={openAddModal}
-          color="#fff"
-        />
-      )}
+          {/* FAB to add a new song is only shown for the 'org' tab */}
+          {activeTab === 'org' && (
+            <FAB
+              icon="plus"
+              style={styles.fab}
+              onPress={openAddModal}
+              color="#fff"
+            />
+          )}
+        </View>
+      </LinearGradient>
 
       <Modal
         visible={modalVisible}
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
+        statusBarTranslucent={true}
       >
         <SafeAreaView style={styles.modalContainer}>
           <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
@@ -509,22 +515,24 @@ const ManageSongsTab = () => {
 };
 
 const getStyles = (colors: any, theme: string) => StyleSheet.create({
-  container: {
+  outer_container: {
     flex: 1,
-    backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: colors.linearGradient[0],
+  },
+  gradient: {
+    flex: 1,
   },
   header: {
-    backgroundColor: colors.primary,
     padding: 16,
     paddingTop: 8,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 12,
+    color: '#F6F1F1',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   searchBar: {
     backgroundColor: colors.surface,
@@ -533,9 +541,8 @@ const getStyles = (colors: any, theme: string) => StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: theme === 'dark' ? colors.surface : '#E6F0FA',
-    margin: 16,
-    marginBottom: 4,
+    backgroundColor: theme === 'dark' ? colors.background : '#E6F0FA',
+    marginBottom: 16,
     borderRadius: 12,
     padding: 4,
   },
@@ -557,14 +564,13 @@ const getStyles = (colors: any, theme: string) => StyleSheet.create({
     color: '#fff',
   },
   listContent: {
-    padding: 16,
     paddingBottom: 80,
   },
   songCard: {
     marginBottom: 12,
     borderRadius: 12,
     elevation: 2,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderWidth: theme === 'dark' ? 1 : 0,
     borderColor: colors.border,
   },
@@ -639,6 +645,19 @@ const getStyles = (colors: any, theme: string) => StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: colors.tint,
+  },
+  formCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalContainer: {
     flex: 1,

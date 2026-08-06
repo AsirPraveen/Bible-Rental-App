@@ -20,5 +20,8 @@ router.get('/pending-rent-requests', auth, orgScope, adminAuth, bookController.g
 router.post('/approve-rent-request', auth, orgScope, adminAuth, bookController.approveRentRequest);
 router.post('/reject-rent-request', auth, orgScope, adminAuth, bookController.rejectRentRequest);
 router.get('/request-history', auth, orgScope, adminAuth, bookController.getRequestHistory);
+router.get('/admin/books', auth, orgScope, adminAuth, bookController.adminGetAllBooks);
+router.put('/books/:id', auth, orgScope, adminAuth, bookController.updateBook);
+router.delete('/books/:id', auth, orgScope, adminAuth, bookController.deleteBook);
 
 module.exports = router;

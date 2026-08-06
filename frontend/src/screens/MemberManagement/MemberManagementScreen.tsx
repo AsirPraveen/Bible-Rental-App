@@ -218,7 +218,7 @@ export default function MemberManagementScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           
@@ -256,7 +256,7 @@ export default function MemberManagementScreen({ navigation }: any) {
           {loading ? (
             <ActivityIndicator size="large" color={colors.tint} style={{ flex: 1 }} />
           ) : (
-            <View style={{ flex: 1 }}>
+            <View style={styles.formCard}>
               {activeTab === 'members' ? (
                 <View style={{ flex: 1 }}>
                   {pendingRequests.length > 0 && (
@@ -467,19 +467,20 @@ const getStyles = (colors: any) => StyleSheet.create({
   outerContainer: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,
   },
   container: {
     flex: 1,
-    padding: 20,
+    padding: 0,
+    paddingTop: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    paddingHorizontal: 20,
     marginBottom: 20,
   },
   backButton: {
@@ -494,7 +495,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.tint,
     marginBottom: 12,
   },
   pendingSection: {
@@ -507,7 +508,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   requestCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 12,
@@ -544,7 +545,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 12,
@@ -569,7 +570,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   memberActionBtn: {
     padding: 8,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
@@ -580,12 +581,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   tabHeader: {
     flexDirection: 'row',
     marginBottom: 20,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
@@ -607,12 +609,21 @@ const getStyles = (colors: any) => StyleSheet.create({
   tabButtonTextActive: {
     color: '#fff',
   },
-  inviteContainer: {
+  formCard: {
+    flex: 1,
     backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 20,
+    paddingBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  inviteContainer: {
+    flex: 1,
   },
   inviteTitle: {
     fontSize: 18,

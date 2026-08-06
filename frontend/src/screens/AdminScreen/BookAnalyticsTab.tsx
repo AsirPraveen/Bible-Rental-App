@@ -169,10 +169,10 @@ const BookAnalyticsTab = () => {
     );
   };
 
-  const renderChartItem = ({ item, index }:any) => {
+  const renderChartItem = ({ item, index }: any) => {
     const ChartComponent = item.component;
     return (
-      <View style={[styles.chartContainer, { width: width - 30 }]}>
+      <View style={[styles.chartContainer, { width: width - 40, marginHorizontal: 5 }]}>
         <View style={styles.chartHeader}>
           <Text style={styles.chartIcon}>{item.icon}</Text>
           <Text style={styles.chartTitle}>{item.title}</Text>
@@ -182,13 +182,15 @@ const BookAnalyticsTab = () => {
     );
   };
 
-  const onChartScroll = (event:any) => {
+  const onChartScroll = (event: any) => {
     const slideSize = width - 30;
     const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
-    setCurrentChartIndex(index);
+    if (index !== currentChartIndex && index >= 0 && index < chartData.length) {
+      setCurrentChartIndex(index);
+    }
   };
 
-  const scrollToChart = (index:any) => {
+  const scrollToChart = (index: any) => {
     if (chartCarouselRef.current) {
       chartCarouselRef.current.scrollToIndex({ index, animated: true });
     }
@@ -201,98 +203,105 @@ const BookAnalyticsTab = () => {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      
-      {/* Header with gradient */}
-      <LinearGradient
-        colors={colors.linearGradient}
-        style={styles.header}
-      >
-        <BlurView intensity={20} style={styles.headerBlur}>
-          <View style={styles.headerContent}>
-            <View style={styles.spacer} />
-            <View style={styles.titleContainer}>
-              <Text style={styles.headerTitle}>Admin Dashboard</Text>
-              <Text style={styles.headerSubtitle}>YOUTH ROOM</Text>
-            </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
-            </TouchableOpacity>
-          </View>
-        </BlurView>
-      </LinearGradient>
-      
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
-        
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+        <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
+
+        {/* Header with gradient */}
+        <LinearGradient
+          colors={colors.linearGradient}
+          style={styles.header}
         >
-          {/* Analytics Cards */}
-          <View style={styles.section}>
-            <Text style={styles.greeting}>Welcome {name} !!!</Text>
-            <Text style={styles.sectionTitle}>
-              <Text style={styles.titleIcon}>📊 </Text>
-              Analytics Overview
-            </Text>
-            <View style={styles.analyticsContainer}>
-              <AnalyticsCard title="Total Books" value={analytics.totalBooks} />
-              <AnalyticsCard title="Total Rented" value={analytics.totalRented} />
+          <BlurView intensity={20} style={styles.headerBlur}>
+            <View style={styles.headerContent}>
+              <View style={styles.spacer} />
+              <View style={styles.titleContainer}>
+                <Text style={styles.headerTitle}>Admin Dashboard</Text>
+                <Text style={styles.headerSubtitle}>YOUTH ROOM</Text>
+              </View>
+              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={24} color="#F6F1F1" />
+              </TouchableOpacity>
             </View>
-          </View>
+          </BlurView>
+        </LinearGradient>
 
-          {/* Charts Carousel Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              <Text style={styles.titleIcon}>📈 </Text>
-              Data Visualization
-            </Text>
-            
-            {/* Chart Carousel */}
-            <FlatList
-              ref={chartCarouselRef}
-              data={chartData}
-              renderItem={renderChartItem}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={onChartScroll}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.chartCarouselContainer}
-              snapToInterval={width - 30}
-              decelerationRate="fast"
-              snapToAlignment="start"
-            />
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
 
-            {/* Chart Indicators */}
-            <View style={styles.indicatorContainer}>
-              {chartData.map((_, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => scrollToChart(index)}
-                  style={[
-                    styles.indicator,
-                    {
-                      backgroundColor: currentChartIndex === index 
-                        ? colors.textLight 
-                        : 'rgba(255,255,255,0.3)'
-                    }
-                  ]}
-                />
-              ))}
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Analytics Cards */}
+            <View style={styles.section}>
+              <Text style={styles.greeting}>Welcome {name} !!!</Text>
+              <Text style={styles.sectionTitle}>
+                <Text style={styles.titleIcon}>📊 </Text>
+                Analytics Overview
+              </Text>
+              <View style={styles.analyticsContainer}>
+                <AnalyticsCard title="Total Books" value={analytics.totalBooks} />
+                <AnalyticsCard title="Total Rented" value={analytics.totalRented} />
+              </View>
             </View>
 
-            {/* Chart Navigation */}
-            {/* <View style={styles.chartNavigation}>
+            {/* Charts Carousel Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                <Text style={styles.titleIcon}>📈 </Text>
+                Data Visualization
+              </Text>
+
+              {/* Chart Carousel */}
+              <FlatList
+                ref={chartCarouselRef}
+                data={chartData}
+                renderItem={renderChartItem}
+                horizontal
+                pagingEnabled={false}
+                showsHorizontalScrollIndicator={false}
+                onScroll={onChartScroll}
+                scrollEventThrottle={16}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.chartCarouselContainer}
+                snapToInterval={width - 30}
+                decelerationRate="fast"
+                snapToAlignment="center"
+                disableIntervalMomentum={true}
+                getItemLayout={(data, index) => ({
+                  length: width - 30,
+                  offset: (width - 30) * index,
+                  index,
+                })}
+              />
+
+              {/* Chart Indicators */}
+              <View style={styles.indicatorContainer}>
+                {chartData.map((_, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => scrollToChart(index)}
+                    style={[
+                      styles.indicator,
+                      {
+                        backgroundColor: currentChartIndex === index
+                          ? colors.textLight
+                          : 'rgba(255,255,255,0.3)'
+                      }
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {/* Chart Navigation */}
+              {/* <View style={styles.chartNavigation}>
               {chartData.map((chart, index) => (
                 <TouchableOpacity
                   key={chart.id}
@@ -324,54 +333,54 @@ const BookAnalyticsTab = () => {
                 </TouchableOpacity>
               ))}
             </View> */}
-          </View>
+            </View>
 
-          {/* Popular Books */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              <Text style={styles.titleIcon}>🔥 </Text>
-              Trending Books
-            </Text>
-            {analytics.popularBooks?.length > 0 ? (
-              analytics.popularBooks.map((book, index) => (
-                <Animated.View
-                  key={book.book_id}
-                  style={[
-                    styles.bookItem,
-                    {
-                      opacity: fadeAnim,
-                      transform: [
-                        {
-                          translateX: slideAnim.interpolate({
-                            inputRange: [0, 50],
-                            outputRange: [0, index % 2 === 0 ? -50 : 50],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  {/* 👇 Pass index */}
-                  <PopularBookCard book={book} totalRented={analytics.totalRented} index={index} />
-                </Animated.View>
-              ))
-            ) : (
-              <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>No trending books available</Text>
-                <Text style={styles.noDataSubtext}>Add some books to see trends</Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-        
-      </Animated.View>
-      
-      {/* Floating background elements */}
-      <View style={styles.floatingElements}>
-        <View style={[styles.floatingCircle, styles.circle1]} />
-        <View style={[styles.floatingCircle, styles.circle2]} />
-        <View style={[styles.floatingCircle, styles.circle3]} />
-      </View>
+            {/* Popular Books */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                <Text style={styles.titleIcon}>🔥 </Text>
+                Trending Books
+              </Text>
+              {analytics.popularBooks?.length > 0 ? (
+                analytics.popularBooks.map((book, index) => (
+                  <Animated.View
+                    key={book.book_id}
+                    style={[
+                      styles.bookItem,
+                      {
+                        opacity: fadeAnim,
+                        transform: [
+                          {
+                            translateX: slideAnim.interpolate({
+                              inputRange: [0, 50],
+                              outputRange: [0, index % 2 === 0 ? -50 : 50],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
+                    {/* 👇 Pass index */}
+                    <PopularBookCard book={book} totalRented={analytics.totalRented} index={index} />
+                  </Animated.View>
+                ))
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>No trending books available</Text>
+                  <Text style={styles.noDataSubtext}>Add some books to see trends</Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+
+        </Animated.View>
+
+        {/* Floating background elements */}
+        <View style={styles.floatingElements}>
+          <View style={[styles.floatingCircle, styles.circle1]} />
+          <View style={[styles.floatingCircle, styles.circle2]} />
+          <View style={[styles.floatingCircle, styles.circle3]} />
+        </View>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -380,7 +389,7 @@ const BookAnalyticsTab = () => {
 const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   loadingContainer: {
     flex: 1,

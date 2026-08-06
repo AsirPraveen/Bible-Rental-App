@@ -1,8 +1,8 @@
 import React from 'react';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
-import { Platform, View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react-navigation/drawer';
+import { Platform, View, TouchableOpacity, Text, StyleSheet, StatusBar } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,9 +16,13 @@ const SuperAdminDrawer = createDrawerNavigator();
 const SuperAdminCustomDrawerContent = (props: any) => {
   const { colors, theme, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const drawerStatus = useDrawerStatus();
 
   return (
     <View style={{ flex: 1 }}>
+      {drawerStatus === 'open' && (
+        <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient?.[0] || colors.primary} />
+      )}
       <DrawerContentScrollView {...props}>
         {/* Header section with admin credentials */}
         <View style={styles.drawerHeader}>
@@ -70,11 +74,11 @@ const SuperAdminDrawerNavigator = () => {
         drawerHideStatusBarOnOpen: Platform.OS === 'ios',
         overlayColor: 'transparent',
         drawerStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: colors.linearGradient?.[0] || colors.primary,
           width: '75%',
         },
         sceneStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: colors.linearGradient?.[0] || colors.primary,
         },
       }}
     >

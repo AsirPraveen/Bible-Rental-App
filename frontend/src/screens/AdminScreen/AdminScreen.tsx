@@ -8,17 +8,14 @@ import { Check, Plus, X } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useTheme } from '../../context/ThemeContext';
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 console.log('API_URL admin screen:', BASE_URL); // Debug the API URL
-const Colors = {
-  bg: '#146C94',
-  active: '#AFD3E2',
-  inactive: '#F6F1F1',
-  transparent: 'transparent',
-};
 
 const AdminScreen = () => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [requestHistory, setRequestHistory] = useState([]);
@@ -183,6 +180,7 @@ const AdminScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Admin Dashboard</Text>
       </View>
@@ -229,10 +227,10 @@ const AdminScreen = () => {
                 </View>
                 <View style={styles.requestActions}>
                   <Pressable onPress={() => handleApproveRequest(request.userEmail, request.book_id)} style={styles.actionButton}>
-                    <Check size={20} color={Colors.inactive} />
+                    <Check size={20} color="#fff" />
                   </Pressable>
                   <Pressable onPress={() => handleRejectRequest(request.userEmail, request.book_id)} style={[styles.actionButton, { backgroundColor: '#FF6B6B' }]}>
-                    <X size={20} color={Colors.inactive} />
+                    <X size={20} color="#fff" />
                   </Pressable>
                 </View>
               </View>
@@ -277,7 +275,7 @@ const AdminScreen = () => {
         {/* Add New Book */}
         <View style={styles.section}>
           <Pressable onPress={() => setShowAddBookForm(!showAddBookForm)} style={styles.addButton}>
-            <Plus size={20} color={Colors.inactive} />
+            <Plus size={20} color="#fff" />
             <Text style={styles.addButtonText}>Add New Book</Text>
           </Pressable>
           {showAddBookForm && (
@@ -346,33 +344,34 @@ const AdminScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: Colors.bg,
+    color: colors.tint,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: Colors.bg,
+    backgroundColor: colors.primary,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.inactive,
+    color: colors.textLight,
   },
   scrollView: {
     flex: 1,
@@ -383,13 +382,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.bg,
+    color: colors.tint,
     marginBottom: 10,
   },
   subSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.bg,
+    color: colors.tint,
     marginTop: 10,
     marginBottom: 5,
   },
@@ -399,12 +398,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   analyticsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 15,
     width: '48%',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -413,18 +412,18 @@ const styles = StyleSheet.create({
   analyticsValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.bg,
+    color: colors.tint,
   },
   analyticsLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   popularBookCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 10,
     marginBottom: 5,
-    shadowColor: '#000',
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
@@ -433,24 +432,24 @@ const styles = StyleSheet.create({
   popularBookTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.bg,
+    color: colors.tint,
   },
   popularBookDetail: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   requestCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 15,
     padding: 15,
-    shadowColor: '#000',
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 5,
     borderLeftWidth: 5,
-    borderLeftColor: Colors.active,
+    borderLeftColor: colors.secondary,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -463,7 +462,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.active,
+    backgroundColor: colors.secondary,
     marginRight: 15,
   },
   requestDetails: {
@@ -472,33 +471,33 @@ const styles = StyleSheet.create({
   requestTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.bg,
+    color: colors.tint,
   },
   requestDetail: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   requestActions: {
     flexDirection: 'row',
   },
   actionButton: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     borderRadius: 5,
     padding: 8,
     marginLeft: 5,
   },
   historyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 15,
     padding: 15,
-    shadowColor: '#000',
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 5,
     borderLeftWidth: 5,
-    borderLeftColor: Colors.bg,
+    borderLeftColor: colors.primary,
   },
   historyContent: {
     flexDirection: 'row',
@@ -508,7 +507,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.bg,
+    backgroundColor: colors.primary,
     marginRight: 15,
   },
   historyDetails: {
@@ -517,11 +516,11 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.bg,
+    color: colors.tint,
   },
   historyDetail: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 5,
   },
   statusText: {
@@ -537,49 +536,49 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.bg,
+    backgroundColor: colors.tint,
     borderRadius: 10,
     padding: 10,
     justifyContent: 'center',
   },
   addButtonText: {
-    color: Colors.inactive,
+    color: '#fff',
     fontSize: 16,
     marginLeft: 5,
   },
   formContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 15,
     marginTop: 10,
-    shadowColor: '#000',
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
   },
   input: {
-    backgroundColor: Colors.inactive,
+    backgroundColor: colors.background,
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
   },
   submitButton: {
-    backgroundColor: '#19A7CE',
+    backgroundColor: colors.secondary,
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
   },
   submitButtonText: {
-    color: Colors.inactive,
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },

@@ -14,6 +14,7 @@ import { useSocket } from '../../context/SocketContext';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import Lottie from 'lottie-react-native';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -1145,7 +1146,8 @@ export default function ChatScreen() {
     : null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
@@ -1190,12 +1192,7 @@ export default function ChatScreen() {
       </LinearGradient>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.secondary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Loading scrolls...
-          </Text>
-        </View>
+        <LoadingScreen variant="transparent" message="Loading scrolls..." />
       ) : (
         <FlatList
           ref={flatListRef}
@@ -1321,6 +1318,7 @@ export default function ChatScreen() {
       <Modal
         visible={!!reactMenuMessageId}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setReactMenuMessageId(null)}
       >
@@ -1370,6 +1368,7 @@ export default function ChatScreen() {
       <Modal
         visible={showCreationMenu}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setShowCreationMenu(false)}
       >
@@ -1419,6 +1418,7 @@ export default function ChatScreen() {
       <Modal
         visible={showPollModal}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setShowPollModal(false)}
       >
@@ -1517,6 +1517,7 @@ export default function ChatScreen() {
       <Modal
         visible={showQnaModal}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setShowQnaModal(false)}
       >
@@ -1597,6 +1598,7 @@ export default function ChatScreen() {
       <Modal
         visible={showQnaAnswersModal}
         transparent
+        statusBarTranslucent
         animationType="fade"
         onRequestClose={() => setShowQnaAnswersModal(false)}
       >
@@ -1610,9 +1612,7 @@ export default function ChatScreen() {
             </View>
 
             {qnaAnswersLoading ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={colors.secondary} />
-              </View>
+              <LoadingScreen variant="transparent" message="Loading submissions..." />
             ) : (
               <FlatList
                 data={qnaAnswersList}
@@ -1639,7 +1639,7 @@ export default function ChatScreen() {
           </View>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

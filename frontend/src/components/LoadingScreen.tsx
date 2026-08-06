@@ -104,7 +104,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   transparentText: {
-    color: colors.primary,
+    color: colors.text,
   },
 });
 

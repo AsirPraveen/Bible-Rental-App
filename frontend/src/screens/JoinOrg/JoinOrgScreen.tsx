@@ -103,6 +103,7 @@ export default function JoinOrgScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           
@@ -207,7 +208,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   outerContainer: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

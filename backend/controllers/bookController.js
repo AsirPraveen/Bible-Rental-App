@@ -9,7 +9,7 @@ const { notifyOrgAdmins, notifyUserById } = require('../utils/notificationServic
 
 exports.getAllBooks = async (req, res) => {
   try {
-    const books = await Book.find({ organization: req.orgId });
+    const books = await Book.find({ organization: req.orgId, showInOrg: { $ne: false } });
     res.send({ status: "Ok", data: books });
   } catch (error) {
     res.send({ status: "error", data: error });
@@ -509,5 +509,121 @@ exports.toggleFavourite = async (req, res) => {
   } catch (error) {
     console.error('Error toggling favourite:', error);
     res.status(500).send({ status: "error", data: error.message });
+  }
+};
+
+exports.adminGetAllBooks = async (req, res) => {
+  try {
+    const books = await Book.find({ organization: req.orgId }).sort({ createdAt: -1 });
+    res.send({ status: "Ok", data: books });
+  } catch (error) {
+    console.error('Error fetching admin books:', error);
+    res.status(500).send({ status: "error", data: error.message });
+  }
+};
+
+exports.updateBook = async (req, res) => {
+  const { id } = req.params;
+  const {
+    book_name,
+    author_name,
+    pages,
+    preface,
+    year_of_publication,
+    author_id,
+    available_count,
+    cover_image,
+    thumbnail1,
+    thumbnail2,
+    showInOrg
+  } = req.body;
+
+  try {
+    const book = await Book.findOne({ _id: id, organization: req.orgId });
+    if (!book) {
+      return res.status(404).send({ status: "error", data: "Book not found" });
+    }
+
+    // Validate numeric fields if they are provided
+    if (pages !== undefined && (isNaN(Number(pages)) || Number(pages) <= 0)) {
+      return res.status(400).send({ status: "error", data: "Pages must be a valid positive number" });
+    }
+    if (available_count !== undefined && (isNaN(Number(available_count)) || Number(available_count) < 0)) {
+      return res.status(400).send({ status: "error", data: "Available count must be a non-negative number" });
+    }
+    if (year_of_publication !== undefined && isNaN(Number(year_of_publication))) {
+      return res.status(400).send({ status: "error", data: "Year of publication must be a valid number" });
+    }
+
+    // Update book details
+    if (book_name !== undefined) book.book_name = book_name.trim();
+    if (author_name !== undefined) book.author_name = author_name.trim();
+    if (pages !== undefined) book.pages = Number(pages);
+    if (preface !== undefined) book.preface = preface.trim();
+    if (year_of_publication !== undefined) book.year_of_publication = Number(year_of_publication);
+    if (author_id !== undefined) book.author_id = Number(author_id);
+
+    if (available_count !== undefined) {
+      book.available_count = Number(available_count);
+      book.available = book.available_count > 0;
+    }
+
+    if (cover_image !== undefined) book.cover_image = cover_image;
+    if (thumbnail1 !== undefined) book.thumbnail1 = thumbnail1;
+    if (thumbnail2 !== undefined) book.thumbnail2 = thumbnail2;
+    if (showInOrg !== undefined) book.showInOrg = Boolean(showInOrg);
+
+    await book.save();
+    res.send({ status: "Ok", data: book });
+  } catch (error) {
+    console.error("Error updating book:", error);
+    res.status(500).send({ status: "error", data: error.message || "Internal server error while updating book" });
+  }
+};
+
+exports.deleteBook = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const book = await Book.findOne({ _id: id, organization: req.orgId });
+    if (!book) {
+      return res.status(404).send({ status: "error", data: "Book not found" });
+    }
+
+    // Helper to extract Cloudinary public ID from URL and destroy it
+    const cloudinary = require('cloudinary').v2;
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+
+    const deleteAsset = async (url) => {
+      if (!url) return;
+      try {
+        const urlParts = url.split('/');
+        const versionIndex = urlParts.findIndex(part => part.startsWith('v') && /^\d+$/.test(part.substring(1)));
+        let publicId;
+        if (versionIndex !== -1 && versionIndex < urlParts.length - 1) {
+          publicId = urlParts.slice(versionIndex + 1).join('/').split('.')[0];
+        } else {
+          publicId = urlParts[urlParts.length - 1].split('.')[0];
+        }
+        await cloudinary.uploader.destroy(publicId);
+        console.log(`Deleted Cloudinary asset: ${publicId}`);
+      } catch (err) {
+        console.error('Error deleting Cloudinary asset:', err);
+      }
+    };
+
+    // Delete associated images from Cloudinary
+    await deleteAsset(book.cover_image);
+    await deleteAsset(book.thumbnail1);
+    await deleteAsset(book.thumbnail2);
+
+    await Book.findOneAndDelete({ _id: id, organization: req.orgId });
+    res.send({ status: "Ok", data: "Book deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting book:', error);
+    res.status(500).send({ status: "error", data: error.message || error });
   }
 };

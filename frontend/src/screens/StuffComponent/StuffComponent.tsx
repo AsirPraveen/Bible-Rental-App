@@ -257,8 +257,8 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     overflow: 'hidden',
-    borderWidth: colors.theme === 'dark' ? 1.5 : 0,
-    borderColor: colors.theme === 'dark' ? colors.secondary : 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.secondary,
   },
   lockedCard: {
     // subtle visual difference for locked cards

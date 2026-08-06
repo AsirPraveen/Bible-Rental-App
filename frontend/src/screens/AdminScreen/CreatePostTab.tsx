@@ -9,6 +9,7 @@ import DateTimePicker from '@react-native-community/datetimepicker'; // Updated 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
@@ -323,7 +324,7 @@ const CreatePostTab = () => {
 
   return (
     <SafeAreaView style={styles.outer_container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
@@ -433,36 +434,48 @@ const CreatePostTab = () => {
               </View>
 
               <Text style={styles.label}>Date (Optional)</Text>
-              <TouchableOpacity onPress={() => { }} style={styles.dateInput}>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInput}>
                 <Text style={styles.dateText}>
                   {date ? date.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }) : 'Select Date'}
                 </Text>
               </TouchableOpacity>
-              <Modal
-                transparent={true}
-                visible={showDatePicker}
-                animationType="fade"
-                onRequestClose={() => setShowDatePicker(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContent}>
-                    <DateTimePicker
-                      value={date || new Date()}
-                      mode="date"
-                      display="spinner"
-                      onChange={onDateChange}
-                    />
-                    <Button
-                      mode="contained"
-                      onPress={() => setShowDatePicker(false)}
-                      style={styles.modalButton}
-                      labelStyle={styles.buttonText}
-                    >
-                      Close
-                    </Button>
-                  </View>
-                </View>
-              </Modal>
+              {showDatePicker && (
+                Platform.OS === 'ios' ? (
+                  <Modal
+                    transparent={true}
+                    visible={showDatePicker}
+                    animationType="fade"
+                    onRequestClose={() => setShowDatePicker(false)}
+                    statusBarTranslucent={true}
+                  >
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.modalContent}>
+                        <DateTimePicker
+                          value={date || new Date()}
+                          mode="date"
+                          display="spinner"
+                          onChange={onDateChange}
+                        />
+                        <Button
+                          mode="contained"
+                          onPress={() => setShowDatePicker(false)}
+                          style={styles.modalButton}
+                          labelStyle={styles.buttonText}
+                        >
+                          Close
+                        </Button>
+                      </View>
+                    </View>
+                  </Modal>
+                ) : (
+                  <DateTimePicker
+                    value={date || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={onDateChange}
+                  />
+                )
+              )}
 
               <Text style={styles.label}>Time (Optional)</Text>
               <TouchableOpacity onPress={() => { setShowTimePicker(true); }} style={styles.dateInput}>
@@ -470,31 +483,43 @@ const CreatePostTab = () => {
                   {time ? time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Select Time'}
                 </Text>
               </TouchableOpacity>
-              <Modal
-                transparent={true}
-                visible={showTimePicker}
-                animationType="fade"
-                onRequestClose={() => setShowTimePicker(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContent}>
-                    <DateTimePicker
-                      value={time || new Date()}
-                      mode="time"
-                      display="spinner"
-                      onChange={onTimeChange}
-                    />
-                    <Button
-                      mode="contained"
-                      onPress={() => setShowTimePicker(false)}
-                      style={styles.modalButton}
-                      labelStyle={styles.buttonText}
-                    >
-                      Close
-                    </Button>
-                  </View>
-                </View>
-              </Modal>
+              {showTimePicker && (
+                Platform.OS === 'ios' ? (
+                  <Modal
+                    transparent={true}
+                    visible={showTimePicker}
+                    animationType="fade"
+                    onRequestClose={() => setShowTimePicker(false)}
+                    statusBarTranslucent={true}
+                  >
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.modalContent}>
+                        <DateTimePicker
+                          value={time || new Date()}
+                          mode="time"
+                          display="spinner"
+                          onChange={onTimeChange}
+                        />
+                        <Button
+                          mode="contained"
+                          onPress={() => setShowTimePicker(false)}
+                          style={styles.modalButton}
+                          labelStyle={styles.buttonText}
+                        >
+                          Close
+                        </Button>
+                      </View>
+                    </View>
+                  </Modal>
+                ) : (
+                  <DateTimePicker
+                    value={time || new Date()}
+                    mode="time"
+                    display="default"
+                    onChange={onTimeChange}
+                  />
+                )
+              )}
 
               <Text style={styles.label}>Image (Optional)</Text>
               <Button
@@ -539,9 +564,10 @@ const CreatePostTab = () => {
         visible={isManageModalVisible}
         animationType="fade"
         onRequestClose={() => setIsManageModalVisible(false)}
+        statusBarTranslucent={true}
       >
         <SafeAreaView style={styles.modalFullContainer}>
-          <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+          <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
           <LinearGradient colors={colors.linearGradient} style={styles.modalGradient}>
             <View style={styles.modalHeader}>
               <IconButton
@@ -555,7 +581,7 @@ const CreatePostTab = () => {
             </View>
 
             {loadingAdminPosts ? (
-              <ActivityIndicator size="large" color="#F6F1F1" style={{ marginTop: 50 }} />
+              <LoadingScreen variant="transparent" message="Loading posts..." />
             ) : (
               <ScrollView contentContainerStyle={styles.postsListContainer}>
                 {adminPosts.length === 0 ? (
@@ -617,6 +643,18 @@ const CreatePostTab = () => {
           </LinearGradient>
         </SafeAreaView>
       </Modal>
+
+      {isPosting && (
+        <Modal transparent={false} animationType="fade">
+          <LoadingScreen message="Creating post..." />
+        </Modal>
+      )}
+
+      {isUploading && (
+        <Modal transparent={false} animationType="fade">
+          <LoadingScreen message="Uploading image..." />
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
@@ -625,7 +663,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,
@@ -829,7 +867,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalFullContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   modalGradient: {
     flex: 1,

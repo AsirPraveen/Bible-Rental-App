@@ -11,6 +11,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useOrg } from '../../context/OrganizationContext';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
 
@@ -72,15 +73,31 @@ export default function FellowshipDetailsScreen() {
     return (isIdMatch || isEmailMatch) && m.role === 'shepherd';
   });
 
-  const handleToggleType = async () => {
+  const handleToggleType = () => {
     if (!fellowship || !isShepherd) return;
-    const newType = fellowship.type === 'normal' ? 'announcement' : 'normal';
-    try {
-      await axios.put(`${API_URL}/api/fellowships/${fellowshipId}`, { type: newType });
-      setFellowship(prev => prev ? { ...prev, type: newType } : null);
-    } catch (err) {
-      Alert.alert('Error', 'Failed to update fellowship type.');
-    }
+    const isToAnnouncement = fellowship.type === 'normal';
+    const newType = isToAnnouncement ? 'announcement' : 'normal';
+
+    Alert.alert(
+      isToAnnouncement ? 'Enable Announcement Only' : 'Disable Announcement Only',
+      isToAnnouncement
+        ? 'Are you sure you want to enable Announcement Only? Only shepherds will be able to post messages in this fellowship.'
+        : 'Are you sure you want to disable Announcement Only? All members will be able to post messages.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isToAnnouncement ? 'Enable' : 'Disable',
+          onPress: async () => {
+            try {
+              await axios.put(`${API_URL}/api/fellowships/${fellowshipId}`, { type: newType });
+              setFellowship(prev => prev ? { ...prev, type: newType } : null);
+            } catch (err) {
+              Alert.alert('Error', 'Failed to update fellowship type.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleRemoveMember = (memberId: string, memberName: string) => {
@@ -147,19 +164,19 @@ export default function FellowshipDetailsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.secondary} />
-        </View>
-      </SafeAreaView>
+      <>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+        <LoadingScreen message="Loading details..." />
+      </>
     );
   }
 
   if (!fellowship) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
         <Text style={{ color: colors.text, textAlign: 'center', marginTop: 40 }}>Fellowship not found.</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -167,7 +184,8 @@ export default function FellowshipDetailsScreen() {
   const members = fellowship.members.filter(m => m.role === 'member');
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
@@ -305,7 +323,7 @@ export default function FellowshipDetailsScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -7,6 +7,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Check, Search, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
+import LoadingScreen from '../../components/LoadingScreen';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
@@ -90,7 +91,8 @@ export default function AddFellowshipMembersScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
@@ -131,7 +133,7 @@ export default function AddFellowshipMembersScreen() {
         )}
 
         {loading ? (
-          <ActivityIndicator style={{ paddingVertical: 40 }} color={colors.secondary} />
+          <LoadingScreen variant="transparent" message="Loading members..." />
         ) : (
           <ScrollView style={styles.memberList} keyboardShouldPersistTaps="handled">
             {filteredMembers.map((member) => {
@@ -187,7 +189,7 @@ export default function AddFellowshipMembersScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

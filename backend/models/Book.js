@@ -17,7 +17,8 @@ const bookSchema = new mongoose.Schema({
   available: { type: Boolean, default: true },
   owned_by: { type: String, default: null },
   rent_from: { type: Date, default: null },
-  likes: { type: Number, default: 0 }
+  likes: { type: Number, default: 0 },
+  showInOrg: { type: Boolean, default: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Book', bookSchema, 'Bible Books');

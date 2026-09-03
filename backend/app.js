@@ -49,6 +49,14 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
+// Railway, Render, Fly and friends put exactly one proxy in front of the app.
+// Without this, express-rate-limit sees the proxy's IP for every request — so a
+// single user could exhaust the login limit for everyone — and v7+ throws
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR when it spots the header with trust proxy
+// unset. `true` would be wrong here: it lets any client spoof X-Forwarded-For
+// and dodge rate limiting entirely. Trust exactly the hops in front of us.
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
 app.use(express.json({ limit: '4mb' }));
 
 mongoose.connect(mongoUrl)

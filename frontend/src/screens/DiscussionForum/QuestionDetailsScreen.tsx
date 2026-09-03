@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Send, MessageCircle } from 'lucide-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 
 // ── Time-ago helper ──────────────────────────────────────────────
 function timeAgo(dateString: string): string {
@@ -220,7 +221,6 @@ export default function QuestionDetailsScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: { flex: 1 },

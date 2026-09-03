@@ -4,10 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Searchbar, FAB, Chip, IconButton, Button, Card } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 const PREDEFINED_TOPICS = ['Prayercell', 'Chorus', 'Worship', 'Skit Night'];
 
 const SuperAdminSongsTab = ({ navigation }: any) => {

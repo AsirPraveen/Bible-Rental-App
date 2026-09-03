@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, Platform, StatusBar, SafeAreaView, Image, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, Platform, StatusBar, Image, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, IconButton, Switch } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -9,10 +10,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import LoadingScreen from '../../components/LoadingScreen';
+import { API_BASE_URL } from '../../config/api';
+import { uploadToCloudinary } from '../../utils/cloudinaryUpload';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const API_URL = API_BASE_URL;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
-const uploadPresentBibleBooks = Constants.expoConfig?.extra?.uploadPresentBibleBooks ?? '';
 
 const CreateBookTab = () => {
   const { colors, theme } = useTheme();
@@ -245,21 +247,9 @@ const CreateBookTab = () => {
       const fileExtension = uri.split('.').pop()?.toLowerCase();
       const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
 
-      const formData = new FormData();
-      formData.append('file', {
-        uri,
-        type: mimeType,
-        name: `book_${imageType}_${Date.now()}.${fileExtension || 'jpg'}`,
-      } as any);
-      formData.append('upload_preset', uploadPresentBibleBooks);
+      const uploaded = await uploadToCloudinary(uri, 'book');
 
-      const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }
-      );
+      const response = { data: { secure_url: uploaded.secureUrl, public_id: uploaded.publicId } };
 
       if (response.data && response.data.secure_url) {
         const newPubId = response.data.public_id;
@@ -470,7 +460,12 @@ const CreateBookTab = () => {
     setEditPages(book.pages?.toString() || '');
     setEditPreface(book.preface || '');
     setEditYear(book.year_of_publication?.toString() || '');
-    setEditAvailableCount(book.available_count?.toString() || '');
+    // This field is the TOTAL number of copies owned, so prefill it with the
+    // total — not the shelf count, which would shrink the library by however
+    // many copies happen to be on loan when an admin opens the edit form.
+    const totalCopies = book.total_copies
+      ?? ((book.available_count || 0) + (book.owned_by?.length || 0));
+    setEditAvailableCount(totalCopies.toString());
     setEditCoverImageUrl(book.cover_image || '');
     setEditThumbnail1Url(book.thumbnail1 || '');
     setEditThumbnail2Url(book.thumbnail2 || '');
@@ -505,19 +500,9 @@ const CreateBookTab = () => {
       const fileExtension = uri.split('.').pop()?.toLowerCase();
       const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
 
-      const formData = new FormData();
-      formData.append('file', {
-        uri,
-        type: mimeType,
-        name: `book_edit_${imageType}_${Date.now()}.${fileExtension || 'jpg'}`,
-      } as any);
-      formData.append('upload_preset', uploadPresentBibleBooks);
+      const uploaded = await uploadToCloudinary(uri, 'book');
 
-      const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
+      const response = { data: { secure_url: uploaded.secureUrl, public_id: uploaded.publicId } };
 
       if (response.data && response.data.secure_url) {
         const newPubId = response.data.public_id;
@@ -804,7 +789,7 @@ const CreateBookTab = () => {
           <View style={styles.bookManageBadgeRow}>
             <View style={[styles.bookManageBadge, { backgroundColor: book.available ? '#4CAF50' : '#FF9800' }]}>
               <Text style={styles.bookManageBadgeText}>
-                {book.available_count || 0} available
+                {book.available_count || 0} of {book.total_copies ?? ((book.available_count || 0) + (book.owned_by?.length || 0))} available
               </Text>
             </View>
             <View style={[styles.bookManageBadge, { backgroundColor: '#E91E63' }]}>
@@ -906,7 +891,7 @@ const CreateBookTab = () => {
                 keyboardType="numeric"
               />
 
-              <Text style={styles.label}>Available Count *</Text>
+              <Text style={styles.label}>Total Copies *</Text>
               <TextInput
                 style={styles.input}
                 value={availableCount}
@@ -1202,7 +1187,7 @@ const CreateBookTab = () => {
                   keyboardType="numeric"
                 />
 
-                <Text style={styles.editLabel}>Available Count</Text>
+                <Text style={styles.editLabel}>Total Copies</Text>
                 <TextInput
                   style={styles.editInput}
                   value={editAvailableCount}
@@ -1281,7 +1266,6 @@ const CreateBookTab = () => {
 const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   gradient: {
@@ -1531,7 +1515,6 @@ const getStyles = (colors: any) => StyleSheet.create({
   // ========== Manage Books Modal Styles ==========
   manageModalContainer: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   manageModalGradient: {

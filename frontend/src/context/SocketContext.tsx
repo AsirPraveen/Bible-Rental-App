@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import { useAuth } from './AuthContext';
+import { API_BASE_URL } from '../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 type SocketContextType = {
   socket: Socket | null;

@@ -18,10 +18,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Plus, BookOpen } from 'lucide-react-native';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useTheme } from '../../../context/ThemeContext';
+import { API_BASE_URL } from '../../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 const { width } = Dimensions.get('window');
 

@@ -7,20 +7,40 @@ const Book = require('../models/Book');
 const Organization = require('../models/Organization');
 const nodemailer = require('nodemailer');
 const { resetPasswordTemplate } = require('../config/emailTemplate');
+const { verifyGoogleCredential } = require('../utils/googleVerify');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Only ever expose these fields of a user document to a client.
+const publicUser = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  image: user.image || ''
+});
 
 exports.register = async (req, res) => {
   const { name, email, mobile, password } = req.body;
   try {
-    const oldUser = await User.findOne({ email });
+    if (!name || !email || !password) {
+      return res.status(400).send({ status: "error", data: "Name, email and password are required" });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).send({ status: "error", data: "Please enter a valid email address" });
+    }
+    if (password.length < 8) {
+      return res.status(400).send({ status: "error", data: "Password must be at least 8 characters" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const oldUser = await User.findOne({ email: normalizedEmail });
     if (oldUser) return res.status(409).send({ status: "error", data: "User already exists!!" });
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       mobile,
       password: encryptedPassword,
       userType: 'User', // default to standard User type
@@ -29,9 +49,10 @@ exports.register = async (req, res) => {
       activeOrganizationId: null
     });
 
-    res.send({ status: "ok", data: "User Created", user: newUser });
+    res.send({ status: "ok", data: "User Created", user: publicUser(newUser) });
   } catch (error) {
-    res.send({ status: "error", data: error });
+    console.error('Register error:', error);
+    res.status(500).send({ status: "error", data: "An error occurred during registration" });
   }
 };
 
@@ -43,9 +64,10 @@ exports.login = async (req, res) => {
     const query = isPhone ? { mobile: emailOrPhone } : { email: emailOrPhone };
     const oldUser = await User.findOne(query).populate('memberships.organization');
 
-    if (!oldUser) {
-      console.log("User not found!");
-      return res.send({ data: "User doesn't exist!!" });
+    // Same response for an unknown account and a bad password, so the endpoint
+    // cannot be used to discover which email addresses are registered.
+    if (!oldUser || !oldUser.password) {
+      return res.status(401).send({ status: "error", data: "Invalid credentials" });
     }
 
     const passwordMatch = await bcrypt.compare(password, oldUser.password);
@@ -100,7 +122,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    console.log("Invalid password!");
     res.status(401).send({ status: "error", data: "Invalid credentials" });
 
   } catch (error) {
@@ -122,7 +143,9 @@ exports.getUserData = async (req, res) => {
     // Update active timestamp
     await User.updateOne({ email: decoded.email }, { $set: { lastActiveAt: new Date() } });
 
+    // Never ship credentials or reset material to the client.
     const user = await User.findOne({ email: decoded.email })
+      .select('-password -otp -otpExpiry -otpAttempts -resetPasswordExpires -secretText')
       .populate('memberships.organization')
       .lean();
 
@@ -240,6 +263,7 @@ exports.forgotPassword = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    user.otpAttempts = 0;
     await user.save();
 
     const emailUser = process.env.EMAIL_USER;
@@ -292,15 +316,37 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+const MAX_OTP_ATTEMPTS = 5;
+
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (!user || user.otp !== otp || Date.now() > user.otpExpiry) {
+    if (!user || !user.otp || Date.now() > user.otpExpiry) {
       return res.status(400).json({ status: 'error', data: 'Invalid or expired OTP' });
     }
+
+    if (user.otp !== otp) {
+      // Burn the OTP after a handful of wrong guesses so a 6-digit code cannot
+      // be brute-forced across rotating IPs (which slip past the IP rate limit).
+      user.otpAttempts = (user.otpAttempts || 0) + 1;
+      if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
+        user.otp = undefined;
+        user.otpExpiry = undefined;
+        user.otpAttempts = 0;
+        await user.save();
+        return res.status(400).json({
+          status: 'error',
+          data: 'Too many incorrect attempts. Please request a new OTP.'
+        });
+      }
+      await user.save();
+      return res.status(400).json({ status: 'error', data: 'Invalid or expired OTP' });
+    }
+
     user.otp = undefined;
     user.otpExpiry = undefined;
+    user.otpAttempts = 0;
     user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min window to reset
     await user.save();
     res.json({ status: 'ok', message: 'OTP verified' });
@@ -333,44 +379,49 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// Runs behind the `auth` middleware — the token comes from the Authorization
+// header and the account is always req.user, never an id supplied in the body.
 exports.updatePushToken = async (req, res) => {
-  const { token, expoPushToken } = req.body;
+  const { expoPushToken } = req.body;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findOne({ email: decoded.email });
-
-    if (!user) {
-      return res.status(404).send({ status: "error", message: "User not found" });
-    }
-
-    user.expoPushToken = expoPushToken;
-    await user.save();
-
+    await User.updateOne({ _id: req.user._id }, { $set: { expoPushToken: expoPushToken || null } });
     res.send({ status: "Ok", message: "Push token updated successfully" });
   } catch (error) {
     console.error('Error updating push token:', error);
-    res.status(500).send({ status: "error", message: error.message });
+    res.status(500).send({ status: "error", message: "Failed to update push token" });
   }
 };
 
 exports.googleLogin = async (req, res) => {
-  const { googleId, email, name, photoUrl } = req.body;
+  const { idToken, accessToken } = req.body;
   try {
-    if (!email || !googleId) {
-      return res.status(400).json({ error: 'Missing required Google credentials' });
+    // The email is taken from the credential Google signed, never from the body.
+    let profile;
+    try {
+      profile = await verifyGoogleCredential({ idToken, accessToken });
+    } catch (verifyErr) {
+      console.warn('Google credential rejected:', verifyErr.message);
+      return res.status(401).json({ status: 'error', error: 'Google sign-in could not be verified.' });
     }
 
+    const email = profile.email;
     let user = await User.findOne({ email }).populate('memberships.organization');
 
     if (!user) {
-      console.log('New Google user detected (not created yet):', email);
+      // Hand back a short-lived ticket so google-set-password can trust this
+      // verification instead of re-accepting an email address from the client.
+      const signupTicket = jwt.sign(
+        { email, name: profile.name, image: profile.picture, googleId: profile.googleId, purpose: 'google_signup' },
+        JWT_SECRET,
+        { expiresIn: '10m' }
+      );
       return res.status(200).json({
         status: 'ok',
         isNewUser: true,
+        signupTicket,
+        userData: { name: profile.name, email, image: profile.picture }
       });
     }
-
-    console.log('Existing Google user logged in:', email);
 
     if (user.globalRole !== 'SuperAdmin' && user.activeOrganizationId) {
       const activeOrg = await Organization.findById(user.activeOrganizationId);
@@ -422,37 +473,62 @@ exports.googleLogin = async (req, res) => {
     });
   } catch (error) {
     console.error('Google login error:', error);
-    res.status(500).json({ error: error.message || 'Google login failed' });
+    res.status(500).json({ status: 'error', error: 'Google login failed' });
   }
 };
 
+/**
+ * Completes Google sign-up by setting a password on a BRAND NEW account.
+ *
+ * This endpoint can only create an account, never modify one. The email comes
+ * from the short-lived signupTicket issued by googleLogin after it verified the
+ * credential with Google — an existing user changes their password through the
+ * OTP flow (forgot-password → verify-otp → reset-password), not through here.
+ */
 exports.googleSetPassword = async (req, res) => {
-  const { email, newPassword, name, googleId, image } = req.body;
+  // `name` is a cosmetic display name the user can edit on the sign-up screen.
+  // The email — the actual security boundary — comes only from the ticket.
+  const { signupTicket, newPassword, name } = req.body;
   try {
-    if (!email || !newPassword) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!signupTicket || !newPassword) {
+      return res.status(400).json({ status: 'error', error: 'Signup ticket and password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ status: 'error', error: 'Password must be at least 8 characters' });
     }
 
-    let user = await User.findOne({ email });
+    let ticket;
+    try {
+      ticket = jwt.verify(signupTicket, JWT_SECRET);
+    } catch (_) {
+      return res.status(401).json({ status: 'error', error: 'Your sign-up session expired. Please sign in with Google again.' });
+    }
 
-    if (!user) {
-      user = await User.create({
-        name: name || email.split('@')[0],
-        email,
-        mobile: '',
-        password: await bcrypt.hash(newPassword, 10),
-        userType: 'User',
-        globalRole: null,
-        image: image || '',
-        secretText: '',
-        googleId: googleId || '',
+    if (ticket.purpose !== 'google_signup' || !ticket.email) {
+      return res.status(401).json({ status: 'error', error: 'Invalid sign-up session. Please sign in with Google again.' });
+    }
+
+    const email = ticket.email.toLowerCase().trim();
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({
+        status: 'error',
+        error: 'An account already exists for this email. Please sign in, or use "Forgot password" to reset it.'
       });
-      console.log('Google user created with password:', email);
-    } else {
-      user.password = await bcrypt.hash(newPassword, 10);
-      await user.save();
-      console.log('Google user password updated:', email);
     }
+
+    const user = await User.create({
+      name: (typeof name === 'string' && name.trim()) || ticket.name || email.split('@')[0],
+      email,
+      mobile: '',
+      password: await bcrypt.hash(newPassword, 10),
+      userType: 'User',
+      globalRole: null,
+      image: ticket.image || '',
+      secretText: '',
+      googleId: ticket.googleId || '',
+    });
 
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '30d' });
     res.json({
@@ -464,6 +540,6 @@ exports.googleSetPassword = async (req, res) => {
     });
   } catch (error) {
     console.error('Google set password error:', error);
-    res.status(500).json({ error: error.message || 'Failed to create account' });
+    res.status(500).json({ status: 'error', error: 'Failed to create account' });
   }
 };

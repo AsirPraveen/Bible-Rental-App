@@ -15,11 +15,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X, Heart } from 'lucide-react-native';
 import axios from "axios";
-import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 type RootStackParamList = {
   AllBooks: { books?: any[] };
   BookDetails: { book: any };

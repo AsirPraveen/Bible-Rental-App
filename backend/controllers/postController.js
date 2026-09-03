@@ -1,6 +1,24 @@
 const Post = require('../models/Post');
 const User = require('../models/UserDetails');
 
+/**
+ * Shapes a post for a member-facing response.
+ *
+ * `likedBy` and `targetUsers` are arrays of email addresses. Sending them to
+ * every reader handed out a member directory, so they are replaced with the
+ * one derived fact the UI actually needs — whether *this* reader liked it.
+ * The admin list (`/api/admin/posts`) still returns targetUsers, which is the
+ * only screen that displays them.
+ */
+const forMember = (post, userEmail) => {
+  const doc = post.toObject ? post.toObject() : post;
+  const { likedBy, targetUsers, ...rest } = doc;
+  return {
+    ...rest,
+    likedByMe: Array.isArray(likedBy) && likedBy.includes(userEmail)
+  };
+};
+
 exports.createPost = async (req, res) => {
   const { title, description, date, time, imageUrl, audienceType, targetUsers, showInNotification, visibility } = req.body;
   try {
@@ -65,7 +83,8 @@ exports.createPost = async (req, res) => {
 };
 
 exports.getAllPosts = async (req, res) => {
-  const { userEmail } = req.query;
+  // Audience targeting follows the authenticated caller, not a query string.
+  const userEmail = req.user.email;
   try {
     // Show posts belonging to this organization OR cross-org public posts
     let query = {
@@ -90,7 +109,7 @@ exports.getAllPosts = async (req, res) => {
     }
 
     const posts = await Post.find(query).sort({ createdAt: -1 });
-    res.send({ status: "Ok", data: posts });
+    res.send({ status: "Ok", data: posts.map(p => forMember(p, userEmail)) });
   } catch (error) {
     console.error('Error fetching posts:', error);
     res.status(500).send({ status: "error", data: error.message });
@@ -122,7 +141,8 @@ exports.updatePostLikes = async (req, res) => {
 
 exports.toggleLike = async (req, res) => {
   const { postId } = req.params;
-  const userEmail = req.body.userEmail;
+  // Attribute the like to the authenticated caller, not to a body field.
+  const userEmail = req.user.email;
   try {
     const user = await User.findOne({ email: userEmail, 'memberships.organization': req.orgId });
     if (!user) {
@@ -150,7 +170,7 @@ exports.toggleLike = async (req, res) => {
       });
     }
 
-    res.send({ status: "Ok", data: await Post.findById(postId) });
+    res.send({ status: "Ok", data: forMember(await Post.findById(postId), userEmail) });
   } catch (error) {
     console.error('Error toggling like:', error);
     res.status(500).send({ status: "error", data: error.message });

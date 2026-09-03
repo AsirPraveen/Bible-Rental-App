@@ -4,19 +4,14 @@ const AppSettingsSchema = new mongoose.Schema({
   isGuestLoginEnabled: { type: Boolean, default: true },
   isGameEnabled: { type: Boolean, default: true },
   isImageGenEnabled: { type: Boolean, default: true },
+  // A guest has no organization, so getAppSettings serves THIS document to
+  // them — which makes these the flags the SuperAdmin's Guest Settings screen
+  // actually controls. Org-level guestAccess governs signed-in browsing.
+  // Only global content is reachable without signing in, hence three keys.
   guestAccess: {
-    Bible:            { type: Boolean, default: true },
-    Songs:            { type: Boolean, default: true },
-    HistoricalMaps:   { type: Boolean, default: true },
-    Notifications:    { type: Boolean, default: false },
-    ReadingTracker:   { type: Boolean, default: false },
-    ReadingPlanner:   { type: Boolean, default: false },
-    DiscussionForum:  { type: Boolean, default: false },
-    PrayerRequests:   { type: Boolean, default: false },
-    FastingTracker:   { type: Boolean, default: false },
-    BookRental:       { type: Boolean, default: false },
-    MessageNotes:     { type: Boolean, default: false },
-    BookPdf:          { type: Boolean, default: false }
+    Bible:             { type: Boolean, default: true },
+    HistoricalMaps:    { type: Boolean, default: true },
+    BiblicalArtifacts: { type: Boolean, default: true }
   }
 }, { timestamps: true });
 

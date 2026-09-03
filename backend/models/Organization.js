@@ -24,17 +24,16 @@ const organizationSchema = new mongoose.Schema({
 
   // Feature toggles (org-level)
   features: {
+    // Enforced server-side by middleware/requireFeature.
     bookRental: { type: Boolean, default: true },
-    forum: { type: Boolean, default: true },
-    prayerWall: { type: Boolean, default: true },
-    songs: { type: Boolean, default: true },
+    upperRoom: { type: Boolean, default: true },
+
+    // Surfaced to the client as isGameEnabled / isImageGenEnabled.
     game: { type: Boolean, default: true },
     imageGeneration: { type: Boolean, default: true },
-    messageNotes: { type: Boolean, default: true },
-    fastingTracker: { type: Boolean, default: true },
-    readingPlanner: { type: Boolean, default: true },
-    
-    // StuffComponent features
+
+    // Gate the cards on the Stuff screen. PascalCase keys match the screen
+    // titles the client navigates to, which is why the casing differs.
     Bible: { type: Boolean, default: true },
     Songs: { type: Boolean, default: true },
     HistoricalMaps: { type: Boolean, default: true },
@@ -45,24 +44,22 @@ const organizationSchema = new mongoose.Schema({
     PrayerRequests: { type: Boolean, default: true },
     MessageNotes: { type: Boolean, default: true },
     BookPdf: { type: Boolean, default: true },
-    upperRoom: { type: Boolean, default: true },
     SongPdf: { type: Boolean, default: true },
+    BiblicalArtifacts: { type: Boolean, default: true },
   },
+
+  // Whether guests may browse this organization at all, and which features
+  // they see once inside. Both live on the org so an org admin can actually
+  // change them — the global AppSettings flag was unreachable from the app.
+  isGuestLoginEnabled: { type: Boolean, default: true },
 
   // Guest access (migrated from AppSettings — per-org)
   guestAccess: {
-    Bible:            { type: Boolean, default: true },
-    Songs:            { type: Boolean, default: true },
-    HistoricalMaps:   { type: Boolean, default: true },
-    Notifications:    { type: Boolean, default: true },
-    DiscussionForum:  { type: Boolean, default: false },
-    PrayerRequests:   { type: Boolean, default: false },
-    FastingTracker:   { type: Boolean, default: false },
-    BookRental:       { type: Boolean, default: false },
-    MessageNotes:     { type: Boolean, default: false },
-    ReadingTracker:   { type: Boolean, default: true },
-    ReadingPlanner:   { type: Boolean, default: true },
-    BookPdf:          { type: Boolean, default: false },
+    // A signed-out guest reaches only global content, so these three are the
+    // entire guest surface. Anything org-scoped requires signing in.
+    Bible:             { type: Boolean, default: true },
+    HistoricalMaps:    { type: Boolean, default: true },
+    BiblicalArtifacts: { type: Boolean, default: true },
   },
 
   // Status

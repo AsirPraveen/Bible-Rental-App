@@ -19,9 +19,9 @@ import Error from 'react-native-vector-icons/MaterialIcons';
 import { useState } from 'react';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 function RegisterPage() {
   const navigation = useNavigation();
   const { colors } = useTheme();
@@ -42,7 +42,7 @@ function RegisterPage() {
   const validateName = (name) => name.length > 1;
   const validateEmail = (email) => /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email);
   const validateMobile = (mobile) => /[6-9][0-9]{9}/.test(mobile);
-  const validatePassword = (password) => /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/.test(password);
+  const validatePassword = (password) => /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}/.test(password);
 
   const handleSubmit = () => {
     let localNameError = '';
@@ -61,7 +61,7 @@ function RegisterPage() {
     else if (!validateMobile(mobile)) localMobileError = 'Mobile must start with 6-9 and be 10 digits';
 
     if (!password) localPasswordError = 'Password is required';
-    else if (!validatePassword(password)) localPasswordError = 'Password must include uppercase, lowercase, number, and be at least 6 characters';
+    else if (!validatePassword(password)) localPasswordError = 'Password must include uppercase, lowercase, number, and be at least 8 characters';
 
     if (!confirmPassword) localConfirmPasswordError = 'Confirm password is required';
     else if (confirmPassword !== password) localConfirmPasswordError = 'Passwords do not match';
@@ -184,7 +184,7 @@ function RegisterPage() {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                if (!validatePassword(text)) setPasswordError('Password must include uppercase, lowercase, number, and be at least 6 characters');
+                if (!validatePassword(text)) setPasswordError('Password must include uppercase, lowercase, number, and be at least 8 characters');
                 else setPasswordError('');
 
                 if (confirmPassword && text !== confirmPassword) {

@@ -5,11 +5,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Searchbar, FAB, Chip, IconButton, Button, Card, Divider } from 'react-native-paper';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useOrg } from '../../context/OrganizationContext';
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 
 const PREDEFINED_TOPICS = ['Prayercell', 'Chorus', 'Worship', 'Skit Night'];
 
@@ -517,7 +517,6 @@ const ManageSongsTab = () => {
 const getStyles = (colors: any, theme: string) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   gradient: {

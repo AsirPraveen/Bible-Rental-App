@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, Platform, StatusBar, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, StatusBar, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, BookOpen, MessageSquare, HandHeart, ShieldCheck, ArrowLeft, Clock } from 'lucide-react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 
 interface NotificationSettingsState {
   readingReminders: boolean;
@@ -72,6 +73,17 @@ const NotificationSettings = () => {
       });
       if (response.data.status === 'Ok') {
         setSettings(response.data.data);
+
+        // The reminder cron compares the configured hour against the current
+        // hour in this zone, so a user who travels or lives outside the
+        // server's zone still gets reminded at their own 6pm.
+        const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (deviceZone && response.data.data?.timezone !== deviceZone) {
+          axios.put(`${BASE_URL}/api/users/notification-settings`,
+            { settings: { ...response.data.data, timezone: deviceZone } },
+            { headers: { Authorization: `Bearer ${token}` } }
+          ).catch(err => console.log('Could not sync timezone:', err?.message));
+        }
       }
     } catch (error) {
       console.error('Error fetching notification settings:', error);
@@ -338,7 +350,6 @@ const NotificationSettings = () => {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

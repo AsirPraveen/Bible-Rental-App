@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, StatusBar, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import RequestCard from './components/RequestCard';
 import EmailTemplateModal from './components/EmailTemplateModal';
-import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 
 const PendingRequestsTab = () => {
   const { colors } = useTheme();
@@ -202,7 +203,6 @@ const PendingRequestsTab = () => {
 const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   gradient: {

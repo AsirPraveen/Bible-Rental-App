@@ -63,8 +63,10 @@ exports.addBook = async (req, res) => {
       return res.status(400).send({ status: "error", data: "Book ID already exists in this organization" });
     }
 
-    // Validate required fields (book_id and available_count are resolved, so check finalBookId and finalAvailableCount)
-    if (!book_name || !author_name || !pages || !year_of_publication || !author_id || !finalBookId || !finalAvailableCount) {
+    // finalBookId and finalAvailableCount are resolved above and validated as
+    // numbers below — including them here made a legitimate 0 report as
+    // "missing" instead of hitting the specific numeric message.
+    if (!book_name || !author_name || !pages || !year_of_publication || !author_id) {
       return res.status(400).send({ status: "error", data: "Missing required fields" });
     }
 
@@ -81,8 +83,7 @@ exports.addBook = async (req, res) => {
       return res.status(400).send({ status: "error", data: "Year of publication must be a valid number" });
     }
 
-    // Create new book
-    await Book.create({
+    const fields = {
       organization: req.orgId,
       book_name: book_name.trim(),
       author_name: author_name.trim(),
@@ -93,13 +94,40 @@ exports.addBook = async (req, res) => {
       thumbnail2: thumbnail2 || null,
       year_of_publication: Number(year_of_publication),
       author_id: Number(author_id),
+      total_copies: finalAvailableCount,
       available_count: finalAvailableCount,
-      book_id: finalBookId,
       rent_count: 0,
       available: true,
-      owned_by: null,
+      owned_by: [],
       rent_from: null
-    });
+    };
+
+    // Two admins submitting at once can compute the same next book_id. The
+    // unique index on { organization, book_id } rejects the loser, so retry
+    // with a freshly read id rather than silently creating a duplicate.
+    const MAX_ATTEMPTS = 5;
+    let bookId = finalBookId;
+
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await Book.create({ ...fields, book_id: bookId });
+        break;
+      } catch (err) {
+        const isDuplicate = err && err.code === 11000;
+        if (!isDuplicate) throw err;
+
+        // An explicitly requested id that collides is a user error, not a race.
+        if (book_id) {
+          return res.status(400).send({ status: "error", data: "Book ID already exists in this organization" });
+        }
+        if (attempt >= MAX_ATTEMPTS) {
+          return res.status(409).send({ status: "error", data: "Could not allocate a book ID. Please try again." });
+        }
+
+        const latest = await Book.findOne({ organization: req.orgId }).sort({ book_id: -1 });
+        bookId = latest && latest.book_id ? latest.book_id + 1 : 1;
+      }
+    }
 
     res.send({ status: "Ok", data: "Book added successfully" });
   } catch (error) {
@@ -130,10 +158,13 @@ exports.getBookAnalytics = async (req, res) => {
 };
 
 exports.submitRentRequest = async (req, res) => {
-  const { userEmail, book_id } = req.body;
+  // Act on the authenticated caller, never on an email supplied in the body.
+  const userEmail = req.user.email;
+  const { book_id } = req.body;
   try {
     const book = await Book.findOne({ book_id, organization: req.orgId });
-    if (!book || !book.available) {
+    // Judge availability on the count, not the cached `available` flag.
+    if (!book || (book.available_count || 0) <= 0) {
       return res.status(400).send({ status: "error", data: "Book is not available" });
     }
 
@@ -142,12 +173,27 @@ exports.submitRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
-    // Check if the user already has a pending request for this book
+    // Check if the user already has a pending request for this book IN THIS ORG.
+    // book_id is a per-org counter, so the same number exists in other orgs too.
     const existingRequest = user.books_rented.find(
-      (request) => request.book_id === book_id && request.status === 'pending'
+      (request) => request.book_id === book_id
+        && request.status === 'pending'
+        && String(request.organization) === String(req.orgId)
     );
     if (existingRequest) {
       return res.status(400).send({ status: "error", data: "Rent request already pending" });
+    }
+
+    // One copy per person per title. Without this, someone already holding a
+    // copy could be approved for a second one — which decremented the shelf
+    // count twice while recording a single borrower.
+    const alreadyHolding = user.books_rented.find(
+      (r) => r.book_id === book_id
+        && r.status === 'approved'
+        && String(r.organization) === String(req.orgId)
+    );
+    if (alreadyHolding) {
+      return res.status(400).send({ status: "error", data: "You already have a copy of this book. Please return it first." });
     }
 
     // Add the rent request to the user's books_rented array
@@ -179,9 +225,12 @@ exports.getPendingRentRequests = async (req, res) => {
     });
     
     // Extract all unique book_ids from pending requests
+    const isThisOrg = (request) =>
+      request.status === 'pending' && String(request.organization) === String(req.orgId);
+
     const bookIds = users.flatMap(user =>
       user.books_rented
-        .filter(request => request.status === 'pending')
+        .filter(isThisOrg)
         .map(request => request.book_id)
     ).filter((id, index, self) => self.indexOf(id) === index);
 
@@ -192,7 +241,7 @@ exports.getPendingRentRequests = async (req, res) => {
     // Map users to pending requests with correct book names
     const pendingRequests = users.flatMap(user =>
       user.books_rented
-        .filter(request => request.status === 'pending')
+        .filter(isThisOrg)
         .map(request => ({
           _id: request._id,
           userEmail: user.email,
@@ -219,9 +268,12 @@ exports.approveRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
-    // Find the specific pending request by book_id and status
+    // book_id is a per-org counter, so the organization must be part of the
+    // match — otherwise .find can return another tenant's request.
     const request = user.books_rented.find(
-      (r) => r.book_id === book_id && r.status === 'pending'
+      (r) => r.book_id === book_id
+        && r.status === 'pending'
+        && String(r.organization) === String(req.orgId)
     );
     if (!request) {
       return res.status(404).send({ status: "error", data: "Request not found or already processed" });
@@ -232,19 +284,39 @@ exports.approveRentRequest = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Book not found in this organization" });
     }
 
-    // Update the book availability and ownership
-    const newAvailableCount = Math.max((book.available_count || 1) - 1, 0);
+    // Claim a copy atomically. Guarding inside the query is what makes this
+    // safe: two admins approving at the same moment cannot both take the last
+    // copy, and approving more requests than there are copies is refused
+    // rather than silently flooring the count at zero.
+    const claimed = await Book.findOneAndUpdate(
+      {
+        book_id,
+        organization: req.orgId,
+        available_count: { $gt: 0 },
+        owned_by: { $ne: userEmail }
+      },
+      {
+        $inc: { available_count: -1, rent_count: 1 },
+        $push: { owned_by: userEmail },
+        $set: { rent_from: new Date() }
+      },
+      { new: true }
+    );
+
+    if (!claimed) {
+      const holding = (book.owned_by || []).includes(userEmail);
+      return res.status(409).send({
+        status: "error",
+        data: holding
+          ? "This member already has a copy of this book."
+          : "No copies are available right now."
+      });
+    }
+
+    // Keep the cached display flag in step with the count.
     await Book.updateOne(
-      { book_id, organization: req.orgId },
-      { 
-        $set: { 
-          available: newAvailableCount > 0, 
-          owned_by: userEmail, 
-          rent_from: new Date(),
-          available_count: newAvailableCount
-        }, 
-        $inc: { rent_count: 1 } 
-      }
+      { _id: claimed._id },
+      { $set: { available: claimed.available_count > 0 } }
     );
 
     // Update the specific request status using its _id and award 50 Talents
@@ -321,7 +393,9 @@ exports.rejectRentRequest = async (req, res) => {
     }
 
     const request = user.books_rented.find(
-      (r) => r.book_id === book_id && r.status === 'pending'
+      (r) => r.book_id === book_id
+        && r.status === 'pending'
+        && String(r.organization) === String(req.orgId)
     );
     if (!request) {
       return res.status(404).send({ status: "error", data: "Request not found or already processed" });
@@ -401,12 +475,10 @@ exports.getRequestHistory = async (req, res) => {
 };
 
 exports.returnBook = async (req, res) => {
-  const { book_id, userEmail } = req.body;
-  const targetEmail = userEmail || (req.user ? req.user.email : null);
-  
-  if (!targetEmail) {
-    return res.status(400).send({ status: "error", data: "User email is required" });
-  }
+  const { book_id } = req.body;
+  // Act on the authenticated caller. This route also awards 100 talents, so
+  // accepting a body-supplied email made it a currency faucet.
+  const targetEmail = req.user.email;
 
   try {
     const user = await User.findOne({ email: targetEmail, 'memberships.organization': req.orgId });
@@ -414,9 +486,11 @@ exports.returnBook = async (req, res) => {
       return res.status(404).send({ status: "error", data: "User not found in this organization" });
     }
 
-    // Find an active approved rental request for this book
+    // Find an active approved rental for this book IN THIS ORGANIZATION.
     const request = user.books_rented.find(
-      (r) => r.book_id === Number(book_id) && r.status === 'approved'
+      (r) => r.book_id === Number(book_id)
+        && r.status === 'approved'
+        && String(r.organization) === String(req.orgId)
     );
     if (!request) {
       return res.status(400).send({ status: "error", data: "No active approved rental found for this book" });
@@ -427,18 +501,33 @@ exports.returnBook = async (req, res) => {
       return res.status(404).send({ status: "error", data: "Book not found in this organization" });
     }
 
-    // Update book availability and increment available_count
-    const newAvailableCount = (book.available_count || 0) + 1;
-    await Book.updateOne(
-      { book_id, organization: req.orgId },
-      { 
-        $set: { 
-          available: true, 
-          available_count: newAvailableCount,
-          owned_by: null,
-          rent_from: null
-        } 
+    // Return the copy atomically. The owned_by guard means a double-tap can
+    // only succeed once, so the shelf count cannot be inflated past the
+    // number of copies the library owns.
+    let returned = await Book.findOneAndUpdate(
+      { book_id, organization: req.orgId, owned_by: targetEmail },
+      { $inc: { available_count: 1 }, $pull: { owned_by: targetEmail }, $set: { available: true } },
+      { new: true }
+    );
+
+    if (!returned) {
+      // Loans approved before owned_by tracked borrowers individually leave
+      // the user with an approved request but no entry in owned_by. Give the
+      // copy back, but never exceed the number of copies owned.
+      const totalCopies = Book.totalCopiesOf(book);
+      if ((book.available_count || 0) < totalCopies) {
+        returned = await Book.findOneAndUpdate(
+          { book_id, organization: req.orgId, available_count: { $lt: totalCopies } },
+          { $inc: { available_count: 1 }, $set: { available: true } },
+          { new: true }
+        );
       }
+    }
+
+    // Clear the loan date only once every copy is back on the shelf.
+    await Book.updateOne(
+      { book_id, organization: req.orgId, owned_by: { $size: 0 } },
+      { $set: { rent_from: null } }
     );
 
     // Update the specific request status to 'returned' and award 100 Talents
@@ -465,7 +554,8 @@ exports.returnBook = async (req, res) => {
 };
 
 exports.toggleFavourite = async (req, res) => {
-  const { userEmail, book_id } = req.body;
+  const userEmail = req.user.email;
+  const { book_id } = req.body;
   try {
     const user = await User.findOne({ email: userEmail, 'memberships.organization': req.orgId });
     if (!user) {
@@ -563,8 +653,22 @@ exports.updateBook = async (req, res) => {
     if (year_of_publication !== undefined) book.year_of_publication = Number(year_of_publication);
     if (author_id !== undefined) book.author_id = Number(author_id);
 
+    // The admin edits how many copies the library owns. The shelf count is
+    // then derived, so editing a title while copies are on loan can no longer
+    // silently invent or destroy copies.
     if (available_count !== undefined) {
-      book.available_count = Number(available_count);
+      const newTotal = Number(available_count);
+      const onLoan = (book.owned_by || []).length;
+
+      if (newTotal < onLoan) {
+        return res.status(400).send({
+          status: "error",
+          data: `${onLoan} ${onLoan === 1 ? 'copy is' : 'copies are'} currently on loan, so the total cannot be set below ${onLoan}.`
+        });
+      }
+
+      book.total_copies = newTotal;
+      book.available_count = newTotal - onLoan;
       book.available = book.available_count > 0;
     }
 
@@ -587,6 +691,17 @@ exports.deleteBook = async (req, res) => {
     const book = await Book.findOne({ _id: id, organization: req.orgId });
     if (!book) {
       return res.status(404).send({ status: "error", data: "Book not found" });
+    }
+
+    // Deleting a title while copies are out would leave those members with an
+    // approved rental pointing at a book that no longer exists — they could
+    // never return it, and it would sit in their history forever.
+    const onLoan = (book.owned_by || []).length;
+    if (onLoan > 0) {
+      return res.status(409).send({
+        status: "error",
+        data: `${onLoan} ${onLoan === 1 ? 'copy is' : 'copies are'} still on loan. Collect ${onLoan === 1 ? 'it' : 'them'} before deleting this book.`
+      });
     }
 
     // Helper to extract Cloudinary public ID from URL and destroy it

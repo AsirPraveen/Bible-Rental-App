@@ -3,6 +3,7 @@ const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const orgScope = require('../middleware/orgScope');
 const adminAuth = require('../middleware/adminAuth');
+const requireFeature = require('../middleware/requireFeature');
 const {
   createFellowship,
   getFellowships,
@@ -16,8 +17,9 @@ const {
   getQnaAnswers
 } = require('../controllers/fellowshipController');
 
-// All routes require auth + org scope
-router.use(authMiddleware, orgScope);
+// All routes require auth, org scope, and the Upper Room feature being on.
+// The toggle in App Settings previously changed nothing on the server.
+router.use(authMiddleware, orgScope, requireFeature('upperRoom', 'The Upper Room'));
 
 // Get org members for fellowship member picker (admin only)
 router.get('/org-members', adminAuth, getOrgMembersForPicker);

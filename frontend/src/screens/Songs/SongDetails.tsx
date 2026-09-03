@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, SafeAreaView, Platform, StatusBar, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Platform, StatusBar, TouchableOpacity, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import YoutubePlayer from "react-native-youtube-iframe";
 import { useTheme, ColorsType } from '../../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../../config/api';
 
 const { width } = Dimensions.get('window');
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 export default function SongDetailsScreen() {
   const { colors } = useTheme();
@@ -250,7 +251,6 @@ export default function SongDetailsScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   header: {

@@ -10,9 +10,9 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useOrg } from '../context/OrganizationContext';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 const AdminDrawer = createDrawerNavigator();
 

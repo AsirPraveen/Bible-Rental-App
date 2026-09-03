@@ -30,6 +30,8 @@ const organizationRoutes = require('./routes/organizationRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 const fellowshipRoutes = require('./routes/fellowshipRoutes');
 const generatedPdfRoutes = require('./routes/generatedPdfRoutes');
+const biblicalArtifactRoutes = require('./routes/biblicalArtifactRoutes');
+const imageGenRoutes = require('./routes/imageGenRoutes');
 
 const cron = require('node-cron');
 const { notifyUserById } = require('./utils/notificationService');
@@ -37,6 +39,15 @@ const ReadingStat = require('./models/ReadingStat');
 
 const mongoUrl = process.env.MONGO_URL;
 const PORT = process.env.PORT || 5001;
+
+// Fail at boot rather than at request time. Without this, a missing JWT_SECRET
+// starts the server happily and every jwt.sign() throws on the first login.
+const REQUIRED_ENV = ['MONGO_URL', 'JWT_SECRET'];
+const missingEnv = REQUIRED_ENV.filter(key => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
 
 app.use(express.json({ limit: '4mb' }));
 
@@ -84,48 +95,85 @@ app.use('/api/organizations', organizationRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/fellowships', fellowshipRoutes);
 app.use('/api', generatedPdfRoutes);
+app.use('/api', biblicalArtifactRoutes);
+app.use('/api', imageGenRoutes);
+
+// ─── 404 + TERMINAL ERROR HANDLER ────────────────────────────────────
+// Must come after every route. Without these, an unhandled throw inside an
+// async handler leaves the request hanging until the client times out.
+app.use((req, res) => {
+  res.status(404).json({ status: 'error', message: `No route matches ${req.method} ${req.originalUrl}` });
+});
+
+app.use((err, req, res, next) => {
+  console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({ status: 'error', message: 'Internal server error' });
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
+/**
+ * Returns the current hour (00-23) in the given IANA timezone, falling back to
+ * server time when the zone is missing or unrecognised.
+ */
+const currentHourIn = (timeZone) => {
+  try {
+    if (timeZone) {
+      return new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit', hour12: false, timeZone
+      }).format(new Date());
+    }
+  } catch (_) {
+    // Unknown zone - fall through to server time.
+  }
+  return new Date().getHours().toString().padStart(2, '0');
+};
 
 /**
  * DYNAMIC DAILY BIBLE READING REMINDER
- * Runs every hour on the minute 0.
- * Checks for users who have a reading reminder set for THIS hour.
+ * Runs every hour on the minute 0 and notifies users whose configured reminder
+ * hour matches the current hour IN THEIR OWN TIMEZONE.
  */
 cron.schedule('0 * * * *', async () => {
-  const currentHourNum = new Date().getHours();
-  const currentHourStr = currentHourNum.toString().padStart(2, '0') + ':00';
-  
-  console.log(`[Cron] Checking reading reminders for ${currentHourStr}...`);
-  
-  try {
-    // 1. Find all reading stats where at least one plan is NOT completed today
-    const stats = await ReadingStat.find({ 
-      'planProgress.completedToday': false 
-    }).populate('user');
+  console.log('[Cron] Checking reading reminders...');
 
-    for (const stat of stats) {
-      if (stat.user && stat.user.expoPushToken) {
-        const user = stat.user;
-        const userSettings = user.notificationSettings || {};
-        
-        // 2. Check if user has reading reminders enabled
-        if (userSettings.readingReminders !== false) {
-           // 3. Check if the current hour matches the user's preferred reminder time
-           // Note: We match the hour part (e.g., '18:00' matches 6:00 PM)
-           const preferredHour = userSettings.readingReminderTime?.split(':')[0];
-           
-           if (preferredHour === currentHourNum.toString().padStart(2, '0')) {
-              await notifyUserById(
-                user._id, 
-                'readingReminders', 
-                'Bible Study Time 📖', 
-                'Don\'t forget to finish your daily reading portion to grow in the Word today!',
-                { type: 'reading_planner' }
-              );
-              console.log(`[Cron] Notification sent to user ${user.email}`);
-           }
-        }
-      }
+  const BATCH_SIZE = 200;
+  let processed = 0;
+  let sent = 0;
+
+  try {
+    // Stream in batches instead of loading every matching stat (and its fully
+    // populated user) into memory at once.
+    const cursor = ReadingStat.find({ 'planProgress.completedToday': false })
+      .populate('user', 'email expoPushToken notificationSettings')
+      .batchSize(BATCH_SIZE)
+      .cursor();
+
+    for await (const stat of cursor) {
+      processed++;
+      const user = stat.user;
+      if (!user || !user.expoPushToken) continue;
+
+      const settings = user.notificationSettings || {};
+      if (settings.readingReminders === false) continue;
+
+      const preferredHour = (settings.readingReminderTime || '18:00').split(':')[0];
+      if (preferredHour !== currentHourIn(settings.timezone)) continue;
+
+      await notifyUserById(
+        user._id,
+        'readingReminders',
+        'Bible Study Time \u{1F4D6}',
+        'Time to finish your daily reading portion and grow in the Word today!',
+        { type: 'reading_planner' }
+      );
+      sent++;
     }
+
+    console.log(`[Cron] Reading reminders: ${sent} sent across ${processed} tracked plans.`);
   } catch (err) {
     console.error('[Cron] Error in reading reminder job:', err);
   }
@@ -134,6 +182,12 @@ cron.schedule('0 * * * *', async () => {
 const { execSync } = require('child_process');
 
 const freePort = (port) => {
+  // Development convenience only. On a shared host this would terminate
+  // whatever holds the port — including a healthy instance mid-restart.
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[Server] Port is in use. Refusing to kill the holder in production.');
+    return;
+  }
   if (process.platform !== 'win32') {
     console.log('[Server] Port-freeing is only supported on Windows. Skipping.');
     return;
@@ -164,8 +218,16 @@ const ChatMessage = require('./models/Message');
 const ChatUser = require('./models/UserDetails');
 
 const server = http.createServer(app);
+// Restrict socket origins once a web build ships. ALLOWED_ORIGINS is a
+// comma-separated list; native clients send no Origin header and are unaffected.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',').map(o => o.trim()).filter(Boolean);
+
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: {
+    origin: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : true,
+    methods: ['GET', 'POST']
+  },
   pingTimeout: 60000,
   pingInterval: 25000
 });
@@ -185,11 +247,43 @@ io.use(async (socket, next) => {
   }
 });
 
+/**
+ * Loads a fellowship and confirms the socket's user is a member of it.
+ *
+ * Every fellowship event must go through this. Membership was previously
+ * checked only in send_message, so joining a room, reacting, voting and
+ * answering a Q&A were all open to any authenticated user who knew an id.
+ *
+ * @returns {Promise<{fellowship: object, member: object}|null>}
+ */
+const authorizeFellowship = async (socket, fellowshipId) => {
+  if (!fellowshipId) return null;
+  let fellowship;
+  try {
+    fellowship = await Fellowship.findById(fellowshipId);
+  } catch (_) {
+    return null; // malformed ObjectId
+  }
+  if (!fellowship) return null;
+
+  const member = fellowship.members.find(
+    m => m.user.toString() === socket.user._id.toString()
+  );
+  if (!member) return null;
+
+  return { fellowship, member };
+};
+
 io.on('connection', (socket) => {
   console.log(`🔌 Socket connected: ${socket.user.name} (${socket.user._id})`);
 
   // ── Join a fellowship room ──
-  socket.on('join_fellowship', (fellowshipId) => {
+  socket.on('join_fellowship', async (fellowshipId) => {
+    const access = await authorizeFellowship(socket, fellowshipId);
+    if (!access) {
+      socket.emit('error_message', { message: 'You are not a member of this fellowship.' });
+      return;
+    }
     socket.join(`fellowship:${fellowshipId}`);
     console.log(`📖 ${socket.user.name} joined fellowship:${fellowshipId}`);
   });
@@ -206,13 +300,12 @@ io.on('connection', (socket) => {
       if (!fellowshipId || !text || !text.trim()) return;
 
       // Verify membership
-      const fellowship = await Fellowship.findById(fellowshipId);
-      if (!fellowship) return;
-
-      const member = fellowship.members.find(
-        m => m.user.toString() === socket.user._id.toString()
-      );
-      if (!member) return;
+      const access = await authorizeFellowship(socket, fellowshipId);
+      if (!access) {
+        socket.emit('error_message', { message: 'You are not a member of this fellowship.' });
+        return;
+      }
+      const { fellowship, member } = access;
 
       // Check announcement mode
       if (fellowship.type === 'announcement' && member.role !== 'shepherd') {
@@ -259,8 +352,9 @@ io.on('connection', (socket) => {
   });
 
   // ── Typing indicator ──
-  socket.on('typing', (data) => {
+  socket.on('typing', async (data) => {
     const { fellowshipId, isTyping } = data;
+    if (!await authorizeFellowship(socket, fellowshipId)) return;
     socket.to(`fellowship:${fellowshipId}`).emit('user_typing', {
       userId: socket.user._id,
       userName: socket.user.name,
@@ -272,9 +366,10 @@ io.on('connection', (socket) => {
   socket.on('react_message', async (data) => {
     try {
       const { fellowshipId, messageId, emoji } = data;
-      const ChatMessage = require('./models/Message');
+      if (!await authorizeFellowship(socket, fellowshipId)) return;
 
-      const message = await ChatMessage.findById(messageId);
+      // The message must belong to the fellowship we just authorized.
+      const message = await ChatMessage.findOne({ _id: messageId, fellowship: fellowshipId });
       if (!message) return;
 
       // Find any reaction by this user on this message
@@ -320,9 +415,9 @@ io.on('connection', (socket) => {
   socket.on('vote_poll', async (data) => {
     try {
       const { fellowshipId, messageId, optionIndex } = data;
-      const ChatMessage = require('./models/Message');
+      if (!await authorizeFellowship(socket, fellowshipId)) return;
 
-      const message = await ChatMessage.findById(messageId);
+      const message = await ChatMessage.findOne({ _id: messageId, fellowship: fellowshipId });
       if (!message || message.type !== 'poll' || !message.pollData) return;
 
       const userIdStr = socket.user._id.toString();
@@ -369,9 +464,9 @@ io.on('connection', (socket) => {
     try {
       const { fellowshipId, messageId, answerText } = data;
       if (!answerText || !answerText.trim()) return;
+      if (!await authorizeFellowship(socket, fellowshipId)) return;
 
-      const ChatMessage = require('./models/Message');
-      const message = await ChatMessage.findById(messageId);
+      const message = await ChatMessage.findOne({ _id: messageId, fellowship: fellowshipId });
       if (!message || message.type !== 'qna' || !message.qnaData) return;
 
       const userIdStr = socket.user._id.toString();
@@ -416,6 +511,8 @@ io.on('connection', (socket) => {
   socket.on('mark_read', async (data) => {
     try {
       const { fellowshipId } = data;
+      if (!await authorizeFellowship(socket, fellowshipId)) return;
+
       await ChatMessage.updateMany(
         {
           fellowship: fellowshipId,

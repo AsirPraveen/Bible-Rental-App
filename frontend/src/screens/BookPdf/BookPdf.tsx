@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Platform, StatusBar, SafeAreaView, Text } from 'react-native';
+import { View, StyleSheet, Platform, StatusBar, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
@@ -27,7 +28,6 @@ export default function BookPdfComponent() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   container: {
@@ -60,4 +60,4 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     lineHeight: 24,
     maxWidth: 300,
   },
-});
+});

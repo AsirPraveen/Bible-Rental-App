@@ -5,9 +5,13 @@ const Book = require('../models/Book');
 const orgScope = require('../middleware/orgScope');
 const auth = require('../middleware/auth');
 const adminAuth = require('../middleware/adminAuth');
+const requireFeature = require('../middleware/requireFeature');
+
+// Authors are part of the book catalogue, so member reads follow bookRental.
+const catalogueRead = [auth, orgScope, requireFeature('bookRental', 'Book rental')];
 
 // Get all authors within organization
-router.get('/api/authors', orgScope, async (req, res) => {
+router.get('/api/authors', catalogueRead, async (req, res) => {
   try {
     const authors = await Author.find({ organization: req.orgId });
     res.json({ status: 'Ok', data: authors });
@@ -17,7 +21,7 @@ router.get('/api/authors', orgScope, async (req, res) => {
 });
 
 // Get author by author_id within organization
-router.get('/api/authors/:authorId', orgScope, async (req, res) => {
+router.get('/api/authors/:authorId', catalogueRead, async (req, res) => {
   try {
     let author = await Author.findOne({ author_id: req.params.authorId, organization: req.orgId });
     if (!author) {
@@ -51,7 +55,7 @@ router.get('/api/authors/:authorId', orgScope, async (req, res) => {
 });
 
 // Get books by author_id within organization
-router.get('/api/authors/:authorId/books', orgScope, async (req, res) => {
+router.get('/api/authors/:authorId/books', catalogueRead, async (req, res) => {
   try {
     const books = await Book.find({ author_id: req.params.authorId, organization: req.orgId, showInOrg: { $ne: false } });
     if (!books.length) return res.status(404).json({ status: 'Error', data: 'No books found' });

@@ -34,6 +34,7 @@ const UserDetailSchema = new mongoose.Schema(
     secretText: String,
     otp: String,
     otpExpiry: Date,
+    otpAttempts: { type: Number, default: 0 },
     books_rented: [{
       book_id: { type: Number },
       organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
@@ -101,6 +102,9 @@ const UserDetailSchema = new mongoose.Schema(
       type: {
         readingReminders: { type: Boolean, default: true },
         readingReminderTime: { type: String, default: '18:00' },
+        // IANA zone (e.g. 'Asia/Kolkata') so the reminder cron fires at the
+        // user's local hour rather than the server's.
+        timezone: { type: String, default: '' },
         forumActivity: { type: Boolean, default: true },
         prayerActivity: { type: Boolean, default: true },
         rentalUpdates: { type: Boolean, default: true }
@@ -108,6 +112,7 @@ const UserDetailSchema = new mongoose.Schema(
       default: {
         readingReminders: true,
         readingReminderTime: '18:00',
+        timezone: '',
         forumActivity: true,
         prayerActivity: true,
         rentalUpdates: true

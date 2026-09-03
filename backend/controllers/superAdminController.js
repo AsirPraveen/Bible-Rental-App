@@ -55,7 +55,7 @@ exports.listAllOrganizations = async (req, res) => {
       const [memberCount, bookCount, songCount] = await Promise.all([
         User.countDocuments({ 'memberships.organization': org._id, globalRole: { $ne: 'SuperAdmin' } }),
         Book.countDocuments({ organization: org._id }),
-        Song.countDocuments({ organization: org._id })
+        Song.countDocuments({ organizations: org._id })
       ]);
       return {
         ...org.toObject(),
@@ -84,7 +84,7 @@ exports.getOrgDetail = async (req, res) => {
     const [memberCount, bookCount, songCount, forumCount, prayerCount] = await Promise.all([
       User.countDocuments({ 'memberships.organization': org._id, globalRole: { $ne: 'SuperAdmin' } }),
       Book.countDocuments({ organization: org._id }),
-      Song.countDocuments({ organization: org._id }),
+      Song.countDocuments({ organizations: org._id }),
       ForumQuestion.countDocuments({ organization: org._id }),
       PrayerRequest.countDocuments({ organization: org._id })
     ]);

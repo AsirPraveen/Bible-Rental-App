@@ -137,10 +137,21 @@ exports.equipDeck = async (req, res) => {
     const user = await UserInfo.findOne({ email });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // Ensure they own these cards
+    // Ensure they own these cards. Instance ids come from the request body,
+    // so every one must resolve to an entry in this user's own inventory.
+    const owned = new Set((user.cardInventory || []).map(item => item._id.toString()));
+
+    const unowned = deckIds.filter(id => !owned.has(String(id)));
+    if (unowned.length > 0) {
+      return res.status(400).json({ status: 'error', data: 'You do not own one or more of those cards.' });
+    }
+    if (eventId !== undefined && eventId !== null && !owned.has(String(eventId))) {
+      return res.status(400).json({ status: 'error', data: 'You do not own that event card.' });
+    }
+
     user.activeDeck = deckIds;
     if (eventId !== undefined) {
-          user.activeEventCard = eventId;
+      user.activeEventCard = eventId;
     }
     await user.save();
 

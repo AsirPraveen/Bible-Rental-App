@@ -6,12 +6,8 @@
 //  - Card list with highlight colors
 // ════════════════════════════════════════════════
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-    View, Text, StyleSheet, FlatList,
-    ActivityIndicator, TouchableOpacity, TextInput,
-    Alert, SafeAreaView, StatusBar, Platform, Dimensions, Modal, ScrollView,
-    Pressable
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Alert, StatusBar, Platform, Dimensions, Modal, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -21,15 +17,15 @@ import {
     clearAllNotesData, syncStandaloneReminders
 } from './services/MessageNoteService';
 import axios from 'axios';
-import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 import { MessageNote, ReminderNote } from './types/MessageNote';
 import MessageNoteCard, { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
 import LoadingScreen from '../../components/LoadingScreen';
+import { API_BASE_URL } from '../../config/api';
 
 const { width } = Dimensions.get('window');
 
@@ -606,7 +602,6 @@ export default function MessageNotesScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
     outer: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
         backgroundColor: colors.primary,
     },
     gradient: {

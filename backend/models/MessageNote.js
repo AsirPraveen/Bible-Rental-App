@@ -63,4 +63,8 @@ const MessageNoteSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
+// Every read is either "my notes in this org" or "public notes in this org".
+MessageNoteSchema.index({ user: 1, organization: 1, date: -1 });
+MessageNoteSchema.index({ organization: 1, isPublic: 1, date: -1 });
+
 module.exports = mongoose.model('MessageNote', MessageNoteSchema);

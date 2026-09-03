@@ -4,8 +4,9 @@ import OnboardingView from "./InitialScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Constants from "expo-constants";
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 export default function OnboardingComponent({ navigation }) {
   const [isCheckingLogin, setIsCheckingLogin] = useState(false);

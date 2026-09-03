@@ -14,10 +14,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
-import Constants from 'expo-constants';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 const ForgotPassword = () => {
   const navigation = useNavigation<any>();

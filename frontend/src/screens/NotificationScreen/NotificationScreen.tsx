@@ -1,16 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  Platform,
-  StatusBar,
-  SafeAreaView,
-  TouchableWithoutFeedback,
-} from "react-native";
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Platform, StatusBar, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -18,6 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import LoadingScreen from "../../components/LoadingScreen";
 import { useTheme, ColorsType } from "../../context/ThemeContext";
+import { API_BASE_URL } from '../../config/api';
 
 interface Post {
   _id: string;
@@ -27,11 +18,12 @@ interface Post {
   time?: string;
   imageUrl?: string;
   likes?: number;
-  likedBy?: string[];
+  // The server sends this derived flag instead of the full likedBy email list.
+  likedByMe?: boolean;
   createdAt: string; // Add createdAt to the interface
 }
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? "";
+const API_URL = API_BASE_URL;
 
 const NotificationScreen = () => {
   const { colors } = useTheme();
@@ -80,20 +72,15 @@ const NotificationScreen = () => {
   }, []);
 
   const toggleLike = async (postId: string, forceLike = false) => {
-    if (!userEmail) return;
-
     const currentPost = posts.find((post) => post._id === postId);
     if (!currentPost) return;
 
-    const isLiked = currentPost.likedBy?.includes(userEmail) ?? false;
+    const isLiked = currentPost.likedByMe ?? false;
 
     // If forceLike is true, only proceed if not already liked
     if (forceLike && isLiked) return;
 
     const newIsLiked = forceLike ? true : !isLiked;
-    const newLikedBy = newIsLiked
-      ? [...(currentPost.likedBy ?? []), userEmail]
-      : currentPost.likedBy?.filter((email) => email !== userEmail) ?? [];
     const newLikes = newIsLiked
       ? (currentPost.likes ?? 0) + 1
       : (currentPost.likes ?? 0) - 1;
@@ -101,17 +88,14 @@ const NotificationScreen = () => {
     setPosts(
       posts.map((post) =>
         post._id === postId
-          ? { ...post, likes: newLikes, likedBy: newLikedBy }
+          ? { ...post, likes: newLikes, likedByMe: newIsLiked }
           : post
       )
     );
 
     try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await axios.put(`${API_URL}/api/posts/${postId}/likes`, {
-        userEmail,
-        token,
-      });
+      // The server attributes the like to the bearer token's account.
+      const response = await axios.put(`${API_URL}/api/posts/${postId}/likes`, {});
       if (response.data.status !== "Ok") {
         throw new Error("Failed to toggle like");
       }
@@ -127,7 +111,7 @@ const NotificationScreen = () => {
             ? {
                 ...post,
                 likes: currentPost.likes,
-                likedBy: currentPost.likedBy,
+                likedByMe: currentPost.likedByMe,
               }
             : post
         )
@@ -222,7 +206,7 @@ const NotificationScreen = () => {
   };
 
   const renderPost = ({ item }: { item: Post }) => {
-    const isLiked = item.likedBy?.includes(userEmail ?? "") ?? false;
+    const isLiked = item.likedByMe ?? false;
     const eventParts = parseEventDateParts(item.date, item.time ?? null);
 
     return (
@@ -321,7 +305,6 @@ const NotificationScreen = () => {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

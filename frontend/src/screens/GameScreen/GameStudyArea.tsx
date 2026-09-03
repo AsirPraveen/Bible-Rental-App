@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
@@ -21,7 +22,7 @@ const GameStudyArea = ({ navigation }: any) => {
 };
 
 const getStyles = (colors: ColorsType) => StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#2E1065' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#2E1065' : colors.primary },
   container: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   title: { color: colors.theme === 'dark' ? '#FFF' : colors.text, fontSize: 24, fontWeight: 'bold', marginTop: 20 },

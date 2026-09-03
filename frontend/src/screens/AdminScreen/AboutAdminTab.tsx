@@ -13,11 +13,12 @@ import { useOrg } from '../../context/OrganizationContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
-const uploadPresentProfiles = Constants.expoConfig?.extra?.uploadPresentProfiles ?? '';
 
 import { StackNavigationProp } from '@react-navigation/stack';
+import { API_BASE_URL } from '../../config/api';
+import { uploadToCloudinary } from '../../utils/cloudinaryUpload';
 
 type RootStackParamList = {
   Onboarding: undefined;
@@ -211,22 +212,9 @@ const AboutAdminTab = () => {
       const fileExtension = uri.split('.').pop()?.toLowerCase();
       const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
 
-      const formData = new FormData();
-      formData.append('file', {
-        uri,
-        type: mimeType,
-        name: `profile_image_${Date.now()}.${fileExtension || 'jpg'}`,
-      } as any);
-      formData.append('upload_preset', uploadPresentProfiles);
+      const uploaded = await uploadToCloudinary(uri, 'about');
 
-      console.log('Uploading to:', `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`);
-      const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }
-      );
+      const response = { data: { secure_url: uploaded.secureUrl, public_id: uploaded.publicId } };
 
       if (response.data && response.data.secure_url) {
         const newPubId = response.data.public_id;

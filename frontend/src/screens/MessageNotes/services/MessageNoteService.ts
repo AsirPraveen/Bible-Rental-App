@@ -3,8 +3,7 @@
 // ════════════════════════════════════════════════
 import { MessageNote, NoteCategory, ReminderNote, VerseHighlight, VoiceNote } from '../types/MessageNote';
 import axios from 'axios';
-import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,8 +12,9 @@ import { Platform } from 'react-native';
 // Local assets for offline Bible
 import tamilBibleData from '../../../assets/offline-bible/tamil_bible.json';
 import bookTranslations from '../../../assets/offline-bible/book_translations.json';
+import { API_BASE_URL } from '../../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const API_URL = API_BASE_URL;
 const STORAGE_KEY = 'MESSAGE_NOTES_V2';
 
 const getAuthHeaders = async () => {
@@ -35,7 +35,9 @@ const handle401 = async (): Promise<never> => {
 // ─── Notification setup ───────────────────────────────────
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
-        shouldShowAlert: true,
+        // SDK 54 split shouldShowAlert into banner and list.
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
     }),

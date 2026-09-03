@@ -23,8 +23,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { syncPushTokenWithBackend } from '../../utils/notifications';
 import { WebView } from 'react-native-webview';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const API_URL = API_BASE_URL;
 const GOOGLE_WEB_CLIENT_ID = Constants.expoConfig?.extra?.googleWebClientId;
 
 // ── Detect native Google Sign-In SDK ─────────────────────────────────────────
@@ -95,19 +96,14 @@ function LoginPage() {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const signInResult = await GoogleSignin.signIn();
 
-      if (signInResult?.data?.user) {
-        const { email, name, photo, id: googleId } = signInResult.data.user;
-        if (!email) {
-          Alert.alert('Error', 'Could not retrieve your Google email.');
-          return;
-        }
-        await sendGoogleProfileToBackend({
-          googleId,
-          email,
-          name: name || email.split('@')[0],
-          photo: photo || '',
-        });
+      // The server verifies this token with Google and derives the email from
+      // it. Nothing the client asserts about identity is trusted any more.
+      const idToken = signInResult?.data?.idToken ?? signInResult?.idToken;
+      if (!idToken) {
+        Alert.alert('Error', 'Google did not return a sign-in token. Please try again.');
+        return;
       }
+      await sendGoogleCredentialToBackend({ idToken });
     } catch (error) {
       if (error?.code === 'SIGN_IN_CANCELLED' || error?.code === '12501') {
         console.log('[GoogleSignIn] Cancelled');
@@ -151,55 +147,34 @@ function LoginPage() {
       return;
     }
 
-    // Fetch Google profile and send to backend
-    fetchGoogleProfileFromToken(accessToken);
+    // The server exchanges this for the profile itself, so the client never
+    // gets to choose which account it is signing in as.
+    sendGoogleCredentialToBackend({ accessToken });
   };
 
-  const fetchGoogleProfileFromToken = async (accessToken) => {
+  // ── Shared: hand the Google credential to the backend for verification ─────
+  const sendGoogleCredentialToBackend = async ({ idToken, accessToken }) => {
     setGoogleLoading(true);
     try {
-      const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const profile = await res.json();
-
-      if (!profile.email) {
-        Alert.alert('Error', 'Could not retrieve your Google email.');
-        return;
-      }
-
-      await sendGoogleProfileToBackend({
-        googleId: profile.id,
-        email: profile.email,
-        name: profile.name || profile.email.split('@')[0],
-        photo: profile.picture || '',
-      });
-    } catch (err) {
-      console.error('[Google] Profile fetch error:', err);
-      Alert.alert('Error', 'Failed to fetch Google profile.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  // ── Shared: Send Google profile to backend ──────────────────────────────────
-  const sendGoogleProfileToBackend = async ({ googleId, email, name, photo }) => {
-    try {
       const res = await axios.post(`${API_URL}/api/auth/google-login`, {
-        googleId,
-        email,
-        name,
-        photoUrl: photo,
+        idToken,
+        accessToken,
       });
-
-      console.log('[Google] Backend:', res.data);
 
       if (res.data.status === 'ok') {
+        const email = res.data.userData?.email;
         if (res.data.isNewUser) {
-          navigation.navigate('GoogleSetPassword', { name, email, image: photo, googleId });
+          // signupTicket is the server's proof that it verified this Google
+          // account; GoogleSetPassword hands it straight back.
+          navigation.navigate('GoogleSetPassword', {
+            name: res.data.userData?.name,
+            email,
+            image: res.data.userData?.image,
+            signupTicket: res.data.signupTicket,
+          });
         } else {
           const token = res.data.data;
-          const dbName = res.data.userData?.name || name;
+          const dbName = res.data.userData?.name;
           const activeOrgId = res.data.activeOrganizationId;
           const userType = res.data.userType;
 
@@ -240,6 +215,8 @@ function LoginPage() {
       console.error('[Google] Backend error:', err);
       const errorMsg = err.response?.data?.error || err.response?.data?.data || err.response?.data?.message || 'Failed to complete sign-in.';
       Alert.alert('Error', errorMsg);
+    } finally {
+      setGoogleLoading(false);
     }
   };
   // ─────────────────────────────────────────────────────────────────────────────

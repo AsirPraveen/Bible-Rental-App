@@ -16,8 +16,9 @@ import { Animated } from 'react-native';
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from '../../context/AuthContext';
 import { useOrg } from '../../context/OrganizationContext';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
 
 const CATEGORIES = [
@@ -178,12 +179,17 @@ const HomeView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isGameEnabled, setIsGameEnabled] = useState(false);
+  // Book rental can be switched off per organization. The Stuff screen already
+  // gated its cards this way; the Home screen — the entry point for the whole
+  // rental flow — did not.
+  const [isBookRentalEnabled, setIsBookRentalEnabled] = useState(true);
 
   const fetchAppSettings = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/app-settings`);
       if (res.data.status === 'Success') {
         setIsGameEnabled(res.data.data.isGameEnabled);
+        setIsBookRentalEnabled(res.data.data.features?.bookRental !== false);
       }
     } catch (error) {
       console.error('Error fetching app settings:', error);
@@ -232,6 +238,7 @@ const HomeView = () => {
 
   async function fetchBooks() {
     try {
+      if (!isBookRentalEnabled) { setIsLoadingBooks(false); return; }
       setIsLoadingBooks(true);
       const res = await axios.get(`${API_URL}/api/books`);
       const data = Array.isArray(res.data.data) ? res.data.data : [];
@@ -415,7 +422,8 @@ const HomeView = () => {
             </Animated.View>
           </View>
 
-          {/* Books Section */}
+          {/* Books Section — hidden when the org has book rental switched off */}
+          {isBookRentalEnabled && (<>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Books</Text>
@@ -534,6 +542,7 @@ const HomeView = () => {
               ))
             )}
           </View>
+          </>)}
         </ScrollView>
       </SafeAreaView>
 

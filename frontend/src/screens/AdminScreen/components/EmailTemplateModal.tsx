@@ -11,12 +11,12 @@ import {
   Alert,
 } from 'react-native';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { MaterialIcons } from '@expo/vector-icons';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTheme, ColorsType } from '../../../context/ThemeContext';
+import { API_BASE_URL } from '../../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 
 interface EmailTemplateModalProps {
   isVisible: boolean;

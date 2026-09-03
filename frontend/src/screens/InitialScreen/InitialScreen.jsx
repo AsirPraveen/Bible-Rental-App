@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity, Dimensions, StyleSheet, SafeAreaView, ImageBackground, ActivityIndicator, Platform, StatusBar } from "react-native";
+import { View, Text, Image, TouchableOpacity, Dimensions, StyleSheet, ImageBackground, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from "react";
 import { useFonts, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import { getStyles } from "./style";

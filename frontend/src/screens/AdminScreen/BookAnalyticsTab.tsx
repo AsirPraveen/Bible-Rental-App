@@ -23,7 +23,6 @@ import PopularBookCard from './components/PopularBookCard';
 import BarChartComponent from './components/BarChartComponent';
 import PieChartComponent from './components/PieChartComponent';
 import LineChartComponent from './components/LineChartComponent';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -35,8 +34,9 @@ type RootStackParamList = {
 
 const { width, height } = Dimensions.get('window');
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
 const BookAnalyticsTab = () => {
   const { colors, theme } = useTheme();

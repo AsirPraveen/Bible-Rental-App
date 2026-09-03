@@ -13,14 +13,14 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { syncPushTokenWithBackend } from '../../utils/notifications';
 import { useAuth } from '../../context/AuthContext';
 import { getStyles } from './style'; // ← Use the same shared styles as Login
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 const GoogleSetPassword = () => {
   const navigation = useNavigation<any>();
@@ -29,8 +29,10 @@ const GoogleSetPassword = () => {
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
-  // Params passed from Login when isNewUser === true
-  const { name, email, image, googleId } = route.params || {};
+  // Params passed from Login when isNewUser === true. signupTicket is the
+  // server's proof that it already verified this Google account — the backend
+  // takes the email from that ticket, not from anything sent here.
+  const { name, email, image, signupTicket } = route.params || {};
 
   const [displayName, setDisplayName] = useState(name || '');
   const [password, setPassword] = useState('');
@@ -41,7 +43,8 @@ const GoogleSetPassword = () => {
   const [confirmError, setConfirmError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const validatePassword = (v: string) => v.length >= 6;
+  // Matches the server-side minimum in authController.googleSetPassword.
+  const validatePassword = (v: string) => v.length >= 8;
 
   const handleSetPassword = async () => {
     setPasswordError('');
@@ -49,7 +52,7 @@ const GoogleSetPassword = () => {
 
     if (!password) { setPasswordError('Password is required'); return; }
     if (!validatePassword(password)) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError('Password must be at least 8 characters');
       return;
     }
     if (!confirmPassword) { setConfirmError('Please confirm your password'); return; }
@@ -58,11 +61,9 @@ const GoogleSetPassword = () => {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/api/auth/google-set-password`, {
-        email,
+        signupTicket,
         newPassword: password,
-        name: displayName.trim() || email?.split('@')[0],
-        googleId: googleId || '',
-        image: image || '',
+        name: displayName.trim(),
       });
 
       if (res.data.status === 'ok') {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert, Modal, Dimensions, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, Pressable, Alert, Modal, Dimensions, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Star, X, Heart } from 'lucide-react-native'; // Changed Star to Heart for likes display
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,8 +8,9 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
+const BASE_URL = API_BASE_URL;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
 
 const getCloudinaryUrl = (publicId: string) => {
@@ -29,7 +31,9 @@ type Book = {
   thumbnail1?: string;
   thumbnail2?: string;
   available: boolean;
-  owned_by?: string;
+  available_count?: number;
+  total_copies?: number;
+  owned_by?: string[];
   likes?: number; // Added likes field
 };
 
@@ -136,13 +140,11 @@ export default function BookDetails() {
           onPress: async () => {
             try {
               const token = await AsyncStorage.getItem('token');
-              const user = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
-              const userEmail = user.data.data.email;
 
+              // The server takes the identity from the bearer token.
               const res = await axios.post(
                 `${BASE_URL}/api/submit-rent-request`,
                 {
-                  userEmail,
                   book_id: book.book_id,
                   book_name: book.book_name,
                 },
@@ -220,7 +222,6 @@ export default function BookDetails() {
       const res = await axios.post(
         `${BASE_URL}/api/toggle-favourite`,
         {
-          userEmail: currentUserEmail,
           book_id: book.book_id,
         },
         {
@@ -260,17 +261,26 @@ export default function BookDetails() {
           <Text style={[styles.rentButtonText, styles.pendingText]}>Asked for rent</Text>
         </View>
       );
-    } else if (book.available) {
+    } else if ((book.available_count ?? 0) > 0) {
+      const free = book.available_count ?? 0;
+      const total = book.total_copies ?? free + (book.owned_by?.length || 0);
       return (
-        <Pressable style={styles.rentButton} onPress={handleRentRequest}>
-          <Text style={styles.rentButtonText}>Rent Now</Text>
-        </Pressable>
+        <View style={styles.buttonContainer}>
+          <Pressable style={styles.rentButton} onPress={handleRentRequest}>
+            <Text style={styles.rentButtonText}>Rent Now</Text>
+          </Pressable>
+          {total > 1 && (
+            <Text style={styles.copiesNote}>{free} of {total} copies available</Text>
+          )}
+        </View>
       );
     } else {
       return (
         <View style={[styles.rentButton, styles.rentedButton]}>
           <Text style={[styles.rentButtonText, styles.rentedText]}>
-            Rented by {book.owned_by || 'someone else'}
+            {book.owned_by && book.owned_by.length === 1
+              ? `Rented by ${book.owned_by[0]}`
+              : `All ${book.owned_by?.length || 0} copies on loan`}
           </Text>
         </View>
       );
@@ -402,7 +412,6 @@ export default function BookDetails() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   container: {
@@ -561,6 +570,12 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   buttonContainer: {
     marginBottom: 20,
+  },
+  copiesNote: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.textSecondary,
   },
   rentButton: {
     backgroundColor: colors.tint,

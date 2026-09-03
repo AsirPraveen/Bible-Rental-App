@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, SafeAreaView, Platform, StatusBar, Animated, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, Platform, StatusBar, Animated, FlatList, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from 'react-native-paper';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Clipboard from 'expo-clipboard';
@@ -20,10 +21,11 @@ import _bookTranslations from '../../assets/offline-bible/book_translations.json
 const bookTranslations = _bookTranslations as any;
 import * as Speech from 'expo-speech';
 import Svg, { Rect, Path } from 'react-native-svg';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
-const STABILITY_API_KEY = Constants.expoConfig?.extra?.stabilityApiKey ?? '';
-const STABILITY_API_URL = Constants.expoConfig?.extra?.stabilityApiUrl ?? '';
+const API_URL = API_BASE_URL;
+// Image generation is proxied by the backend. The Stability key must never be
+// bundled into the app — anyone can read it out of an APK.
 
 const HIGHLIGHT_COLORS = [
   { name: 'yellow', colorVal: 'rgba(250, 204, 21, 0.3)' },
@@ -676,8 +678,6 @@ const BibleComponent = () => {
           onPress: async () => {
             try {
               setIsGeneratingImage(true);
-              const apiKey = STABILITY_API_KEY;
-
               let promptText = selectedVerse.text;
               if (language.toLowerCase() !== 'english') {
                 try {
@@ -690,22 +690,25 @@ const BibleComponent = () => {
 
               const prompt = `A professional and detailed illustration of a biblical scene inspired by the verse "${promptText}" (${selectedVerse.citation}) from the Holy Bible.`;
 
+              // The server holds the API key, checks the org's feature flag and
+              // charges the credit atomically, refunding it if generation fails.
               const response = await axios.post(
-                STABILITY_API_URL,
-                {
-                  text_prompts: [{ text: prompt, weight: 1 }],
-                  cfg_scale: 7, height: 1024, width: 1024, steps: 50, samples: 1,
-                },
-                {
-                  headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                }
+                `${API_URL}/api/generate-verse-image`,
+                { prompt }
               );
 
-              const imageBase64 = response.data.artifacts[0].base64;
+              const imageBase64 = response.data?.data?.base64;
+              if (!imageBase64) {
+                throw new Error('No image was returned.');
+              }
+
               const imageUrl = `data:image/png;base64,${imageBase64}`;
 
-              const creditDeducted = await deductCredit();
-              if (creditDeducted) {
+              // The server already charged the credit when it generated the
+              // image (and refunds it if generation failed), so the client just
+              // reflects the balance it returned rather than charging again.
+              setImageGenerationCredits(response.data?.remainingCredits ?? imageGenerationCredits);
+              {
                 // Save to local FileSystem
                 const fileName = `verse_img_${Date.now()}.png`;
                 const fileUri = FileSystem.documentDirectory + fileName;
@@ -2075,7 +2078,6 @@ const BibleComponent = () => {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

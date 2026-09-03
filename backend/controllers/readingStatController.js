@@ -3,11 +3,10 @@ const ReadingStat = require('../models/ReadingStat');
 // POST: Sync user reading stats
 exports.syncReadingStats = async (req, res) => {
   try {
-    const { userId, totalChaptersRead, activePlans } = req.body;
+    const { totalChaptersRead, activePlans } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required to sync stats." });
-    }
+    // Always sync the authenticated caller's own stats — never a body-supplied id.
+    const userId = req.user._id;
 
     // Upsert the stats for the user
     const stats = await ReadingStat.findOneAndUpdate(

@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Platform, StatusBar, SafeAreaView, Text, FlatList, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, StyleSheet, Platform, StatusBar, Text, FlatList, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Chip, Searchbar } from 'react-native-paper';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Filter, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 import { useOrg } from '../../context/OrganizationContext';
+import { API_BASE_URL } from '../../config/api';
 
 export default function SongComponent() {
   const { colors } = useTheme();
@@ -563,7 +564,6 @@ export default function SongComponent() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   headerBackground: {

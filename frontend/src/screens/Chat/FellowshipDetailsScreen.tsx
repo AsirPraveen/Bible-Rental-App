@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
-  SafeAreaView, Platform, ActivityIndicator, Switch, StatusBar
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, ActivityIndicator, Switch, StatusBar } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Shield, User, UserMinus, LogOut, Megaphone, MessageSquare, Settings, UserPlus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,10 +7,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useOrg } from '../../context/OrganizationContext';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 type MemberType = {
   user: { _id: string; name: string; email: string; image?: string };

@@ -2,11 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { Alert, NativeModules } from 'react-native';
 import { navigationRef } from '../app/index';
+import { API_BASE_URL } from '../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 let GoogleSignin: any = null;
 try {
@@ -129,6 +129,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.removeItem('token');
       await AsyncStorage.setItem('isGuest', 'false');
       await AsyncStorage.removeItem('activeOrgId');
+      // OrganizationContext also sets this as an axios default. Clearing storage
+      // alone left the previous org id riding along on subsequent requests.
+      delete axios.defaults.headers.common['x-organization-id'];
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => { });
 
       // Native Google Sign-Out
@@ -157,7 +160,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem('isGuest', 'true');
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('token');
-      // For guest, let them choose organization inside selection screens
+      // Clear the org too. A guest reaches only global content, and leaving a
+      // stale activeOrgId behind made OrganizationContext call a members-only
+      // endpoint, whose 401 the interceptor turned into a false "Session
+      // Expired" logout.
+      await AsyncStorage.removeItem('activeOrgId');
+      delete axios.defaults.headers.common['x-organization-id'];
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => { });
     } catch (e) {
       console.error('Error entering guest mode', e);
@@ -170,6 +178,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (error) => {
         const status = error.response?.status;
         const code = error.response?.data?.code;
+
+        // A guest has no session to expire. Without this check any 401 from a
+        // members-only route would eject them from guest mode with a
+        // misleading message — the root cause of the F-1 report.
+        const hadToken = await AsyncStorage.getItem('token');
+
+        if (status === 401 && !hadToken) {
+          return Promise.reject(error);
+        }
 
         if (status === 401) {
           await logout();

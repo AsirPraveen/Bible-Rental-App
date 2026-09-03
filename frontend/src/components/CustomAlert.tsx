@@ -124,10 +124,10 @@ export const CustomAlert: React.FC = () => {
       return true; // Intercept and block default back action
     };
 
-    BackHandler.addEventListener('hardwareBackPress', handleBackButton);
+    const subscription = BackHandler.addEventListener('hardwareBackPress', handleBackButton);
 
     return () => {
-      BackHandler.removeEventListener('hardwareBackPress', handleBackButton);
+      subscription.remove();
     };
   }, [visible, options]);
 

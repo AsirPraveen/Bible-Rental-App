@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, SafeAreaView, Platform, StatusBar, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Platform, StatusBar, ScrollView, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Book, Music, FileText, MessageSquare, Target, Calendar, HandHeart, Map as MapIcon, Users, Lock } from 'lucide-react-native';
+import { Book, Music, FileText, MessageSquare, Target, Calendar, HandHeart, Map as MapIcon, Users, Lock, Box } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 // Map card titles → guestAccess keys
 const GUEST_KEY_MAP: Record<string, string> = {
@@ -22,6 +23,7 @@ const GUEST_KEY_MAP: Record<string, string> = {
   'PrayerRequests': 'PrayerRequests',
   'BookPdf': 'BookPdf',
   'MessageNotes': 'MessageNotes',
+  'BiblicalArtifacts': 'BiblicalArtifacts',
 };
 
 export default function StuffComponent() {
@@ -118,6 +120,12 @@ export default function StuffComponent() {
       isNew: false,
       isComingSoon: true,
     },
+    {
+      title: 'BiblicalArtifacts',
+      icon: <Box color={iconColor} size={32} />,
+      bgColor: cardBg,
+      isNew: true,
+    },
   ];
 
   if (isGuest) {
@@ -162,8 +170,8 @@ export default function StuffComponent() {
     const guestKey = GUEST_KEY_MAP[title];
     if (!guestKey) return false;
 
-    // Only Bible and HistoricalMaps are global guest features configured by the SuperAdmin
-    if (guestKey === 'Bible' || guestKey === 'HistoricalMaps') {
+    // Only Bible, HistoricalMaps and BiblicalArtifacts are global guest features configured by the SuperAdmin
+    if (guestKey === 'Bible' || guestKey === 'HistoricalMaps' || guestKey === 'BiblicalArtifacts') {
       return guestAccess[guestKey] === false;
     }
 
@@ -227,7 +235,6 @@ export default function StuffComponent() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

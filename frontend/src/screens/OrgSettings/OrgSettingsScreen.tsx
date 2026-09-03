@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ScrollView, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ScrollView, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOrg } from '../../context/OrganizationContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ArrowLeft, Copy, RefreshCw, Save, Shield } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 export default function OrgSettingsScreen({ navigation }: any) {
   const { activeOrg, refreshOrgs } = useOrg();
@@ -236,7 +237,6 @@ export default function OrgSettingsScreen({ navigation }: any) {
 const getStyles = (colors: any) => StyleSheet.create({
   outerContainer: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   gradient: {

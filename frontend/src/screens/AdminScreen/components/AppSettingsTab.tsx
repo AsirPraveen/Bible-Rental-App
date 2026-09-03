@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView, Platform, StatusBar, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, StatusBar, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Settings, Gamepad2, Book, Music, Map as MapIcon, Calendar, Target,
   Users, Flame, HandHeart, MessageSquare, FileText, Image as LucideImage,
-  BookOpen, ArrowLeft, Menu, Bell
+  BookOpen, ArrowLeft, Menu, Bell, Box, Library
 } from 'lucide-react-native';
 import { useTheme, ColorsType } from '../../../context/ThemeContext';
+import { API_BASE_URL } from '../../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 const AppSettingsTab = () => {
   const navigation = useNavigation<any>();
@@ -33,7 +34,9 @@ const AppSettingsTab = () => {
     MessageNotes: true,
     BookPdf: true,
     upperRoom: true,
-    SongPdf: true
+    SongPdf: true,
+    BiblicalArtifacts: true,
+    bookRental: true
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -96,7 +99,9 @@ const AppSettingsTab = () => {
     { key: 'PrayerRequests', label: 'Prayer Wall', description: 'Post requests and pray for other members.', icon: HandHeart, iconColor: '#DB2777', iconBg: 'rgba(219, 39, 119, 0.1)' },
     { key: 'MessageNotes', label: 'Sermon Notes', description: 'Take notes during messages or study.', icon: MessageSquare, iconColor: '#7C3AED', iconBg: 'rgba(124, 58, 237, 0.1)' },
     { key: 'BookPdf', label: 'Literature Library', description: 'Read and view PDF books/literature.', icon: FileText, iconColor: '#4B5563', iconBg: 'rgba(75, 85, 99, 0.1)' },
+    { key: 'bookRental', label: 'Book Rental', description: 'Browse the library and borrow physical books.', icon: Library, iconColor: '#B45309', iconBg: 'rgba(180, 83, 9, 0.1)' },
     { key: 'upperRoom', label: 'The Upper Room', description: 'Enable group fellowships and real-time chat.', icon: BookOpen, iconColor: '#0D9488', iconBg: 'rgba(13, 148, 136, 0.1)' },
+    { key: 'BiblicalArtifacts', label: '3D Biblical Museum', description: 'Explore interactive 3D replicas of Biblical artifacts (e.g. Ark of the Covenant, Noah\'s Ark).', icon: Box, iconColor: '#E65100', iconBg: 'rgba(230, 81, 0, 0.1)' },
   ];
 
   if (loading) {
@@ -234,7 +239,6 @@ const AppSettingsTab = () => {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   gradient: {

@@ -100,7 +100,7 @@ const getFellowships = async (req, res) => {
 // GET /api/fellowships/:id
 const getFellowshipDetails = async (req, res) => {
   try {
-    const fellowship = await Fellowship.findById(req.params.id)
+    const fellowship = await Fellowship.findOne({ _id: req.params.id, organization: req.orgId })
       .populate('members.user', 'name email image')
       .populate('createdBy', 'name email image');
 
@@ -129,7 +129,9 @@ const getFellowshipDetails = async (req, res) => {
 // Requires shepherd role in the fellowship or org admin
 const updateFellowship = async (req, res) => {
   try {
-    const fellowship = await Fellowship.findById(req.params.id);
+    // Scoped to the caller's org: the admin fallback below must mean
+    // "admin of THIS organization", not "admin of any organization".
+    const fellowship = await Fellowship.findOne({ _id: req.params.id, organization: req.orgId });
     if (!fellowship) {
       return res.status(404).json({ status: 'error', message: 'Fellowship not found.' });
     }
@@ -180,7 +182,9 @@ const updateFellowship = async (req, res) => {
 // PATCH /api/fellowships/:id/archive
 const archiveFellowship = async (req, res) => {
   try {
-    const fellowship = await Fellowship.findById(req.params.id);
+    // Scoped to the caller's org: the admin fallback below must mean
+    // "admin of THIS organization", not "admin of any organization".
+    const fellowship = await Fellowship.findOne({ _id: req.params.id, organization: req.orgId });
     if (!fellowship) {
       return res.status(404).json({ status: 'error', message: 'Fellowship not found.' });
     }
@@ -211,7 +215,9 @@ const archiveFellowship = async (req, res) => {
 // Body: { userIds: [ObjectId], role?: 'shepherd'|'member' }
 const addMembers = async (req, res) => {
   try {
-    const fellowship = await Fellowship.findById(req.params.id);
+    // Scoped to the caller's org: the admin fallback below must mean
+    // "admin of THIS organization", not "admin of any organization".
+    const fellowship = await Fellowship.findOne({ _id: req.params.id, organization: req.orgId });
     if (!fellowship) {
       return res.status(404).json({ status: 'error', message: 'Fellowship not found.' });
     }
@@ -228,11 +234,19 @@ const addMembers = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'userIds array is required.' });
     }
 
+    // Only people who belong to this organization can be added to its fellowships.
+    const eligible = await User.find({
+      _id: { $in: userIds },
+      memberships: { $elemMatch: { organization: req.orgId, isActive: true } }
+    }).select('_id');
+    const eligibleIds = new Set(eligible.map(u => u._id.toString()));
+
     const existingIds = fellowship.members.map(m => m.user.toString());
     const newMembers = [];
     const addedNames = [];
 
     for (const uid of userIds) {
+      if (!eligibleIds.has(uid.toString())) continue;
       if (!existingIds.includes(uid.toString())) {
         fellowship.members.push({
           user: uid,
@@ -272,7 +286,9 @@ const addMembers = async (req, res) => {
 // DELETE /api/fellowships/:id/members/:userId
 const removeMember = async (req, res) => {
   try {
-    const fellowship = await Fellowship.findById(req.params.id);
+    // Scoped to the caller's org: the admin fallback below must mean
+    // "admin of THIS organization", not "admin of any organization".
+    const fellowship = await Fellowship.findOne({ _id: req.params.id, organization: req.orgId });
     if (!fellowship) {
       return res.status(404).json({ status: 'error', message: 'Fellowship not found.' });
     }
@@ -317,7 +333,9 @@ const removeMember = async (req, res) => {
 // GET /api/fellowships/:id/messages?page=1&limit=50
 const getMessages = async (req, res) => {
   try {
-    const fellowship = await Fellowship.findById(req.params.id);
+    // Scoped to the caller's org: the admin fallback below must mean
+    // "admin of THIS organization", not "admin of any organization".
+    const fellowship = await Fellowship.findOne({ _id: req.params.id, organization: req.orgId });
     if (!fellowship) {
       return res.status(404).json({ status: 'error', message: 'Fellowship not found.' });
     }
@@ -408,7 +426,7 @@ const getQnaAnswers = async (req, res) => {
     const messageId = req.params.messageId;
     const userId = req.user._id;
 
-    const fellowship = await Fellowship.findById(fellowshipId);
+    const fellowship = await Fellowship.findOne({ _id: fellowshipId, organization: req.orgId });
     if (!fellowship) {
       return res.status(404).json({ status: 'error', message: 'Fellowship not found.' });
     }
@@ -421,7 +439,7 @@ const getQnaAnswers = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'You are not a member of this fellowship.' });
     }
 
-    const message = await Message.findById(messageId);
+    const message = await Message.findOne({ _id: messageId, fellowship: fellowshipId });
     if (!message || message.type !== 'qna' || !message.qnaData) {
       return res.status(404).json({ status: 'error', message: 'Q&A message not found.' });
     }

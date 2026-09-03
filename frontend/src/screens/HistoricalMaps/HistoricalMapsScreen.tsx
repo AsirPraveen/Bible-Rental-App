@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Platform, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, StatusBar, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 import { MapPin, List as ListIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
+const apiUrl = API_BASE_URL;
 
 export default function HistoricalMapsScreen() {
   const navigation = useNavigation<any>();
@@ -221,7 +222,6 @@ export default function HistoricalMapsScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: { flex: 1 },

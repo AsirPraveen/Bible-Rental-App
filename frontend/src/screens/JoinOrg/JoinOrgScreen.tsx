@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOrg, Organization } from '../../context/OrganizationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ArrowLeft, Search, Check, AlertCircle, Building2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 export default function JoinOrgScreen({ navigation }: any) {
   const { refreshOrgs, switchOrg } = useOrg();
@@ -207,7 +208,6 @@ export default function JoinOrgScreen({ navigation }: any) {
 const getStyles = (colors: any) => StyleSheet.create({
   outerContainer: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   gradient: {

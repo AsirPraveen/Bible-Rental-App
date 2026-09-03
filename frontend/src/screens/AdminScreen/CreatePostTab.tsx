@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView, Image, TouchableOpacity, Platform, StatusBar, SafeAreaView, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView, Image, TouchableOpacity, Platform, StatusBar, ActivityIndicator, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, IconButton, Chip, Switch } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -10,10 +11,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import LoadingScreen from '../../components/LoadingScreen';
+import { API_BASE_URL } from '../../config/api';
+import { uploadToCloudinary } from '../../utils/cloudinaryUpload';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const API_URL = API_BASE_URL;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
-const uploadPresentPosts = Constants.expoConfig?.extra?.uploadPresentPosts ?? '';
 
 const CreatePostTab = () => {
   const { colors, theme } = useTheme();
@@ -185,22 +187,9 @@ const CreatePostTab = () => {
       const fileExtension = uri.split('.').pop()?.toLowerCase();
       const mimeType = fileExtension === 'png' ? 'image/png' : fileExtension === 'gif' ? 'image/gif' : 'image/jpeg';
 
-      const formData = new FormData();
-      formData.append('file', {
-        uri,
-        type: mimeType,
-        name: `post_image_${Date.now()}.${fileExtension || 'jpg'}`,
-      } as any);
-      formData.append('upload_preset', uploadPresentPosts);
+      const uploaded = await uploadToCloudinary(uri, 'post');
 
-      console.log('Uploading to:', `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`);
-      const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }
-      );
+      const response = { data: { secure_url: uploaded.secureUrl, public_id: uploaded.publicId } };
 
       if (response.data && response.data.secure_url) {
         const newPubId = response.data.public_id;
@@ -662,7 +651,6 @@ const CreatePostTab = () => {
 const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.linearGradient[0],
   },
   gradient: {

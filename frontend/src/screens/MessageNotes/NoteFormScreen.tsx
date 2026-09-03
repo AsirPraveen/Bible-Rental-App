@@ -9,11 +9,8 @@
 // ════════════════════════════════════════════════
 import React, { useState, useEffect, useRef } from 'react';
 import Slider from '@react-native-community/slider';
-import {
-  View, Text, TextInput, StyleSheet, ScrollView,
-  TouchableOpacity, Alert, Platform, KeyboardAvoidingView, Modal,
-  ActivityIndicator, StatusBar, SafeAreaView, Pressable
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, Modal, ActivityIndicator, StatusBar, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -31,10 +28,11 @@ import { MessageNote, NoteCategory, HighlightColor } from './types/MessageNote';
 import { CATEGORY_META } from './components/MessageNoteCard';
 import { useAuth } from '../../context/AuthContext';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
-const uploadPresentPosts = Constants.expoConfig?.extra?.uploadPresentPosts ?? '';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
+import { uploadToCloudinary } from '../../utils/cloudinaryUpload';
 
 const { tamilBibleData, bookTranslations } = getLocalBibleData();
 
@@ -264,22 +262,9 @@ export default function NoteFormScreen() {
         const fileExtension = uri.split('.').pop()?.toLowerCase();
         const mimeType = fileExtension === 'm4a' ? 'audio/m4a' : fileExtension === 'caf' ? 'audio/caf' : 'audio/mpeg';
 
-        const formData = new FormData();
-        formData.append('file', {
-          uri,
-          type: mimeType,
-          name: `voice_note_${Date.now()}.${fileExtension || 'm4a'}`,
-        } as any);
-        formData.append('upload_preset', uploadPresentPosts);
+        const uploaded = await uploadToCloudinary(uri, 'note', 'video');
 
-        // Upload to Cloudinary auto/video endpoint
-        const response = await axios.post(
-          `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/video/upload`,
-          formData,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          }
-        );
+        const response = { data: { secure_url: uploaded.secureUrl, public_id: uploaded.publicId } };
 
         if (response.data && response.data.secure_url) {
           const newPubId = response.data.public_id;

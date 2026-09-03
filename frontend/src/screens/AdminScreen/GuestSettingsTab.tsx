@@ -7,15 +7,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 const FEATURE_LABELS: Record<string, { label: string; icon: string; description: string }> = {
   Bible: { label: 'Bible', icon: 'book-outline', description: 'Read Bible chapters & verses' },
   HistoricalMaps: { label: 'Historical Maps', icon: 'map-outline', description: 'View Biblical maps' },
+  BiblicalArtifacts: { label: '3D Biblical Museum', icon: 'cube-outline', description: 'Explore 3D replicas of Biblical artifacts' },
 };
 
 export default function GuestSettingsTab() {
@@ -52,8 +53,16 @@ export default function GuestSettingsTab() {
     setSaving(true);
     try {
       const token = await AsyncStorage.getItem('token');
+      // An org admin edits their own org's settings. A SuperAdmin with no
+      // active org edits the platform-wide fallback defaults instead — the
+      // two now have separate routes with separate guards.
+      const activeOrgId = await AsyncStorage.getItem('activeOrgId');
+      const endpoint = activeOrgId
+        ? `${API_URL}/api/app-settings`
+        : `${API_URL}/api/app-settings/global`;
+
       const res = await axios.put(
-        `${API_URL}/api/app-settings`, 
+        endpoint,
         { guestAccess, isGuestLoginEnabled },
         { headers: { Authorization: `Bearer ${token}` } }
       );

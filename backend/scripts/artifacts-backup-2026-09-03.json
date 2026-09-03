@@ -1,0 +1,990 @@
+[
+  {
+    "_id": "6a757b87db1088e1728a0c0d",
+    "id": "wedding_jars",
+    "name": "Wedding at Cana Water Jars",
+    "reference": "John 2:1-11",
+    "description": "Six stone water jars used for Jewish ceremonial washing, where Jesus performed His first miracle by turning water into wine.",
+    "funFact": "Stone was preferred over clay for purification because stone was considered immune to ritual impurity.",
+    "dimensions": "Holding 20 to 30 gallons each",
+    "materials": [
+      "Limestone / Stone"
+    ],
+    "modelUrl": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/WaterBottle/glTF-Binary/WaterBottle.glb",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "jar_mouth",
+        "label": "Stone Jar",
+        "detail": "Filled to the brim with water, which immediately transformed into premium wine.",
+        "position": [
+          -0.3,
+          0.45,
+          0
+        ],
+        "color": "#3B82F6",
+        "_id": "6a757b87db1088e1728a0c0e"
+      },
+      {
+        "id": "purification",
+        "label": "Ceremonial Stone",
+        "detail": "Made of stone rather than clay because stone was considered immune to ritual impurity.",
+        "position": [
+          -0.3,
+          -0.15,
+          0
+        ],
+        "color": "#4B5563",
+        "_id": "6a757b87db1088e1728a0c0f"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.937Z",
+    "updatedAt": "2026-08-07T12:51:49.553Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bf1",
+    "id": "altar_of_burnt_offering",
+    "name": "Altar of Burnt Offering",
+    "reference": "Exodus 27:1-8",
+    "description": "The bronze altar situated in the outer courtyard of the Tabernacle, where daily animal sacrifices were offered for the atonement of Israel's sins.",
+    "funFact": "Its fire was commanded to be kept burning continuously and never allowed to go out.",
+    "dimensions": "5 cubits (2.3 m / 7.5 ft) long, 5 cubits wide, 3 cubits high",
+    "materials": [
+      "Acacia Wood",
+      "Bronze Overlay"
+    ],
+    "modelUrl": "",
+    "category": "Tabernacle",
+    "hotspots": [
+      {
+        "id": "horns",
+        "label": "Altar Horns",
+        "detail": "Four horns fashioned at the four corners. Fugitives could seek asylum by grabbing these horns.",
+        "position": [
+          0.7,
+          0.5,
+          0.7
+        ],
+        "color": "#B45309",
+        "_id": "6a757b87db1088e1728a0bf2"
+      },
+      {
+        "id": "grating",
+        "label": "Bronze Grating",
+        "detail": "A mesh screen suspended inside the altar, allowing ashes to fall through.",
+        "position": [
+          0,
+          0.1,
+          0
+        ],
+        "color": "#4B5563",
+        "_id": "6a757b87db1088e1728a0bf3"
+      },
+      {
+        "id": "approach",
+        "label": "Approach Area",
+        "detail": "The side of the altar where the priest stood to tend the sacrificial wood and offerings.",
+        "position": [
+          0,
+          -0.4,
+          1.1
+        ],
+        "color": "#B45309",
+        "_id": "6a757b87db1088e1728a0bf4"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.931Z",
+    "updatedAt": "2026-08-07T06:30:31.931Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bd8",
+    "id": "ark_of_the_covenant",
+    "name": "Ark of the Covenant",
+    "reference": "Exodus 25:10-22",
+    "description": "A sacred chest made of acacia wood and overlaid with pure gold. It was the physical manifestation of God's presence among the Israelites, containing the tablets of the Ten Commandments, Aaron's budded rod, and a golden pot of manna.",
+    "funFact": "The Ark was carried by the Levites using long poles and led the Israelites through the wilderness, dividing the waters of the Jordan River.",
+    "dimensions": "2.5 cubits (1.1 m / 3.7 ft) long, 1.5 cubits (0.7 m / 2.2 ft) wide, 1.5 cubits high",
+    "materials": [
+      "Acacia Wood",
+      "Pure Gold Overlay"
+    ],
+    "modelUrl": "",
+    "category": "Tabernacle",
+    "hotspots": [
+      {
+        "id": "cherubim",
+        "label": "Atonement Cover & Cherubim",
+        "detail": "Two cherubim of hammered gold on the ends of the atonement cover (mercy seat), with their wings spread upward, overshadowing the cover.",
+        "position": [
+          0,
+          0.8,
+          0
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0bd9"
+      },
+      {
+        "id": "box",
+        "label": "Gold Box",
+        "detail": "Made of acacia wood and overlaid with pure gold, both inside and out, symbolising durability, incorruptibility, and divine kingship.",
+        "position": [
+          0,
+          -0.1,
+          0
+        ],
+        "color": "#E5C158",
+        "_id": "6a757b87db1088e1728a0bda"
+      },
+      {
+        "id": "rings",
+        "label": "Gold Rings",
+        "detail": "Four rings of gold cast for its four corners to receive the poles for carrying the Ark.",
+        "position": [
+          1.1,
+          -0.25,
+          0.55
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0bdb"
+      },
+      {
+        "id": "poles",
+        "label": "Carrying Poles",
+        "detail": "Poles of acacia wood overlaid with gold, inserted into the rings. They were never to be removed from the rings.",
+        "position": [
+          0,
+          -0.25,
+          0.75
+        ],
+        "color": "#E5C158",
+        "_id": "6a757b87db1088e1728a0bdc"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.925Z",
+    "updatedAt": "2026-08-07T06:30:31.925Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0be1",
+    "id": "menorah",
+    "name": "Menorah (Golden Lampstand)",
+    "reference": "Exodus 25:31-40",
+    "description": "A seven-branched lampstand made of pure gold, used in the Tabernacle and later in the Temple in Jerusalem. It symbolises divine light, wisdom, and the presence of the Holy Spirit, burning continually in the holy place.",
+    "funFact": "It was beaten out of a single talent (approx. 34 kg / 75 lbs) of pure gold, including its base, shaft, cups, buds, and blossoms.",
+    "dimensions": "Approx. 1.5 m (5 ft) tall, width of about 1 m (3.3 ft)",
+    "materials": [
+      "Pure Gold"
+    ],
+    "modelUrl": "",
+    "category": "Tabernacle",
+    "hotspots": [
+      {
+        "id": "central_shaft",
+        "label": "Central Shaft",
+        "detail": "The main trunk from which three branches extend on each side, representing the tree of life and God's central presence.",
+        "position": [
+          0,
+          0.1,
+          0
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0be2"
+      },
+      {
+        "id": "cups",
+        "label": "Almond-Shaped Cups",
+        "detail": "Each branch features cups shaped like almond blossoms with buds and petals, representing life, watchfulness, and fruitfulness.",
+        "position": [
+          -0.65,
+          0.65,
+          0
+        ],
+        "color": "#E5C158",
+        "_id": "6a757b87db1088e1728a0be3"
+      },
+      {
+        "id": "lamps",
+        "label": "Seven Oil Lamps",
+        "detail": "Lamps filled with pure olive oil, trimmed daily by the priests to burn continuously, casting light in the Tabernacle's holy place.",
+        "position": [
+          0,
+          1.05,
+          0
+        ],
+        "color": "#FFA500",
+        "_id": "6a757b87db1088e1728a0be4"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.928Z",
+    "updatedAt": "2026-08-07T06:30:31.928Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c10",
+    "id": "loaves_and_fish",
+    "name": "Five Loaves and Two Fish",
+    "reference": "Matthew 14:13-21",
+    "description": "The small lunch of five barley loaves and two fish offered by a young boy, which Jesus multiplied to feed over five thousand people.",
+    "funFact": "Barley loaves were the standard, inexpensive bread eaten by the common people in the region.",
+    "dimensions": "N/A",
+    "materials": [
+      "Barley Bread",
+      "Salted Fish",
+      "Wicker Basket"
+    ],
+    "modelUrl": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/FoodBasket/glTF-Binary/FoodBasket.glb",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "bread",
+        "label": "Five Barley Loaves",
+        "detail": "The humble food of the poor, broken and multiplied in the hands of the Savior.",
+        "position": [
+          -0.15,
+          0.15,
+          0
+        ],
+        "color": "#D97706",
+        "_id": "6a757b87db1088e1728a0c11"
+      },
+      {
+        "id": "fish",
+        "label": "Two Small Fish",
+        "detail": "Used to provide savory nourishment alongside the bread, resulting in twelve baskets of leftovers.",
+        "position": [
+          0.18,
+          0.16,
+          0.05
+        ],
+        "color": "#1E3A8A",
+        "_id": "6a757b87db1088e1728a0c12"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.938Z",
+    "updatedAt": "2026-08-07T12:51:49.651Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c0a",
+    "id": "galilee_boat",
+    "name": "Sea of Galilee Fishing Boat",
+    "reference": "Mark 4:35-41",
+    "description": "A typical wooden fishing boat used on the Sea of Galilee, representing where Jesus taught the crowds and calmed the storm.",
+    "funFact": "A real boat from this era (approx. 2000 years old) was discovered in the mud of the lake bed in 1986.",
+    "dimensions": "8.2 m long, 2.3 m wide, 1.2 m deep",
+    "materials": [
+      "Oak Wood",
+      "Cedar Wood"
+    ],
+    "modelUrl": "",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "stern",
+        "label": "The Stern",
+        "detail": "Where Jesus slept on a cushion during the fierce windstorm before rebuking the wind.",
+        "position": [
+          -1.1,
+          0,
+          0
+        ],
+        "color": "#8B4513",
+        "_id": "6a757b87db1088e1728a0c0b"
+      },
+      {
+        "id": "mast",
+        "label": "Mast and Rigging",
+        "detail": "Supporting a single square sail, essential for navigating the sudden squalls of the lake.",
+        "position": [
+          0,
+          1.1,
+          0
+        ],
+        "color": "#5C4033",
+        "_id": "6a757b87db1088e1728a0c0c"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.937Z",
+    "updatedAt": "2026-08-07T06:30:31.937Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c17",
+    "id": "peters_net",
+    "name": "Peter's Fishing Net",
+    "reference": "Luke 5:1-11",
+    "description": "The large casting net used by Simon Peter. After catching nothing all night, Jesus commanded him to let down the nets, resulting in a miraculous catch.",
+    "funFact": "Peter and his partners left their boat and nets immediately, walking away from the biggest catch of their lives to follow Jesus.",
+    "dimensions": "Approx. 4-5 m (13-16 ft) diameter",
+    "materials": [
+      "Linen Rope",
+      "Lead Weights"
+    ],
+    "modelUrl": "",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "mesh",
+        "label": "Woven Mesh",
+        "detail": "Designed to stretch and wrap around schools of fish, breaking under the weight of the miraculous catch.",
+        "position": [
+          0.1,
+          0.1,
+          0
+        ],
+        "color": "#7F1D1D",
+        "_id": "6a757b87db1088e1728a0c18"
+      },
+      {
+        "id": "call",
+        "label": "Fishers of Men",
+        "detail": "Peter left his nets immediately to follow Jesus and become a fisher of souls.",
+        "position": [
+          0,
+          -0.3,
+          0
+        ],
+        "color": "#3B82F6",
+        "_id": "6a757b87db1088e1728a0c19"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.938Z",
+    "updatedAt": "2026-08-07T06:30:31.938Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bf5",
+    "id": "bronze_serpent",
+    "name": "Bronze Serpent",
+    "reference": "Numbers 21:4-9",
+    "description": "The copper/bronze serpent made by Moses on a pole. Anyone bitten by a venomous snake who looked at the bronze serpent was healed. Jesus references this as a symbol of His crucifixion.",
+    "funFact": "Centuries later, the Israelites began worshipping it, prompting King Hezekiah to destroy it, calling it Nehushtan (a piece of bronze).",
+    "dimensions": "Unknown (Pole length of approx. 2.5 m / 8 ft)",
+    "materials": [
+      "Bronze",
+      "Acacia Wood Pole"
+    ],
+    "modelUrl": "",
+    "category": "Israel",
+    "hotspots": [
+      {
+        "id": "serpent",
+        "label": "The Bronze Serpent",
+        "detail": "Crafted in the likeness of the fiery serpents that plagued the camp, symbolising judgment borne.",
+        "position": [
+          0,
+          0.6,
+          0.15
+        ],
+        "color": "#B45309",
+        "_id": "6a757b87db1088e1728a0bf6"
+      },
+      {
+        "id": "pole",
+        "label": "Wood Pole",
+        "detail": "The wooden standard elevated high in the center of the camp for all to see.",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#78350F",
+        "_id": "6a757b87db1088e1728a0bf7"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.932Z",
+    "updatedAt": "2026-08-07T06:30:31.932Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c01",
+    "id": "crown_of_thorns",
+    "name": "Crown of Thorns",
+    "reference": "Matthew 27:29",
+    "description": "The woven crown of thorns placed mockingly on Jesus' head by Roman soldiers during His trial, symbolizing both suffering and His true kingship.",
+    "funFact": "The crown was both a cruel torture and a mocking caricature of the Roman Emperor's laurel wreath.",
+    "dimensions": "Approx. 20 cm (8 in) diameter",
+    "materials": [
+      "Thorny Branches"
+    ],
+    "modelUrl": "",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "thorns",
+        "label": "Spikes/Thorns",
+        "detail": "Sharp, piercing thorns up to 2 inches long, causing deep wounds and severe pain.",
+        "position": [
+          0.4,
+          0.05,
+          0.2
+        ],
+        "color": "#7F1D1D",
+        "_id": "6a757b87db1088e1728a0c02"
+      },
+      {
+        "id": "weave",
+        "label": "Platted Ring",
+        "detail": "Branches platted together into a circle to mimic a royal wreath or laurel crown.",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#3F2A1D",
+        "_id": "6a757b87db1088e1728a0c03"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.936Z",
+    "updatedAt": "2026-08-07T06:30:31.936Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c1a",
+    "id": "pauls_chains",
+    "name": "Paul's Chains",
+    "reference": "Acts 28:16-20",
+    "description": "The iron chains worn by the Apostle Paul during his house arrest in Rome and imprisonment, which he proudly called his 'ambassadorial bonds'.",
+    "funFact": "Paul declared that although he was bound, the Word of God is unchained and cannot be imprisoned.",
+    "dimensions": "Approx. 1.2 m (4 ft) length",
+    "materials": [
+      "Heavy Wrought Iron"
+    ],
+    "modelUrl": "",
+    "category": "Acts",
+    "hotspots": [
+      {
+        "id": "link",
+        "label": "Iron Shackles",
+        "detail": "Bound Paul to a Roman guard 24 hours a day, yet did not hinder the spread of the Gospel.",
+        "position": [
+          0,
+          0.12,
+          0.05
+        ],
+        "color": "#374151",
+        "_id": "6a757b87db1088e1728a0c1b"
+      },
+      {
+        "id": "freedom",
+        "label": "Unchained Word",
+        "detail": "Paul famously declared that although he was chained, the Word of God is not chained.",
+        "position": [
+          0,
+          -0.3,
+          0
+        ],
+        "color": "#10B981",
+        "_id": "6a757b87db1088e1728a0c1c"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.939Z",
+    "updatedAt": "2026-08-07T06:30:31.939Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bfe",
+    "id": "jesus_cross",
+    "name": "Jesus' Cross",
+    "reference": "John 19:16-30",
+    "description": "The wooden cross upon which Jesus Christ was crucified at Golgotha, securing salvation and atonement for humanity.",
+    "funFact": "Crucifixion was designed by Romans to be the most painful and shameful public execution possible.",
+    "dimensions": "Approx. 3 m (10 ft) tall, 1.8 m (6 ft) wide",
+    "materials": [
+      "Rough Cedar Wood"
+    ],
+    "modelUrl": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/WoodenTable/glTF-Binary/WoodenTable.glb",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "inscription",
+        "label": "The Titulus Crucis",
+        "detail": "The sign placed above Jesus' head written in Hebrew, Latin, and Greek: 'Jesus of Nazareth, King of the Jews'.",
+        "position": [
+          0,
+          1.1,
+          0.1
+        ],
+        "color": "#E5E7EB",
+        "_id": "6a757b87db1088e1728a0bff"
+      },
+      {
+        "id": "crossbeam",
+        "label": "Patibulum (Crossbar)",
+        "detail": "The horizontal timber carried by the condemned to the site of crucifixion.",
+        "position": [
+          0,
+          0.6,
+          0
+        ],
+        "color": "#8B4513",
+        "_id": "6a757b87db1088e1728a0c00"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.935Z",
+    "updatedAt": "2026-08-07T12:51:49.602Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c04",
+    "id": "empty_tomb",
+    "name": "Empty Tomb",
+    "reference": "Luke 24:1-12",
+    "description": "The rock-cut tomb of Joseph of Arimathea where Jesus was buried, found empty on the third day, proving His resurrection over death.",
+    "funFact": "Joseph of Arimathea, a wealthy member of the Sanhedrin, donated his own pre-prepared tomb for Jesus.",
+    "dimensions": "Approx. 3 m wide, 2.5 m high",
+    "materials": [
+      "Limestone Rock"
+    ],
+    "modelUrl": "",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "tomb_entrance",
+        "label": "Open Chamber",
+        "detail": "The entrance where the linen cloths were found lying neatly folded.",
+        "position": [
+          0.1,
+          -0.15,
+          0.5
+        ],
+        "color": "#4B5563",
+        "_id": "6a757b87db1088e1728a0c05"
+      },
+      {
+        "id": "stone",
+        "label": "Rolled Stone",
+        "detail": "A large, circular stone disc rolled completely away from the entrance.",
+        "position": [
+          -1.2,
+          -0.3,
+          0.65
+        ],
+        "color": "#6B7280",
+        "_id": "6a757b87db1088e1728a0c06"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.936Z",
+    "updatedAt": "2026-08-07T06:30:31.936Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bed",
+    "id": "high_priests_breastplate",
+    "name": "High Priest's Breastplate",
+    "reference": "Exodus 28:15-30",
+    "description": "The sacred breastplate of judgment worn by Aaron the High Priest, set with twelve precious stones representing the twelve tribes of Israel. It held the Urim and Thummim used to determine God's will.",
+    "funFact": "Each stone was engraved with a name of one of the twelve tribes of Israel like a signet ring.",
+    "dimensions": "Span square (approx. 22 x 22 cm / 9 x 9 in)",
+    "materials": [
+      "Gold Filigree",
+      "Blue, Purple & Scarlet Linen",
+      "12 Gemstones"
+    ],
+    "modelUrl": "",
+    "category": "Tabernacle",
+    "hotspots": [
+      {
+        "id": "stones",
+        "label": "Twelve Gemstones",
+        "detail": "Four rows of three stones, each engraved with the name of one of the twelve tribes of Israel.",
+        "position": [
+          0,
+          0.1,
+          0.15
+        ],
+        "color": "#10B981",
+        "_id": "6a757b87db1088e1728a0bee"
+      },
+      {
+        "id": "urim_thummim",
+        "label": "Urim and Thummim",
+        "detail": "Sacred objects kept in the breastplate pocket, used by the High Priest to receive answers from God.",
+        "position": [
+          0,
+          -0.2,
+          -0.05
+        ],
+        "color": "#7C3AED",
+        "_id": "6a757b87db1088e1728a0bef"
+      },
+      {
+        "id": "chains",
+        "label": "Gold Chains",
+        "detail": "Braided gold cords securing the breastplate to the ephod's shoulder pieces.",
+        "position": [
+          0.4,
+          0.45,
+          0
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0bf0"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.930Z",
+    "updatedAt": "2026-08-07T06:30:31.930Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bdd",
+    "id": "noahs_ark",
+    "name": "Noah's Ark",
+    "reference": "Genesis 6:14-16",
+    "description": "The massive vessel built by Noah at God's command to save his family and all species of land animals from the Great Flood. It stands as a powerful symbol of God's covenant, mercy, and preservation of life.",
+    "funFact": "The Ark had three decks and its volume was equivalent to roughly 522 standard American railroad stock cars.",
+    "dimensions": "300 cubits (135 m / 450 ft) long, 50 cubits (22.5 m / 75 ft) wide, 30 cubits (13.5 m / 45 ft) high",
+    "materials": [
+      "Gopher Wood",
+      "Pitch Sealant"
+    ],
+    "modelUrl": "",
+    "category": "Genesis",
+    "hotspots": [
+      {
+        "id": "roof",
+        "label": "Opening (Window)",
+        "detail": "A horizontal opening (tzohar) running along the top of the Ark, finished to a cubit from the top, allowing ventilation and light inside.",
+        "position": [
+          0,
+          0.65,
+          0
+        ],
+        "color": "#D2B48C",
+        "_id": "6a757b87db1088e1728a0bde"
+      },
+      {
+        "id": "door",
+        "label": "Ark Door",
+        "detail": "A single large door set in the side of the Ark, shut by God Himself once everyone was inside to secure them from the rising floodwaters.",
+        "position": [
+          -0.9,
+          -0.15,
+          0.45
+        ],
+        "color": "#8B4513",
+        "_id": "6a757b87db1088e1728a0bdf"
+      },
+      {
+        "id": "decks",
+        "label": "Three Decks",
+        "detail": "Built with lower, middle, and upper decks to compartmentalise animals, food, and Noah's family, optimising the vast internal space.",
+        "position": [
+          0.1,
+          -0.05,
+          0
+        ],
+        "color": "#A0522D",
+        "_id": "6a757b87db1088e1728a0be0"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.927Z",
+    "updatedAt": "2026-08-07T06:30:31.927Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bfb",
+    "id": "moses_staff",
+    "name": "Moses' Staff",
+    "reference": "Exodus 4:1-5",
+    "description": "The simple wooden staff used by Moses, which became known as the 'Staff of God'. It was used to perform signs, divide the Red Sea, and bring water from the rock.",
+    "funFact": "It started as a simple shepherd's crook, proving God uses ordinary items for extraordinary miracles.",
+    "dimensions": "Approx. 1.6 m (5.3 ft) long",
+    "materials": [
+      "Acacia Wood"
+    ],
+    "modelUrl": "",
+    "category": "Israel",
+    "hotspots": [
+      {
+        "id": "crook",
+        "label": "The Hook/Crook",
+        "detail": "The curved upper portion used by shepherds to guide sheep and pull them from thickets.",
+        "position": [
+          0.12,
+          1.05,
+          0
+        ],
+        "color": "#8B4513",
+        "_id": "6a757b87db1088e1728a0bfc"
+      },
+      {
+        "id": "shaft",
+        "label": "Wooden Shaft",
+        "detail": "A plain, weathered stick representing how God uses ordinary, humble instruments for great works.",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#5C4033",
+        "_id": "6a757b87db1088e1728a0bfd"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.934Z",
+    "updatedAt": "2026-08-07T06:30:31.934Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0be5",
+    "id": "tabernacle_of_moses",
+    "name": "Tabernacle of Moses",
+    "reference": "Exodus 26:1-30",
+    "description": "The portable dwelling place of God's presence, constructed under Moses' direction according to the pattern shown on Mount Sinai. It served as the center of worship during the wilderness journeys.",
+    "funFact": "The Tabernacle took about six months to build and was assembled and disassembled by the Levites.",
+    "dimensions": "30 cubits (13.5 m / 45 ft) long, 10 cubits wide, 10 cubits high",
+    "materials": [
+      "Acacia Wood",
+      "Gold Overlay",
+      "Goat Hair Coverings",
+      "Bronze Bases"
+    ],
+    "modelUrl": "",
+    "category": "Tabernacle",
+    "hotspots": [
+      {
+        "id": "holy_place",
+        "label": "The Holy Place",
+        "detail": "The outer sanctuary containing the Table of Showbread, Golden Menorah, and Altar of Incense.",
+        "position": [
+          0.2,
+          0.1,
+          0.4
+        ],
+        "color": "#1E3A8A",
+        "_id": "6a757b87db1088e1728a0be6"
+      },
+      {
+        "id": "holy_of_holies",
+        "label": "Holy of Holies",
+        "detail": "The inner sanctuary separated by the veil, containing only the Ark of the Covenant.",
+        "position": [
+          -0.8,
+          0.1,
+          0.4
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0be7"
+      },
+      {
+        "id": "veil",
+        "label": "The Veil",
+        "detail": "A thick woven curtain of blue, purple, and scarlet yarns depicting cherubim, separating the two chambers.",
+        "position": [
+          -0.3,
+          0.1,
+          0.4
+        ],
+        "color": "#7C3AED",
+        "_id": "6a757b87db1088e1728a0be8"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.929Z",
+    "updatedAt": "2026-08-07T06:30:31.929Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0be9",
+    "id": "solomons_temple",
+    "name": "Solomon's Temple",
+    "reference": "1 Kings 6",
+    "description": "The first permanent Temple in Jerusalem, built by King Solomon as a magnificent house for Yahweh. It replaced the portable Tabernacle and served as the focal point of Israel's national worship.",
+    "funFact": "It was built in quietness — no hammer, axe, or any iron tool was heard at the temple site while it was being built.",
+    "dimensions": "60 cubits (27 m / 90 ft) long, 20 cubits wide, 30 cubits high",
+    "materials": [
+      "Cut Stone",
+      "Cedar Wood",
+      "Olive Wood",
+      "Pure Gold Lining"
+    ],
+    "modelUrl": "",
+    "category": "Temple",
+    "hotspots": [
+      {
+        "id": "pillars",
+        "label": "Jachin and Boaz",
+        "detail": "Two massive bronze pillars standing at the entrance, representing strength and establishment.",
+        "position": [
+          1.2,
+          -0.4,
+          0.3
+        ],
+        "color": "#B45309",
+        "_id": "6a757b87db1088e1728a0bea"
+      },
+      {
+        "id": "sanctuary",
+        "label": "Inner Sanctuary",
+        "detail": "Lined entirely with fine cedar wood and overlaid with pure gold, featuring double cherubim.",
+        "position": [
+          -0.1,
+          0.2,
+          0
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0beb"
+      },
+      {
+        "id": "porch",
+        "label": "The Portico (Ulam)",
+        "detail": "The grand entrance hall leading into the main temple structure.",
+        "position": [
+          0.9,
+          0.1,
+          0
+        ],
+        "color": "#6B7280",
+        "_id": "6a757b87db1088e1728a0bec"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.929Z",
+    "updatedAt": "2026-08-07T06:30:31.929Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c07",
+    "id": "last_supper_table",
+    "name": "Last Supper Table",
+    "reference": "Luke 22:7-38",
+    "description": "The table in the Upper Room where Jesus ate the Passover meal with His disciples, instituting the Holy Communion.",
+    "funFact": "Eating reclined on cushions around a low U-shaped table (triclinium) was the custom for special meals in that era.",
+    "dimensions": "Approx. 3.5 m long, 1.2 m wide",
+    "materials": [
+      "Oak Wood"
+    ],
+    "modelUrl": "",
+    "category": "Gospel",
+    "hotspots": [
+      {
+        "id": "cup",
+        "label": "The Communion Cup",
+        "detail": "Representing the New Covenant in His blood, poured out for many.",
+        "position": [
+          0,
+          0.2,
+          0
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0c08"
+      },
+      {
+        "id": "bread",
+        "label": "The Bread",
+        "detail": "Broken bread representing Jesus' body, given for the redemption of mankind.",
+        "position": [
+          0.2,
+          0.18,
+          0
+        ],
+        "color": "#D97706",
+        "_id": "6a757b87db1088e1728a0c09"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.937Z",
+    "updatedAt": "2026-08-07T06:30:31.937Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0bf8",
+    "id": "table_of_showbread",
+    "name": "Table of Showbread",
+    "reference": "Exodus 25:23-30",
+    "description": "A golden table in the Tabernacle's Holy Place on which twelve loaves of unleavened bread, representing the twelve tribes, were kept constantly before God.",
+    "funFact": "Showbread literally translates to 'Bread of the Presence' in Hebrew.",
+    "dimensions": "2 cubits (90 cm / 3 ft) long, 1 cubit wide, 1.5 cubits high",
+    "materials": [
+      "Acacia Wood",
+      "Gold Plating"
+    ],
+    "modelUrl": "",
+    "category": "Tabernacle",
+    "hotspots": [
+      {
+        "id": "loaves",
+        "label": "Twelve Loaves",
+        "detail": "Freshly baked each Sabbath, arranged in two stacks of six, dusted with pure frankincense.",
+        "position": [
+          0.1,
+          0.25,
+          0
+        ],
+        "color": "#D97706",
+        "_id": "6a757b87db1088e1728a0bf9"
+      },
+      {
+        "id": "tabletop",
+        "label": "Gold Border",
+        "detail": "An ornamental gold molding around the edge to prevent items from falling off.",
+        "position": [
+          0,
+          0.15,
+          0
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0bfa"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.933Z",
+    "updatedAt": "2026-08-07T06:30:31.933Z"
+  },
+  {
+    "_id": "6a757b87db1088e1728a0c13",
+    "id": "romans_armor",
+    "name": "Roman Soldier's Armor",
+    "reference": "Ephesians 6:10-18",
+    "description": "The defensive and offensive armor worn by Roman legionaries, used by the Apostle Paul as a metaphor for the Armor of God.",
+    "funFact": "Paul was likely chained to a Roman soldier while writing Ephesians, giving him a constant visual reference.",
+    "dimensions": "N/A",
+    "materials": [
+      "Iron Plates",
+      "Bronze",
+      "Leather",
+      "Wood"
+    ],
+    "modelUrl": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Shield/glTF-Binary/Shield.glb",
+    "category": "Acts",
+    "hotspots": [
+      {
+        "id": "breastplate",
+        "label": "Breastplate of Righteousness",
+        "detail": "The Lorica Segmentata, protecting vital organs from deadly thrusts.",
+        "position": [
+          0,
+          0.1,
+          0.25
+        ],
+        "color": "#4B5563",
+        "_id": "6a757b87db1088e1728a0c14"
+      },
+      {
+        "id": "helmet",
+        "label": "Helmet of Salvation",
+        "detail": "The Galea, guarding the mind and head during intense combat.",
+        "position": [
+          0,
+          0.85,
+          0
+        ],
+        "color": "#D4AF37",
+        "_id": "6a757b87db1088e1728a0c15"
+      },
+      {
+        "id": "shield",
+        "label": "Shield of Faith",
+        "detail": "The large Scutum, capable of extinguishing all the flaming arrows of the enemy.",
+        "position": [
+          -0.75,
+          -0.05,
+          0.3
+        ],
+        "color": "#DC2626",
+        "_id": "6a757b87db1088e1728a0c16"
+      }
+    ],
+    "__v": 0,
+    "createdAt": "2026-08-07T06:30:31.938Z",
+    "updatedAt": "2026-08-07T12:51:49.231Z"
+  }
+]

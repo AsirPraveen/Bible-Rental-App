@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TextInput, FlatList, TouchableOpacity, Switch, ActivityIndicator, Alert, SafeAreaView, Platform, StatusBar, Modal, RefreshControl } from 'react-native';
+import { View, StyleSheet, Text, TextInput, FlatList, TouchableOpacity, Switch, ActivityIndicator, Alert, Platform, StatusBar, Modal, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Globe, UserCheck, Database, Music, ShieldAlert, AlertTriangle, Plus, LogOut, ChevronRight, Building2, Shield, Eye, Menu } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 export default function SuperAdminDashboard({ navigation }: any) {
   const { colors } = useTheme();
@@ -507,7 +508,6 @@ export default function SuperAdminDashboard({ navigation }: any) {
 const getStyles = (colors: any) => StyleSheet.create({
   outerContainer: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

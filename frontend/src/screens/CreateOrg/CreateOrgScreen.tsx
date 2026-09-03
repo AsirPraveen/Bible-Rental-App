@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ActivityIndicator, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOrg } from '../../context/OrganizationContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ArrowLeft, Building2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 export default function CreateOrgScreen({ navigation }: any) {
   const { refreshOrgs, switchOrg } = useOrg();
@@ -144,7 +145,6 @@ export default function CreateOrgScreen({ navigation }: any) {
 const getStyles = (colors: any) => StyleSheet.create({
   outerContainer: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

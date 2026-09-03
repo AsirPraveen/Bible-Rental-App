@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, ChevronDown, ChevronUp, RotateCcw, Gem, Trophy, Plus, Minus, X, Cloud } from 'lucide-react-native';
 import { Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://192.168.1.13:5001';
+const apiUrl = API_BASE_URL;
 
 // Bible books structure with chapters
 const BIBLE_STRUCTURE = {
@@ -108,9 +109,9 @@ const ReadingTrackerComponent = () => {
   const syncProgressToCloud = async (chapters, treasures, totalRead) => {
     try {
       if (!userId) return;
+      // userId is no longer sent — the server syncs the authenticated caller.
       setIsSyncing(true);
       await axios.post(`${apiUrl}/api/reading-tracker/sync`, {
-        userId,
         readingProgress: chapters,
         treasuresInHeaven: treasures,
         totalChaptersRead: totalRead
@@ -525,7 +526,6 @@ const ReadingTrackerComponent = () => {
 const getStyles = (colors) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

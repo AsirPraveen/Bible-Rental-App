@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, Pressable, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, Pressable, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ArrowLeft, Heart } from 'lucide-react-native';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const API_URL = API_BASE_URL;
 
 type AuthorBooksRouteParams = {
   id: string;
@@ -210,7 +211,6 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   scrollView: {

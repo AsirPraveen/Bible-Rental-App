@@ -1,8 +1,9 @@
 const rateLimit = require('express-rate-limit');
 
 /**
- * Rate limiter for authentication and sensitive endpoints to prevent brute-force attacks.
- * Limits requests from a single IP to 30 requests per 15-minute window.
+ * Strict limiter for credential-handling endpoints (login, register, OTP,
+ * Google sign-in). These are the endpoints worth brute-forcing, so they get
+ * the tightest budget.
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -15,4 +16,20 @@ const authLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
-module.exports = { authLimiter };
+/**
+ * Looser limiter for authenticated session traffic (/userdata, push tokens).
+ * These are called on every app launch and org switch, and several users often
+ * share one egress IP, so the strict budget would lock out real people.
+ */
+const sessionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: {
+    status: 'error',
+    data: 'Too many requests from this IP. Please try again shortly.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { authLimiter, sessionLimiter };

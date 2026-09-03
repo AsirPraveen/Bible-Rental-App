@@ -6,11 +6,11 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { Check, Plus, X } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const BASE_URL = API_BASE_URL;
 console.log('API_URL admin screen:', BASE_URL); // Debug the API URL
 
 const AdminScreen = () => {
@@ -348,7 +348,6 @@ const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   loadingContainer: {
     flex: 1,

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 const GameCrafting = ({ navigation }: any) => {
   const { colors } = useTheme();
@@ -378,7 +379,7 @@ const GameCrafting = ({ navigation }: any) => {
 };
 
 const getStyles = (colors: ColorsType) => StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#450a0a' : colors.primary, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+  safeArea: { flex: 1, backgroundColor: colors.theme === 'dark' ? '#450a0a' : colors.primary },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',

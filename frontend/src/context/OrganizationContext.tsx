@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 export type Organization = {
   _id: string;
@@ -57,21 +57,13 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
 
   const fetchOrgContext = async () => {
     if (isGuest) {
-      // For guest, let them select an org from AsyncStorage
-      const savedOrgId = await AsyncStorage.getItem('activeOrgId');
-      if (savedOrgId) {
-        try {
-          const res = await axios.get(`${API_URL}/api/organizations/details`, {
-            params: { orgId: savedOrgId }
-          });
-          if (res.data.status === 'Ok') {
-            setActiveOrg(res.data.data);
-            setOrgRole('Guest');
-          }
-        } catch (err) {
-          console.log('Error restoring guest org details:', err);
-        }
-      }
+      // A guest's whole surface is global content — Bible, historical maps and
+      // the 3D museum — so there is no org context to restore. Calling
+      // /organizations/details here would 401 (it requires a member) and the
+      // global interceptor would log the guest out with "Session Expired".
+      setActiveOrg(null);
+      setMemberships([]);
+      setOrgRole('Guest');
       setLoading(false);
       return;
     }
@@ -87,17 +79,10 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
-      console.log('[fetchOrgContext] token read from AsyncStorage:', token ? token.substring(0, 15) + '...' : 'null');
-      
       const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
-      console.log('[fetchOrgContext] API response status:', res.data?.status);
-      
+
       if (res.data.status === 'Ok') {
         const userData = res.data.data;
-        console.log('[fetchOrgContext] userData keys:', Object.keys(userData));
-        console.log('[fetchOrgContext] memberships count:', userData.memberships?.length);
-        console.log('[fetchOrgContext] activeOrganizationId:', userData.activeOrganizationId);
-        
         const userMemberships: Membership[] = userData.memberships || [];
         setMemberships(userMemberships);
 
@@ -107,7 +92,6 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
           const activeMembership = userMemberships.find(
             m => m.organization._id.toString() === activeId.toString()
           );
-          console.log('[fetchOrgContext] activeMembership found:', !!activeMembership);
           if (activeMembership) {
             setActiveOrg(activeMembership.organization);
             setOrgRole(activeMembership.role);
@@ -138,18 +122,7 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
       setLoading(true);
       
       if (isGuest) {
-        // Switch locally for guests
-        const res = await axios.get(`${API_URL}/api/organizations/details`, {
-          params: { orgId }
-        });
-        if (res.data.status === 'Ok') {
-          setActiveOrg(res.data.data);
-          setOrgRole('Guest');
-          await AsyncStorage.setItem('activeOrgId', orgId);
-          axios.defaults.headers.common['x-organization-id'] = orgId;
-          setLoading(false);
-          return true;
-        }
+        // Guests have no org to switch to — signing in is what grants one.
         setLoading(false);
         return false;
       }

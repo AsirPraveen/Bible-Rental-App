@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, SafeAreaView, Platform, StatusBar, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, Platform, StatusBar, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Heart } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = Constants?.expoConfig?.extra?.apiUrl;
+const BASE_URL = API_BASE_URL;
 
 type Book = {
   book_id: string;
@@ -22,7 +23,7 @@ type Book = {
   thumbnail1?: string;
   thumbnail2?: string;
   available: boolean;
-  owned_by?: string;
+  owned_by?: string[];
 };
 
 export default function Wishlist() {
@@ -134,13 +135,10 @@ export default function Wishlist() {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
       
-      const userRes = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
-      const userEmail = userRes.data.data.email;
-
+      // The server takes the identity from the bearer token.
       const res = await axios.post(
         `${BASE_URL}/api/toggle-favourite`,
         {
-          userEmail,
           book_id: bookId,
         },
         {
@@ -433,7 +431,6 @@ export default function Wishlist() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: colors.background,
   },
   gradient: {

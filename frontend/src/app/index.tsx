@@ -11,7 +11,9 @@ import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    // SDK 54 split shouldShowAlert into banner and list.
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),

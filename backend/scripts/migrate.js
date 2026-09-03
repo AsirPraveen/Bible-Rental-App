@@ -1,10 +1,21 @@
 require('dotenv').config();
+
+// Connection strings come from the environment. They were previously hardcoded
+// here with live credentials and committed to the repository.
+const requireEnv = (key) => {
+  const value = process.env[key];
+  if (!value) {
+    console.error(`Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+  return value;
+};
 const mongoose = require('mongoose');
 
 // Old Connection String (defaulting to Atlas 'test' database)
-const OLD_DB_URL = "mongodb+srv://asir:asir@cluster0.z0qmu.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0";
+const OLD_DB_URL = requireEnv('OLD_MONGO_URL');
 // New Isolated Database URL
-const NEW_DB_URL = "mongodb+srv://asir:asir@cluster0.z0qmu.mongodb.net/youth-room-saas?retryWrites=true&w=majority&appName=Cluster0";
+const NEW_DB_URL = requireEnv('MONGO_URL');
 
 async function runMigration() {
   console.log('--- Starting Multi-Tenant SaaS Migration ---');

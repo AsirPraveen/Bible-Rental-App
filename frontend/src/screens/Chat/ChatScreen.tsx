@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator, Alert, StatusBar, Keyboard,
-  PanResponder, Animated, Modal, Pressable, ScrollView
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, StatusBar, Keyboard, PanResponder, Animated, Modal, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Send, Info, Megaphone, ChevronDown, Plus, BarChart2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,11 +8,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { useOrg } from '../../context/OrganizationContext';
 import { useSocket } from '../../context/SocketContext';
 import axios from 'axios';
-import Constants from 'expo-constants';
 import Lottie from 'lottie-react-native';
 import LoadingScreen from '../../components/LoadingScreen';
+import { API_BASE_URL } from '../../config/api';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl ?? '';
+const API_URL = API_BASE_URL;
 
 type MessageType = {
   _id: string;

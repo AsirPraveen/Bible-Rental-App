@@ -3,11 +3,12 @@ const ReadingStat = require('../models/ReadingStat');
 
 exports.syncReadingProgress = async (req, res) => {
   try {
-    const { userId, readingProgress, treasuresInHeaven, totalChaptersRead, planProgress } = req.body;
+    const { readingProgress, treasuresInHeaven, totalChaptersRead, planProgress } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ status: 'Error', message: 'User ID is required' });
-    }
+    // Always sync the authenticated caller's own progress. Taking userId from
+    // the body let any member overwrite another member's reading map and set
+    // their treasuresInHeaven (the leaderboard currency) to any value.
+    const userId = req.user._id;
 
     // Update User details with full mapping and treasures
     const user = await User.findByIdAndUpdate(

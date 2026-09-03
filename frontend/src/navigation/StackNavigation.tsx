@@ -65,6 +65,8 @@ import SuperAdminSongsTab from '../screens/SuperAdminDashboard/SuperAdminSongsTa
 import SongPdfGenerator from '../screens/Songs/SongPdfGenerator';
 import GeneratedPdfsScreen from '../screens/Songs/GeneratedPdfsScreen';
 import SongSelectionScreen from '../screens/Songs/SongSelectionScreen';
+import BiblicalArtifactsScreen from '../screens/BiblicalArtifacts/BiblicalArtifactsScreen';
+import ArtifactViewerScreen from '../screens/BiblicalArtifacts/ArtifactViewerScreen';
 
 const Stack = createStackNavigator();
 
@@ -260,6 +262,16 @@ const StackNavigation = () => {
       <Stack.Screen
         name="MapViewer"
         component={MapViewerScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BiblicalArtifacts"
+        component={BiblicalArtifactsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ArtifactViewer"
+        component={ArtifactViewerScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

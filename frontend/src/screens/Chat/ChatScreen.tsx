@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, StatusBar, Keyboard, PanResponder, Animated, Modal, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Keyboard, PanResponder, Animated, Modal, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Send, Info, Megaphone, ChevronDown, Plus, BarChart2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useOrg } from '../../context/OrganizationContext';
-import { useSocket } from '../../context/SocketContext';
-import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useOrg } from '@/context/OrganizationContext';
+import { useSocket } from '@/context/SocketContext';
+import { apiClient } from '@/services';
 import Lottie from 'lottie-react-native';
-import LoadingScreen from '../../components/LoadingScreen';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import LoadingScreen from '@/components/LoadingScreen';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 type MessageType = {
   _id: string;
   text: string;
@@ -122,6 +121,7 @@ export default function ChatScreen() {
   const route = useRoute<any>();
   const { user } = useAuth();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.background });
   const { socket } = useSocket();
 
   const { fellowshipId, fellowshipName, fellowshipType, fellowshipIcon } = route.params || {};
@@ -317,7 +317,7 @@ export default function ChatScreen() {
       setSelectedQnaMessageId(messageId);
       setShowQnaAnswersModal(true);
 
-      const res = await axios.get(`${API_URL}/api/fellowships/${fellowshipId}/messages/${messageId}/answers`);
+      const res = await apiClient.get(`/api/fellowships/${fellowshipId}/messages/${messageId}/answers`);
       if (res.data.status === 'Ok') {
         setQnaAnswersList(res.data.data || []);
       } else {
@@ -352,7 +352,7 @@ export default function ChatScreen() {
         setLoadingMore(true);
       }
 
-      const res = await axios.get(`${API_URL}/api/fellowships/${fellowshipId}/messages`, {
+      const res = await apiClient.get(`/api/fellowships/${fellowshipId}/messages`, {
         params: { page: pageNum, limit: 50 }
       });
 
@@ -418,7 +418,7 @@ export default function ChatScreen() {
     useCallback(() => {
       const checkRole = async () => {
         try {
-          const res = await axios.get(`${API_URL}/api/fellowships/${fellowshipId}`);
+          const res = await apiClient.get(`/api/fellowships/${fellowshipId}`);
           if (res.data.status === 'Ok') {
             const fellowship = res.data.data;
             setIsAnnouncement(fellowship.type === 'announcement');
@@ -1065,7 +1065,7 @@ export default function ChatScreen() {
                     Sending...
                   </Text>
                   <Lottie
-                    source={require('../../assets/lottie_icon/Sandy Loading.json')}
+                    source={require('@/assets/lottie_icon/Sandy Loading.json')}
                     autoPlay
                     loop
                     style={{ width: 14, height: 14 }}
@@ -1142,8 +1142,7 @@ export default function ChatScreen() {
     : null;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
@@ -1312,6 +1311,7 @@ export default function ChatScreen() {
       </KeyboardAvoidingView>
 
       <Modal
+        navigationBarTranslucent
         visible={!!reactMenuMessageId}
         transparent
         statusBarTranslucent
@@ -1362,6 +1362,7 @@ export default function ChatScreen() {
 
       {/* Creation Menu Selection Modal */}
       <Modal
+        navigationBarTranslucent
         visible={showCreationMenu}
         transparent
         statusBarTranslucent
@@ -1412,6 +1413,7 @@ export default function ChatScreen() {
 
       {/* Create Poll Modal */}
       <Modal
+        navigationBarTranslucent
         visible={showPollModal}
         transparent
         statusBarTranslucent
@@ -1511,6 +1513,7 @@ export default function ChatScreen() {
 
       {/* Create Q&A Modal */}
       <Modal
+        navigationBarTranslucent
         visible={showQnaModal}
         transparent
         statusBarTranslucent
@@ -1592,6 +1595,7 @@ export default function ChatScreen() {
 
       {/* Q&A Answers Modal */}
       <Modal
+        navigationBarTranslucent
         visible={showQnaAnswersModal}
         transparent
         statusBarTranslucent
@@ -1635,7 +1639,7 @@ export default function ChatScreen() {
           </View>
         </Pressable>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1646,7 +1650,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 14,
-    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 14,
+    paddingTop: 14,
   },
   backBtn: {
     padding: 8,

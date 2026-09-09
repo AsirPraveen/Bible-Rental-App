@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ScrollView, Modal, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ScrollView, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Searchbar, FAB, Chip, IconButton, Button, Card } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import { useTheme } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-
-const BASE_URL = API_BASE_URL;
+import { apiClient } from '@/services';
+import { useTheme } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 const PREDEFINED_TOPICS = ['Prayercell', 'Chorus', 'Worship', 'Skit Night'];
 
 const SuperAdminSongsTab = ({ navigation }: any) => {
   const { colors, theme } = useTheme();
+  useSystemBars({ top: colors.background });
   const styles = getStyles(colors, theme);
   const [songs, setSongs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
 
   const fetchMetadata = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/songs-metadata`);
+      const res = await apiClient.get(`/api/songs-metadata`);
       if (res.data.status === 'Ok') {
         setExistingMetadata(res.data.data);
       }
@@ -61,7 +61,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
   const fetchDetailedMetadata = async () => {
     try {
       setMetadataLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/superadmin/songs-filters-metadata`);
+      const res = await apiClient.get(`/api/superadmin/songs-filters-metadata`);
       if (res.data.status === 'Ok') {
         setTopicsList(res.data.data.topics || []);
         setSongbooksList(res.data.data.songbooks || []);
@@ -76,7 +76,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
 
   const toggleSongAllow = async (id: string) => {
     try {
-      const res = await axios.post(`${BASE_URL}/api/superadmin/songs/${id}/toggle-allow`);
+      const res = await apiClient.post(`/api/superadmin/songs/${id}/toggle-allow`);
       if (res.data.status === 'Ok') {
         setSongs(prevSongs => prevSongs.map(s => s._id === id ? { ...s, allowed: res.data.data.allowed } : s));
       }
@@ -88,7 +88,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
 
   const toggleFilterAllow = async (type: 'topic' | 'songbook' | 'author', id: string) => {
     try {
-      const res = await axios.post(`${BASE_URL}/api/superadmin/songs-filters-metadata/toggle-allow`, { type, id });
+      const res = await apiClient.post(`/api/superadmin/songs-filters-metadata/toggle-allow`, { type, id });
       if (res.data.status === 'Ok') {
         if (type === 'topic') {
           setTopicsList(prev => prev.map(item => item._id === id ? { ...item, allowed: res.data.data.allowed } : item));
@@ -107,7 +107,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
   const fetchGlobalSongs = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/superadmin/songs`, {
+      const res = await apiClient.get(`/api/superadmin/songs`, {
         params: { search: searchQuery }
       });
       if (res.data.status === 'Ok') {
@@ -217,10 +217,10 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
 
     try {
       if (editingSongId) {
-        await axios.put(`${BASE_URL}/api/superadmin/songs/${editingSongId}`, formData);
+        await apiClient.put(`/api/superadmin/songs/${editingSongId}`, formData);
         Alert.alert('Success', 'Global song updated');
       } else {
-        await axios.post(`${BASE_URL}/api/superadmin/songs`, formData);
+        await apiClient.post(`/api/superadmin/songs`, formData);
         Alert.alert('Success', 'Global song created');
       }
       setModalVisible(false);
@@ -243,7 +243,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`${BASE_URL}/api/superadmin/songs/${id}`);
+              await apiClient.delete(`/api/superadmin/songs/${id}`);
               fetchGlobalSongs();
             } catch (error) {
               Alert.alert('Error', 'Failed to delete global song');
@@ -336,8 +336,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -464,12 +463,13 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
       )}
 
       <Modal
+        navigationBarTranslucent
+        statusBarTranslucent
         visible={modalVisible}
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
-          <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{editingSongId ? 'Edit Global Song' : 'Add New Global Song'}</Text>
             <IconButton icon="close" iconColor={colors.text} onPress={() => setModalVisible(false)} />

@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, HandHeart, PlusCircle } from 'lucide-react-native';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-
-const BASE_URL = API_BASE_URL;
-import AddPrayerRequestModal from './AddPrayerRequestModal';
-import LoadingScreen from '../../components/LoadingScreen';
-import { useAuth } from '../../context/AuthContext';
-import { API_BASE_URL } from '../../config/api';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import AddPrayerRequestModal from './components/AddPrayerRequestModal';
+import LoadingScreen from '@/components/LoadingScreen';
+import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 
 export default function PrayerRequestsScreen() {
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const { isGuest } = useAuth();
   const [requests, setRequests] = useState([]);
@@ -29,14 +29,14 @@ export default function PrayerRequestsScreen() {
       // Fetch current user ID
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const userRes = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
+        const userRes = await apiClient.post(`/api/auth/userdata`, { token });
         if (userRes.data?.status === 'Ok') {
           setCurrentUserId(userRes.data.data._id);
         }
       }
 
       // Fetch requests
-      const reqRes = await axios.get(`${BASE_URL}/api/prayer-requests`);
+      const reqRes = await apiClient.get(`/api/prayer-requests`);
       if (reqRes.data.status === 'Success') {
         setRequests(reqRes.data.data);
       }
@@ -54,7 +54,7 @@ export default function PrayerRequestsScreen() {
   const handlePray = async (id: string) => {
     if (!currentUserId) return;
     try {
-      const res = await axios.put(`${BASE_URL}/api/prayer-requests/${id}/pray`, { userId: currentUserId });
+      const res = await apiClient.put(`/api/prayer-requests/${id}/pray`, { userId: currentUserId });
       if (res.data.status === 'Success') {
         setRequests((prev: any) => 
           prev.map((req: any) => {
@@ -170,7 +170,7 @@ export default function PrayerRequestsScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

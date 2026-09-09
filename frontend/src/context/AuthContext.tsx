@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import { Alert, NativeModules } from 'react-native';
-import { navigationRef } from '../app/index';
+import { navigationRef } from '../navigation/navigationRef';
 import { API_BASE_URL } from '../config/api';
 
 const API_URL = API_BASE_URL;
@@ -16,30 +16,12 @@ try {
   console.log('[Auth] Native Google Sign-In not available in this environment');
 }
 
-axios.interceptors.request.use(
-  async (config) => {
-    try {
-      // Only attach auth and org headers to local API requests
-      const isLocalRequest = !config.url || config.url.startsWith('/') || config.url.startsWith(API_URL);
-      if (isLocalRequest) {
-        const token = await AsyncStorage.getItem('token');
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        const activeOrgId = await AsyncStorage.getItem('activeOrgId');
-        if (activeOrgId && config.headers) {
-          config.headers['x-organization-id'] = activeOrgId;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to attach token/org to request headers', e);
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// Auth and org headers are attached by apiClient's own request interceptor
+// (src/services/apiClient.ts). A duplicate interceptor on the GLOBAL axios
+// instance used to live here; it is gone because every call to our backend now
+// goes through apiClient, and a second mechanism only invites the two to drift.
+// Requests to third parties must keep using bare axios precisely so that they
+// do NOT receive our credentials.
 
 type AuthState = {
   isGuest: boolean;
@@ -75,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (token) {
           try {
-            const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
+            const res = await apiClient.post(`/api/auth/userdata`, { token });
             if (res.data.status === 'Ok') {
               const freshUser = res.data.data;
               setUser(freshUser);
@@ -107,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Fetch populated user data immediately to ensure user._id is available
       try {
-        const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
+        const res = await apiClient.post(`/api/auth/userdata`, { token });
         if (res.data.status === 'Ok') {
           const freshUser = res.data.data;
           setUser(freshUser);
@@ -131,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.removeItem('activeOrgId');
       // OrganizationContext also sets this as an axios default. Clearing storage
       // alone left the previous org id riding along on subsequent requests.
-      delete axios.defaults.headers.common['x-organization-id'];
+      delete apiClient.defaults.headers.common['x-organization-id'];
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => { });
 
       // Native Google Sign-Out
@@ -165,7 +147,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // endpoint, whose 401 the interceptor turned into a false "Session
       // Expired" logout.
       await AsyncStorage.removeItem('activeOrgId');
-      delete axios.defaults.headers.common['x-organization-id'];
+      delete apiClient.defaults.headers.common['x-organization-id'];
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => { });
     } catch (e) {
       console.error('Error entering guest mode', e);
@@ -173,11 +155,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
+    const interceptor = apiClient.interceptors.response.use(
       (response) => response,
       async (error) => {
-        const status = error.response?.status;
-        const code = error.response?.data?.code;
+        // apiClient normalises to ApiError before this runs; fall back to the
+        // raw AxiosError shape in case an un-normalised error ever reaches here.
+        const status = error?.status ?? error.response?.status;
+        const code = error?.code ?? error.response?.data?.code;
 
         // A guest has no session to expire. Without this check any 401 from a
         // members-only route would eject them from guest mode with a
@@ -233,7 +217,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     return () => {
-      axios.interceptors.response.eject(interceptor);
+      apiClient.interceptors.response.eject(interceptor);
     };
   }, []);
 

@@ -4,9 +4,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { MessageNote } from '../types/MessageNote';
-import { useAuth } from '../../../context/AuthContext';
-import { useTheme, ColorsType } from '../../../context/ThemeContext';
+import { MessageNote } from '../types';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
 
 export const CATEGORY_META: Record<
     string,

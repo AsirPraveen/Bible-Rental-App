@@ -365,6 +365,7 @@ export const CustomAlert: React.FC = () => {
 
   return (
     <Modal
+      navigationBarTranslucent
       visible={visible}
       transparent={true}
       animationType="fade"

@@ -9,13 +9,13 @@
 // ════════════════════════════════════════════════
 import React, { useState, useEffect, useRef } from 'react';
 import Slider from '@react-native-community/slider';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, Modal, ActivityIndicator, StatusBar, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, Modal, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import {
@@ -23,16 +23,15 @@ import {
   addVoiceNote, deleteVoiceNote, addReminder, deleteReminder,
   lookupVerse, requestNotificationPermission, generateTitle, getLocalBibleData,
   scheduleNoteNotification
-} from './services/MessageNoteService';
-import { MessageNote, NoteCategory, HighlightColor } from './types/MessageNote';
+} from './messageNoteService';
+import { MessageNote, NoteCategory, HighlightColor } from './types';
 import { CATEGORY_META } from './components/MessageNoteCard';
-import { useAuth } from '../../context/AuthContext';
-
-const API_URL = API_BASE_URL;
+import { useAuth } from '@/context/AuthContext';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-import { uploadToCloudinary } from '../../utils/cloudinaryUpload';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
+import { useSystemBars } from '@/hooks/useSystemBars';
 
 const { tamilBibleData, bookTranslations } = getLocalBibleData();
 
@@ -49,6 +48,7 @@ const HIGHLIGHT_COLORS: { key: HighlightColor; label: string; emoji: string; col
 
 export default function NoteFormScreen() {
   const { colors } = useTheme();
+  useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -108,7 +108,7 @@ export default function NoteFormScreen() {
   const deleteVoiceNoteFromCloudinary = async (publicId: string) => {
     try {
       const token = await AsyncStorage.getItem('token');
-      await axios.post(`${API_URL}/api/cloudinary/delete`, {
+      await apiClient.post(`/api/cloudinary/delete`, {
         token,
         publicId,
         resourceType: 'video'
@@ -400,7 +400,6 @@ export default function NoteFormScreen() {
   // ══════════════════════════════════════════════
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
@@ -601,7 +600,8 @@ export default function NoteFormScreen() {
       </ScrollView>
 
       {/* ══ VERSE LOOKUP MODAL ══ */}
-      <Modal visible={showVerseModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowVerseModal(false)}>
+      <Modal
+        navigationBarTranslucent visible={showVerseModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowVerseModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowVerseModal(false)}>
           <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
@@ -695,7 +695,8 @@ export default function NoteFormScreen() {
       </Modal>
 
       {/* ══ HIGHLIGHT MODAL ══ (Simplified to use the same picker logic) */}
-      <Modal visible={showHlModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowHlModal(false)}>
+      <Modal
+        navigationBarTranslucent visible={showHlModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowHlModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowHlModal(false)}>
           <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
@@ -780,7 +781,8 @@ export default function NoteFormScreen() {
       </Modal>
 
       {/* ══ FULLSCREEN EDITOR ══ */}
-      <Modal visible={isFullScreen} statusBarTranslucent={false} animationType="slide" onRequestClose={() => setIsFullScreen(false)}>
+      <Modal
+        navigationBarTranslucent visible={isFullScreen} statusBarTranslucent={false} animationType="slide" onRequestClose={() => setIsFullScreen(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 15, alignItems: 'center', borderBottomWidth: 1, borderColor: colors.border }}>
             <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Write Note</Text>

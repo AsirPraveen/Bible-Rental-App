@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useOrg, Organization } from '../../context/OrganizationContext';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useOrg, Organization } from '@/context/OrganizationContext';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ArrowLeft, Search, Check, AlertCircle, Building2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function JoinOrgScreen({ navigation }: any) {
   const { refreshOrgs, switchOrg } = useOrg();
   const { isGuest } = useAuth();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
   const [inviteCode, setInviteCode] = useState('');
@@ -30,7 +29,7 @@ export default function JoinOrgScreen({ navigation }: any) {
   const fetchPublicOrgs = async () => {
     try {
       setLoadingOrgs(true);
-      const res = await axios.get(`${API_URL}/api/organizations/public-directory`);
+      const res = await apiClient.get(`/api/organizations/public-directory`);
       if (res.data.status === 'Ok') {
         setPublicOrgs(res.data.data);
       }
@@ -49,7 +48,7 @@ export default function JoinOrgScreen({ navigation }: any) {
 
     try {
       setJoining(true);
-      const res = await axios.post(`${API_URL}/api/organizations/join-invite`, {
+      const res = await apiClient.post(`/api/organizations/join-invite`, {
         inviteCode: inviteCode.trim()
       });
 
@@ -82,7 +81,7 @@ export default function JoinOrgScreen({ navigation }: any) {
 
     try {
       setJoining(true);
-      const res = await axios.post(`${API_URL}/api/organizations/join-request`, {
+      const res = await apiClient.post(`/api/organizations/join-request`, {
         orgId: org._id
       });
 
@@ -104,7 +103,6 @@ export default function JoinOrgScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           

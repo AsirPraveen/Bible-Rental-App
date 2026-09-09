@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../config/api';
+import { apiClient } from '@/services';
 
 /**
  * Uploads a local file to Cloudinary using a server-issued signature.
@@ -28,7 +28,7 @@ export const uploadToCloudinary = async (
   resourceType: 'image' | 'video' = 'image'
 ): Promise<UploadResult> => {
   // 1. Ask the server to authorise this upload.
-  const sigRes = await axios.post(`${API_BASE_URL}/api/cloudinary/signature`, { kind });
+  const sigRes = await apiClient.post('/api/cloudinary/signature', { kind });
   if (sigRes.data?.status !== 'Ok') {
     throw new Error(sigRes.data?.data || 'Could not prepare the upload.');
   }

@@ -8,10 +8,10 @@ import Lottie from 'lottie-react-native';
 import type LottieView from 'lottie-react-native';
 import { useTheme } from '../context/ThemeContext';
 
-import BookAnalyticsTab from '../screens/AdminScreen/BookAnalyticsTab';
-import AboutAdminTab from '../screens/AdminScreen/AboutAdminTab';
-import PendingScreen from '../screens/AdminScreen/PendingScreen';
-import CreateScreen from '../screens/AdminScreen/CreateScreen';
+import { BookAnalyticsTab } from '@/screens/Admin';
+import { AboutAdminTab } from '@/screens/Admin';
+import { PendingScreen } from '@/screens/Admin';
+import { CreateScreen } from '@/screens/Admin';
 
 const Tab = createBottomTabNavigator();
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);

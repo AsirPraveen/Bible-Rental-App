@@ -2,12 +2,9 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config/api';
-
-const API_URL = API_BASE_URL;
-
 export async function registerForPushNotificationsAsync() {
   let token;
 
@@ -52,7 +49,7 @@ export async function syncPushTokenWithBackend(token: string) {
   try {
     const userToken = await AsyncStorage.getItem('token');
     if (userToken && token) {
-      await axios.post(`${API_URL}/api/auth/update-push-token`, {
+      await apiClient.post(`/api/auth/update-push-token`, {
         token: userToken,
         expoPushToken: token,
       });

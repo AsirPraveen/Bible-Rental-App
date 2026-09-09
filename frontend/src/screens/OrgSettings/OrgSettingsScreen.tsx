@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ScrollView, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ScrollView, ActivityIndicator, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useOrg } from '../../context/OrganizationContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useOrg } from '@/context/OrganizationContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ArrowLeft, Copy, RefreshCw, Save, Shield } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function OrgSettingsScreen({ navigation }: any) {
   const { activeOrg, refreshOrgs } = useOrg();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
   const [name, setName] = useState('');
@@ -45,9 +44,9 @@ export default function OrgSettingsScreen({ navigation }: any) {
       
       // Features
       setBookRental(activeOrg.features?.bookRental ?? true);
-      setForum(activeOrg.features?.forum ?? true);
-      setPrayerWall(activeOrg.features?.prayerWall ?? true);
-      setSongs(activeOrg.features?.songs ?? true);
+      setForum(activeOrg.features?.DiscussionForum ?? true);
+      setPrayerWall(activeOrg.features?.PrayerRequests ?? true);
+      setSongs(activeOrg.features?.Songs ?? true);
       setGame(activeOrg.features?.game ?? true);
       setImageGeneration(activeOrg.features?.imageGeneration ?? true);
 
@@ -65,7 +64,7 @@ export default function OrgSettingsScreen({ navigation }: any) {
   const handleRegenerateInvite = async () => {
     try {
       setRegenerating(true);
-      const res = await axios.post(`${API_URL}/api/organizations/invite/regenerate`);
+      const res = await apiClient.post(`/api/organizations/invite/regenerate`);
       if (res.data.status === 'Ok') {
         setInviteCode(res.data.data);
         await refreshOrgs();
@@ -86,18 +85,21 @@ export default function OrgSettingsScreen({ navigation }: any) {
 
     try {
       setSaving(true);
-      const res = await axios.put(`${API_URL}/api/organizations/update`, {
+      const res = await apiClient.put(`/api/organizations/update`, {
         name: name.trim(),
         description: description.trim(),
         isPublic,
         requiresApproval,
+        // Key names must match backend/models/Organization.js. The schema is
+        // strict, so a key it does not declare is dropped on save without error
+        // -- which is why forum/prayerWall/songs never persisted.
         features: {
           bookRental,
-          forum,
-          prayerWall,
-          songs,
+          DiscussionForum: forum,
+          PrayerRequests: prayerWall,
+          Songs: songs,
           game,
-          imageGeneration
+          imageGeneration,
         }
       });
 
@@ -114,7 +116,6 @@ export default function OrgSettingsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           

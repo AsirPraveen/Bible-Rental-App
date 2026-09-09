@@ -1,15 +1,15 @@
 import React from 'react';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react-navigation/drawer';
-import { Platform, View, TouchableOpacity, Text, StyleSheet, StatusBar } from 'react-native';
+import { Platform, View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-import SuperAdminDashboard from '../screens/SuperAdminDashboard/SuperAdminDashboard';
-import SuperAdminSongsTab from '../screens/SuperAdminDashboard/SuperAdminSongsTab';
-import GuestSettingsTab from '../screens/AdminScreen/GuestSettingsTab';
-import ManageMapsTab from '../screens/AdminScreen/ManageMapsTab';
+import { SuperAdminDashboardScreen as SuperAdminDashboard } from '@/screens/SuperAdminDashboard';
+import { SuperAdminSongsTab } from '@/screens/SuperAdminDashboard';
+import { GuestSettingsTab } from '@/screens/Admin';
+import { ManageMapsTab } from '@/screens/Admin';
 
 const SuperAdminDrawer = createDrawerNavigator();
 
@@ -20,9 +20,6 @@ const SuperAdminCustomDrawerContent = (props: any) => {
 
   return (
     <View style={{ flex: 1 }}>
-      {drawerStatus === 'open' && (
-        <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient?.[0] || colors.primary} />
-      )}
       <DrawerContentScrollView {...props}>
         {/* Header section with admin credentials */}
         <View style={styles.drawerHeader}>

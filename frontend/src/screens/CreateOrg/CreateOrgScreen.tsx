@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, Switch, ActivityIndicator, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useOrg } from '../../context/OrganizationContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useOrg } from '@/context/OrganizationContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ArrowLeft, Building2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function CreateOrgScreen({ navigation }: any) {
   const { refreshOrgs, switchOrg } = useOrg();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
   const [name, setName] = useState('');
@@ -29,7 +28,7 @@ export default function CreateOrgScreen({ navigation }: any) {
 
     try {
       setSubmitting(true);
-      const res = await axios.post(`${API_URL}/api/organizations/create`, {
+      const res = await apiClient.post(`/api/organizations/create`, {
         name: name.trim(),
         description: description.trim(),
         isPublic,
@@ -145,7 +144,7 @@ export default function CreateOrgScreen({ navigation }: any) {
 const getStyles = (colors: any) => StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

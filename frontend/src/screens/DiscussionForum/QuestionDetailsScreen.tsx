@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Send, MessageCircle } from 'lucide-react-native';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-
-const BASE_URL = API_BASE_URL;
-
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 // ── Time-ago helper ──────────────────────────────────────────────
 function timeAgo(dateString: string): string {
   const now = Date.now();
@@ -34,6 +32,7 @@ function timeAgo(dateString: string): string {
 
 export default function QuestionDetailsScreen() {
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -68,7 +67,7 @@ export default function QuestionDetailsScreen() {
     try {
       setLoading(true);
 
-      const res = await axios.post(`${BASE_URL}/api/forum/questions/${question._id}/answers`, {
+      const res = await apiClient.post(`/api/forum/questions/${question._id}/answers`, {
         answerText
       });
 
@@ -221,7 +220,7 @@ export default function QuestionDetailsScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: { flex: 1 },
 

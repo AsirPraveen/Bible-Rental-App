@@ -6,7 +6,7 @@
 //  - Card list with highlight colors
 // ════════════════════════════════════════════════
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Alert, StatusBar, Platform, Dimensions, Modal, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Alert, Platform, Dimensions, Modal, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,17 +15,16 @@ import {
     getAllNotes, deleteNote, getNoteById,
     getStandaloneReminders, addStandaloneReminder, deleteStandaloneReminder,
     clearAllNotesData, syncStandaloneReminders
-} from './services/MessageNoteService';
-import axios from 'axios';
-
-const API_URL = API_BASE_URL;
-import { MessageNote, ReminderNote } from './types/MessageNote';
+} from './messageNoteService';
+import { apiClient } from '@/services';
+import { MessageNote, ReminderNote } from './types';
 import MessageNoteCard, { CATEGORY_META } from './components/MessageNoteCard';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-import LoadingScreen from '../../components/LoadingScreen';
-import { API_BASE_URL } from '../../config/api';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import LoadingScreen from '@/components/LoadingScreen';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 
 const { width } = Dimensions.get('window');
 
@@ -36,6 +35,7 @@ const CATEGORIES = [
 
 export default function MessageNotesScreen() {
     const { colors } = useTheme();
+    useSystemBars({ top: colors.primary });
     const styles = getStyles(colors);
     const navigation = useNavigation<any>();
     const { isGuest, logout, user } = useAuth();
@@ -44,7 +44,7 @@ export default function MessageNotesScreen() {
     const deleteVoiceNoteFromCloudinary = async (publicId: string) => {
         try {
             const token = await AsyncStorage.getItem('token');
-            await axios.post(`${API_URL}/api/cloudinary/delete`, {
+            await apiClient.post(`/api/cloudinary/delete`, {
                 token,
                 publicId,
                 resourceType: 'video'
@@ -223,7 +223,6 @@ export default function MessageNotesScreen() {
 
     return (
         <SafeAreaView style={styles.outer}>
-            <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
             {/*  ── Solid Header ── */}
             <View style={[styles.gradient, { backgroundColor: colors.primary }]}>
@@ -396,6 +395,7 @@ export default function MessageNotesScreen() {
 
             {/* ── Standalone Reminders Modal ── */}
             <Modal
+              navigationBarTranslucent
                 visible={showRmModal}
                 transparent
                 statusBarTranslucent={true}

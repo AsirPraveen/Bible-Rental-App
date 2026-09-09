@@ -5,12 +5,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import Animated, { useAnimatedStyle, withTiming, useDerivedValue } from "react-native-reanimated";
 import Lottie from "lottie-react-native";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { Ionicons } from '@expo/vector-icons';
 
-import HomeComponent from "../screens/HomeScreen/HomeScreen";
-import StuffComponent from "../screens/StuffComponent/StuffComponent";
-import NotificationScreen from "../screens/NotificationScreen/NotificationScreen";
-import UserProfileScreen from "../screens/UserProfileScreen/UserProfileScreen";
+import HomeComponent from "@/screens/Home";
+import { StuffScreen as StuffComponent } from '@/screens/Stuff';
+import { NotificationsScreen as NotificationScreen } from '@/screens/Notifications';
+import { UserProfileScreen } from '@/screens/UserProfile';
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 

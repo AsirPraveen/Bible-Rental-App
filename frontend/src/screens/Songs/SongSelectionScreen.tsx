@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ScrollView, Platform, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Searchbar, Checkbox, Button, Card } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
-import { useTheme } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-
-const BASE_URL = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import { useTheme } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
+import { ScreenHeader } from '@/components/ScreenHeader';
 const SongSelectionScreen = ({ route }: any) => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient?.[0] || '#146C94' });
   const { initialSelectedSongs } = route?.params || {};
 
   const [songs, setSongs] = useState<any[]>([]);
@@ -44,7 +44,7 @@ const SongSelectionScreen = ({ route }: any) => {
   const fetchSongs = async (isAppend = false, pageNum = currentPage) => {
     try {
       setLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/songs`, {
+      const res = await apiClient.get(`/api/songs`, {
         params: {
           search: searchQuery,
           page: pageNum,
@@ -132,12 +132,13 @@ const SongSelectionScreen = ({ route }: any) => {
   return (
     <SafeAreaView style={[styles.outerContainer, { backgroundColor: colors.linearGradient?.[0] || '#146C94' }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Design PDF Sheet</Text>
-      </View>
+      <ScreenHeader
+        style={styles.header}
+        titleStyle={styles.headerTitle}
+        title="Design PDF Sheet"
+        backIcon={<Ionicons name="arrow-back" size={24} color="#fff" />}
+        backStyle={styles.backBtn}
+      />
 
       <View style={[styles.bodyContainer, { backgroundColor: colors.background }]}>
         <Searchbar

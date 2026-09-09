@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, StatusBar, TextInput, Animated, Easing } from 'react-native';
+import { View, StyleSheet, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, TextInput, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useOrg } from '../../context/OrganizationContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
+import { useOrg } from '@/context/OrganizationContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft, UserMinus, Shield, ShieldAlert, Check, X, Users, Mail, Copy, Plus, RotateCw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import * as Clipboard from 'expo-clipboard';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function MemberManagementScreen({ navigation }: any) {
   const { activeOrg } = useOrg();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const { user } = useAuth();
   const styles = getStyles(colors);
 
@@ -93,7 +92,7 @@ export default function MemberManagementScreen({ navigation }: any) {
         startRotation();
         setRefreshing(true);
       }
-      const res = await axios.get(`${API_URL}/api/organizations/members`);
+      const res = await apiClient.get(`/api/organizations/members`);
       if (res.data.status === 'Ok') {
         setMembers(res.data.data.members || []);
         setPendingRequests(res.data.data.pendingRequests || []);
@@ -113,7 +112,7 @@ export default function MemberManagementScreen({ navigation }: any) {
   const handleApproveJoin = async (userId: string, approve: boolean) => {
     try {
       setActioning(userId);
-      const res = await axios.post(`${API_URL}/api/organizations/members/approve`, {
+      const res = await apiClient.post(`/api/organizations/members/approve`, {
         userId,
         approve
       });
@@ -140,7 +139,7 @@ export default function MemberManagementScreen({ navigation }: any) {
           onPress: async () => {
             try {
               setActioning(userId);
-              const res = await axios.post(`${API_URL}/api/organizations/members/update`, {
+              const res = await apiClient.post(`/api/organizations/members/update`, {
                 userId,
                 role: newRole
               });
@@ -170,7 +169,7 @@ export default function MemberManagementScreen({ navigation }: any) {
           onPress: async () => {
             try {
               setActioning(userId);
-              const res = await axios.post(`${API_URL}/api/organizations/members/update`, {
+              const res = await apiClient.post(`/api/organizations/members/update`, {
                 userId,
                 remove: true
               });
@@ -195,7 +194,7 @@ export default function MemberManagementScreen({ navigation }: any) {
     }
     try {
       setInviting(true);
-      const res = await axios.post(`${API_URL}/api/organizations/members/invite`, {
+      const res = await apiClient.post(`/api/organizations/members/invite`, {
         email: inviteEmail.trim(),
         role: inviteRole
       });
@@ -219,7 +218,6 @@ export default function MemberManagementScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           

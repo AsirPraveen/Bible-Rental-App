@@ -1,0 +1,139 @@
+import type { ColorsType } from '@/context/ThemeContext';
+import { StyleSheet } from 'react-native';
+
+export const getStyles = (colors: ColorsType) => StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  textSign: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.theme === 'dark' ? '#12161A' : 'white',
+  },
+  smallIcon: {
+    marginRight: 10,
+    fontSize: 24,
+  },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 20,
+  },
+  logo: {
+    height: 260,
+    width: 260,
+    marginTop: 50,
+    borderRadius: 30,
+  },
+  text_footer: {
+    color: colors.textSecondary,
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  action: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    marginTop: 15,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: colors.tint,
+    borderRadius: 50,
+    alignItems: 'center',
+  },
+  textInput: {
+    flex: 1,
+    color: colors.text,
+    paddingVertical: 2,
+    fontSize: 15,
+  },
+  loginContainer: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 30,
+    flex: 1,
+    paddingBottom: 40,
+  },
+  header: {
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+  },
+  text_header: {
+    color: colors.tint,
+    fontWeight: 'bold',
+    fontSize: 30,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  button: {
+    alignItems: 'center',
+    marginTop: 20,
+    textAlign: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  inBut: {
+    width: '70%',
+    backgroundColor: colors.theme === 'dark' ? colors.tint : colors.primary,
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    borderRadius: 50,
+  },
+  inBut2: {
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : colors.primary,
+    height: 65,
+    width: 65,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: colors.theme === 'dark' ? 1 : 0,
+    borderColor: colors.border,
+  },
+  bottomButton: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  smallIcon2: {
+    fontSize: 40,
+  },
+  bottomText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  radioButton_div: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  radioButton_inner_div: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioButton_title: {
+    fontSize: 20,
+    color: colors.tint,
+  },
+  radioButton_text: {
+    fontSize: 16,
+    color: colors.text,
+    marginRight: 5,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginLeft: 20,
+    marginTop: 5,
+  },
+});

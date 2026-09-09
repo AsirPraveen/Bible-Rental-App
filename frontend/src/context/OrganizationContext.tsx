@@ -1,11 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { apiClient } from '@/services';
 import { useAuth } from './AuthContext';
 import { API_BASE_URL } from '../config/api';
-
-const API_URL = API_BASE_URL;
-
 export type Organization = {
   _id: string;
   name: string;
@@ -16,19 +14,39 @@ export type Organization = {
   inviteCode?: string;
   isPublic: boolean;
   requiresApproval: boolean;
-  features: {
+  /**
+   * Feature flags. These key names MUST match backend/models/Organization.js
+   * exactly -- the schema is strict, so Mongoose silently drops any key it does
+   * not declare, and a read of a misspelled key yields undefined (which most
+   * call sites then treat as "enabled").
+   *
+   * Three keys here used to be camelCase inventions (forum, prayerWall, songs)
+   * that the server neither stored nor returned, so those toggles always
+   * displayed as on and never saved.
+   */
+  features: Partial<{
     bookRental: boolean;
-    forum: boolean;
-    prayerWall: boolean;
-    songs: boolean;
+    upperRoom: boolean;
     game: boolean;
     imageGeneration: boolean;
-    messageNotes: boolean;
-    fastingTracker: boolean;
-    readingPlanner: boolean;
-  };
+    Bible: boolean;
+    Songs: boolean;
+    HistoricalMaps: boolean;
+    ReadingTracker: boolean;
+    ReadingPlanner: boolean;
+    DiscussionForum: boolean;
+    FastingTracker: boolean;
+    PrayerRequests: boolean;
+    MessageNotes: boolean;
+    BookPdf: boolean;
+    SongPdf: boolean;
+    BiblicalArtifacts: boolean;
+  }>;
   guestAccess: Record<string, boolean>;
 };
+
+/** The org feature-flag map, for code that holds it on its own. */
+export type OrgFeatures = Organization['features'];
 
 export type Membership = {
   organization: Organization;
@@ -79,7 +97,7 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.post(`${API_URL}/api/auth/userdata`, { token });
+      const res = await apiClient.post(`/api/auth/userdata`, { token });
 
       if (res.data.status === 'Ok') {
         const userData = res.data.data;
@@ -96,7 +114,7 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
             setActiveOrg(activeMembership.organization);
             setOrgRole(activeMembership.role);
             await AsyncStorage.setItem('activeOrgId', activeId);
-            axios.defaults.headers.common['x-organization-id'] = activeId;
+            apiClient.defaults.headers.common['x-organization-id'] = activeId;
           } else {
             setActiveOrg(null);
             setOrgRole('User');
@@ -127,10 +145,10 @@ export const OrganizationProvider = ({ children }: { children: React.ReactNode }
         return false;
       }
 
-      const res = await axios.post(`${API_URL}/api/organizations/switch`, { orgId });
+      const res = await apiClient.post(`/api/organizations/switch`, { orgId });
       if (res.data.status === 'Ok') {
         await AsyncStorage.setItem('activeOrgId', orgId);
-        axios.defaults.headers.common['x-organization-id'] = orgId;
+        apiClient.defaults.headers.common['x-organization-id'] = orgId;
         await fetchOrgContext();
         return true;
       }

@@ -78,7 +78,7 @@ async function runMigration() {
   const UserSchema = require('../models/UserDetails').schema;
   const BookSchema = require('../models/Book').schema;
   const SongSchema = require('../models/Song').schema;
-  const AuthorSchema = require('../models/author').schema;
+  const AuthorSchema = require('../models/Author').schema;
   const BibleSchema = require('../models/BibleChapter').schema;
   const MapSchema = require('../models/HistoricalMap').schema;
   const LocationSchema = require('../models/HistoricalLocation').schema;

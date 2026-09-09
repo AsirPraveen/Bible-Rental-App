@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, StatusBar, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useOrg } from '../../context/OrganizationContext';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useOrg } from '@/context/OrganizationContext';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { LogOut, ArrowLeft, Building2, KeyRound, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function OrgSelectionScreen({ navigation }: any) {
   const { memberships, loading, switchOrg, refreshOrgs } = useOrg();
   const { logout, user } = useAuth();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
   const [inviteCode, setInviteCode] = useState('');
@@ -35,7 +34,7 @@ export default function OrgSelectionScreen({ navigation }: any) {
     }
     try {
       setJoining(true);
-      const res = await axios.post(`${API_URL}/api/organizations/join-invite`, { inviteCode: code });
+      const res = await apiClient.post(`/api/organizations/join-invite`, { inviteCode: code });
       if (res.data.status === 'Ok') {
         Alert.alert('Success', 'Successfully joined organization!');
         setInviteCode('');
@@ -79,7 +78,6 @@ export default function OrgSelectionScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         {hasWorkspaces && (
           <View style={styles.topBar}>

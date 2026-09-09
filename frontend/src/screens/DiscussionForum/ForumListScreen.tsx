@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, TextInput, Switch, Platform, StatusBar, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, TextInput, Switch, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MessageCircle, Users, PlusCircle, Search, Clock, TrendingUp, X } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import LoadingScreen from '../../components/LoadingScreen';
-import { useAuth } from '../../context/AuthContext';
+import LoadingScreen from '@/components/LoadingScreen';
+import { useAuth } from '@/context/AuthContext';
 import { Alert } from 'react-native';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-
-const BASE_URL = API_BASE_URL;
-
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 // ── Time-ago helper ──────────────────────────────────────────────
 function timeAgo(dateString: string): string {
   const now = Date.now();
@@ -39,6 +37,7 @@ type SortMode = 'newest' | 'mostReplies';
 
 export default function ForumListScreen() {
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const { isGuest } = useAuth();
   const [questions, setQuestions] = useState<any[]>([]);
@@ -60,7 +59,7 @@ export default function ForumListScreen() {
   const fetchQuestions = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/forum/questions`);
+      const res = await apiClient.get(`/api/forum/questions`);
       if (res.data.status === 'Success') {
         setQuestions(res.data.data);
       }
@@ -75,7 +74,7 @@ export default function ForumListScreen() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const res = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
+        const res = await apiClient.post(`/api/auth/userdata`, { token });
         if (res.data.status === 'Ok' && res.data.data) {
           setCurrentUserId(res.data.data._id);
         }
@@ -93,7 +92,7 @@ export default function ForumListScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await axios.get(`${BASE_URL}/api/forum/questions`);
+      const res = await apiClient.get(`/api/forum/questions`);
       if (res.data.status === 'Success') {
         setQuestions(res.data.data);
       }
@@ -125,7 +124,7 @@ export default function ForumListScreen() {
     try {
       setSubmitLoading(true);
 
-      const res = await axios.post(`${BASE_URL}/api/forum/questions`, {
+      const res = await apiClient.post(`/api/forum/questions`, {
         questionText: newQuestion,
         isAnonymous,
         visibility
@@ -325,7 +324,8 @@ export default function ForumListScreen() {
         </View>
 
         {/* ── Ask Question Modal ─────────────────────────────── */}
-        <Modal visible={modalVisible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={() => setModalVisible(false)}>
+        <Modal
+          navigationBarTranslucent visible={modalVisible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               {/* Modal header */}
@@ -390,7 +390,7 @@ export default function ForumListScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

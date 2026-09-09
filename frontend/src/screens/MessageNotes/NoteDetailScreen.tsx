@@ -7,32 +7,28 @@
 //  - Share / Export functionality
 // ════════════════════════════════════════════════
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, Share, Platform, ActivityIndicator, Linking, Modal, StatusBar,
-  Pressable
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, Platform, ActivityIndicator, Linking, Modal, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import {
   getNoteById, deleteNote, addReminder, deleteReminder,
   generateTitle, exportNoteAsText
-} from './services/MessageNoteService';
-import { MessageNote, VoiceNote, VerseHighlight } from './types/MessageNote';
+} from './messageNoteService';
+import { MessageNote, VoiceNote, VerseHighlight } from './types';
 import { CATEGORY_META } from './components/MessageNoteCard';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import LoadingScreen from '../../components/LoadingScreen';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import LoadingScreen from '@/components/LoadingScreen';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function NoteDetailScreen() {
   const { colors } = useTheme();
+  useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -49,7 +45,7 @@ export default function NoteDetailScreen() {
   const deleteVoiceNoteFromCloudinary = async (publicId: string) => {
     try {
       const token = await AsyncStorage.getItem('token');
-      await axios.post(`${API_URL}/api/cloudinary/delete`, {
+      await apiClient.post(`/api/cloudinary/delete`, {
         token,
         publicId,
         resourceType: 'video'
@@ -277,8 +273,7 @@ export default function NoteDetailScreen() {
   const metaBg = colors.theme === 'dark' ? colors.inputBg : (meta?.bg || '#F6F1F1');
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <View style={styles.headerTop}>
@@ -442,6 +437,7 @@ export default function NoteDetailScreen() {
 
       {/* ── Full Verse Modal ── */}
       <Modal
+        navigationBarTranslucent
         visible={!!selectedHighlight}
         transparent
         statusBarTranslucent={true}
@@ -490,7 +486,7 @@ export default function NoteDetailScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

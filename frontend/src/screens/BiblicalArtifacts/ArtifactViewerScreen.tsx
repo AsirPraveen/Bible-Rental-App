@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Platform, StatusBar, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { ArrowLeft, RotateCcw, Play, Pause, Layers, Scale, Sparkles, BookOpen } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import axios from 'axios';
-import LoadingScreen from '../../components/LoadingScreen';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
+import { apiClient } from '@/services';
+import LoadingScreen from '@/components/LoadingScreen';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
 
 // three.js and its loaders ship with the app rather than loading from a CDN at
 // runtime, so the viewer works offline and cannot be broken by a third party.
 // See src/assets/three/README.md for provenance and upgrade notes.
-import threeSource from '../../assets/three/three.min.json';
-import orbitControlsSource from '../../assets/three/OrbitControls.json';
-import gltfLoaderSource from '../../assets/three/GLTFLoader.json';
-
-const apiUrl = API_BASE_URL;
-
+import threeSource from '@/assets/three/three.min.json';
+import orbitControlsSource from '@/assets/three/OrbitControls.json';
+import gltfLoaderSource from '@/assets/three/GLTFLoader.json';
+import { useSystemBars } from '@/hooks/useSystemBars';
 const THREE_RUNTIME = [
   (threeSource as { src: string }).src,
   (orbitControlsSource as { src: string }).src,
@@ -30,6 +28,7 @@ export default function ArtifactViewerScreen() {
   const route = useRoute<any>();
   const { artifactId } = route.params;
   const { colors, theme } = useTheme();
+  useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
 
   const [artifact, setArtifact] = useState<any | null>(null);
@@ -43,7 +42,7 @@ export default function ArtifactViewerScreen() {
   useEffect(() => {
     const fetchArtifactDetails = async () => {
       try {
-        const res = await axios.get(`${apiUrl}/api/artifacts/${artifactId}`);
+        const res = await apiClient.get(`/api/artifacts/${artifactId}`);
         if (res.data && res.data.status === 'Success') {
           setArtifact(res.data.data);
         }
@@ -1333,7 +1332,6 @@ export default function ArtifactViewerScreen() {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
-      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* 3D Canvas WebView Section */}
       <View style={styles.viewerContainer}>

@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { Plus, Clock, Info, PlusCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-
-const BASE_URL = API_BASE_URL;
-import AddFastingModal from './AddFastingModal';
-import LoadingScreen from '../../components/LoadingScreen';
-import { useAuth } from '../../context/AuthContext';
-import { API_BASE_URL } from '../../config/api';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import AddFastingModal from './components/AddFastingModal';
+import LoadingScreen from '@/components/LoadingScreen';
+import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 
 export default function FastingTrackerScreen() {
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const { isGuest } = useAuth();
   const [plans, setPlans] = useState([]);
@@ -34,10 +34,10 @@ export default function FastingTrackerScreen() {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const res = await axios.post(`${BASE_URL}/api/auth/userdata`, { token });
+        const res = await apiClient.post(`/api/auth/userdata`, { token });
         if (res.data.status === 'Ok' && res.data.data) {
           const userId = res.data.data._id;
-          const plansRes = await axios.get(`${BASE_URL}/api/fasting/user/${userId}`);
+          const plansRes = await apiClient.get(`/api/fasting/user/${userId}`);
           if (plansRes.data.status === 'Success') {
             setPlans(plansRes.data.data);
           }
@@ -59,7 +59,7 @@ export default function FastingTrackerScreen() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const res = await axios.put(`${BASE_URL}/api/fasting/${id}/status`, { status });
+      const res = await apiClient.put(`/api/fasting/${id}/status`, { status });
       if (res.data.status === 'Success') {
         fetchPlans(); // Refresh the list
       }
@@ -203,7 +203,7 @@ export default function FastingTrackerScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

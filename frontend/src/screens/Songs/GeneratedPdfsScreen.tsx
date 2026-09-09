@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Pressable, Platform, StatusBar as RNStatusBar, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Pressable, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, IconButton, Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
-import { StatusBar } from 'expo-status-bar';
 import { ArrowLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-
-const BASE_URL = API_BASE_URL;
-
+import { useTheme } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 const preprocessHtml = (html: string) => {
   if (!html) return '';
   if (html.includes('tempPool.children.length === 0')) {
@@ -70,6 +67,7 @@ const cleanHtmlForPreview = (html: string) => {
 const GeneratedPdfsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const [pdfs, setPdfs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +77,7 @@ const GeneratedPdfsScreen = () => {
   const fetchPdfs = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/generated-pdfs`);
+      const res = await apiClient.get(`/api/generated-pdfs`);
       if (res.data.status === 'Ok') {
         setPdfs(res.data.data || []);
       }
@@ -137,7 +135,7 @@ const GeneratedPdfsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`${BASE_URL}/api/generated-pdfs/${id}`);
+              await apiClient.delete(`/api/generated-pdfs/${id}`);
               fetchPdfs();
             } catch (error) {
               Alert.alert('Error', 'Failed to delete song sheet');
@@ -248,13 +246,14 @@ const GeneratedPdfsScreen = () => {
 
       {/* Full-screen WebView PDF Preview Modal */}
       <Modal
+        navigationBarTranslucent
+        statusBarTranslucent
         visible={previewHtml !== null}
         animationType="fade"
         transparent={false}
         onRequestClose={() => setPreviewHtml(null)}
       >
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.primary }}>
-          <RNStatusBar barStyle="light-content" backgroundColor={colors.primary} />
           {/* Header */}
           <View style={{
             height: 56,
@@ -304,7 +303,7 @@ const GeneratedPdfsScreen = () => {
 const getStyles = (colors: any) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: {
     flex: 1,

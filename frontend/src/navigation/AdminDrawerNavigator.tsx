@@ -1,19 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react-navigation/drawer';
-import { Platform, View, TouchableOpacity, Text, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
+import { Platform, View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AdminTabsNavigation from './AdminTabsNavigation';
-import AppSettingsTab from '../screens/AdminScreen/components/AppSettingsTab';
+import AppSettingsTab from '../screens/Admin/components/AppSettingsTab';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useOrg } from '../context/OrganizationContext';
-import axios from 'axios';
+import { apiClient } from '@/services';
 import { API_BASE_URL } from '../config/api';
-
-const API_URL = API_BASE_URL;
-
 const AdminDrawer = createDrawerNavigator();
 
 const AdminCustomDrawerContent = (props: any) => {
@@ -28,7 +25,7 @@ const AdminCustomDrawerContent = (props: any) => {
     if (!user) return;
     try {
       if (!silent) setLoadingFellowships(true);
-      const res = await axios.get(`${API_URL}/api/fellowships`);
+      const res = await apiClient.get(`/api/fellowships`);
       if (res.data.status === 'Ok') {
         setFellowships(res.data.data);
       }
@@ -58,9 +55,6 @@ const AdminCustomDrawerContent = (props: any) => {
 
   return (
     <View style={{ flex: 1 }}>
-      {drawerStatus === 'open' && (
-        <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient?.[0] || colors.primary} />
-      )}
       <DrawerContentScrollView {...props}>
         <DrawerItemList {...props} />
 

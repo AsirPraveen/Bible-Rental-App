@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, StatusBar, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Search, Box, BookOpen, Layers } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
-import LoadingScreen from '../../components/LoadingScreen';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-
-const apiUrl = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import LoadingScreen from '@/components/LoadingScreen';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function BiblicalArtifactsScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
   const [artifacts, setArtifacts] = useState<any[]>([]);
@@ -25,7 +24,7 @@ export default function BiblicalArtifactsScreen() {
   useEffect(() => {
     const fetchArtifacts = async () => {
       try {
-        const res = await axios.get(`${apiUrl}/api/artifacts`);
+        const res = await apiClient.get(`/api/artifacts`);
         if (res.data && res.data.data) {
           setArtifacts(res.data.data);
         }
@@ -126,7 +125,6 @@ export default function BiblicalArtifactsScreen() {
 
   return (
     <SafeAreaView style={styles.outerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.linearGradient[0]} />
       <LinearGradient colors={colors.linearGradient} style={styles.gradientHeader}>
         {/* Header toolbar */}
         <View style={styles.headerContainer}>

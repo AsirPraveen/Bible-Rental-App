@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Check, Search, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import LoadingScreen from '../../components/LoadingScreen';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
+import LoadingScreen from '@/components/LoadingScreen';
+import { apiClient } from '@/services';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 const ICONS = ['📖', '🙏', '📢', '⛪', '🕊️', '✝️', '🔥', '💡', '🎵', '👑', '🌿', '💪'];
 
 type OrgMember = {
@@ -25,6 +24,7 @@ export default function CreateFellowshipScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.background });
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -39,7 +39,7 @@ export default function CreateFellowshipScreen() {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/fellowships/org-members`);
+        const res = await apiClient.get(`/api/fellowships/org-members`);
         if (res.data.status === 'Ok') {
           // Filter out the current user from the selectable list
           const others = res.data.data.filter((m: OrgMember) => m._id !== user?._id);
@@ -73,7 +73,7 @@ export default function CreateFellowshipScreen() {
 
     setCreating(true);
     try {
-      const res = await axios.post(`${API_URL}/api/fellowships`, {
+      const res = await apiClient.post(`/api/fellowships`, {
         name: name.trim(),
         description: description.trim(),
         icon: selectedIcon,
@@ -94,8 +94,7 @@ export default function CreateFellowshipScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
@@ -283,7 +282,7 @@ export default function CreateFellowshipScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -295,7 +294,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 14,
+    paddingTop: 14,
   },
   backBtn: {
     padding: 8,
@@ -402,7 +401,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    paddingBottom: 16,
   },
   createBtn: {
     paddingVertical: 16,

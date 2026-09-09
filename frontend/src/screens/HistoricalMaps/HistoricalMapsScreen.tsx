@@ -1,20 +1,19 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 import { MapPin, List as ListIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
-import LoadingScreen from '../../components/LoadingScreen';
-import { useTheme, ColorsType } from '../../context/ThemeContext';
-import { API_BASE_URL } from '../../config/api';
-
-const apiUrl = API_BASE_URL;
-
+import { apiClient } from '@/services';
+import LoadingScreen from '@/components/LoadingScreen';
+import { useTheme, ColorsType } from '@/context/ThemeContext';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 export default function HistoricalMapsScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +21,7 @@ export default function HistoricalMapsScreen() {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const res = await axios.get(`${apiUrl}/api/maps/locations`);
+        const res = await apiClient.get(`/api/maps/locations`);
         if (res.data && res.data.data) {
           const formatted = res.data.data.map((loc: any) => ({
             ...loc,
@@ -222,7 +221,7 @@ export default function HistoricalMapsScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outer_container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.linearGradient[0],
   },
   gradient: { flex: 1 },
   headerContainer: { padding: 20, paddingTop: 16, flexDirection: 'row', alignItems: 'center' },

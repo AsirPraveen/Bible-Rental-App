@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, ActivityIndicator, Switch, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Switch } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Shield, User, UserMinus, LogOut, Megaphone, MessageSquare, Settings, UserPlus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useOrg } from '../../context/OrganizationContext';
-import axios from 'axios';
-import LoadingScreen from '../../components/LoadingScreen';
-import { API_BASE_URL } from '../../config/api';
-
-const API_URL = API_BASE_URL;
-
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useOrg } from '@/context/OrganizationContext';
+import { apiClient } from '@/services';
+import LoadingScreen from '@/components/LoadingScreen';
+import { API_BASE_URL } from '@/config/api';
+import { useSystemBars } from '@/hooks/useSystemBars';
 type MemberType = {
   user: { _id: string; name: string; email: string; image?: string };
   role: 'shepherd' | 'member';
@@ -33,6 +32,7 @@ export default function FellowshipDetailsScreen() {
   const route = useRoute<any>();
   const { user } = useAuth();
   const { colors } = useTheme();
+  useSystemBars({ top: colors.background });
   const { fellowshipId } = route.params || {};
 
   const [fellowship, setFellowship] = useState<FellowshipType | null>(null);
@@ -41,7 +41,7 @@ export default function FellowshipDetailsScreen() {
   const fetchDetails = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/api/fellowships/${fellowshipId}`);
+      const res = await apiClient.get(`/api/fellowships/${fellowshipId}`);
       if (res.data.status === 'Ok') {
         setFellowship(res.data.data);
       }
@@ -86,7 +86,7 @@ export default function FellowshipDetailsScreen() {
           text: isToAnnouncement ? 'Enable' : 'Disable',
           onPress: async () => {
             try {
-              await axios.put(`${API_URL}/api/fellowships/${fellowshipId}`, { type: newType });
+              await apiClient.put(`/api/fellowships/${fellowshipId}`, { type: newType });
               setFellowship(prev => prev ? { ...prev, type: newType } : null);
             } catch (err) {
               Alert.alert('Error', 'Failed to update fellowship type.');
@@ -106,7 +106,7 @@ export default function FellowshipDetailsScreen() {
         {
           text: 'Remove', style: 'destructive', onPress: async () => {
             try {
-              await axios.delete(`${API_URL}/api/fellowships/${fellowshipId}/members/${memberId}`);
+              await apiClient.delete(`/api/fellowships/${fellowshipId}/members/${memberId}`);
               fetchDetails();
             } catch (err) {
               Alert.alert('Error', 'Failed to remove member.');
@@ -126,7 +126,7 @@ export default function FellowshipDetailsScreen() {
         {
           text: 'Leave', style: 'destructive', onPress: async () => {
             try {
-              await axios.delete(`${API_URL}/api/fellowships/${fellowshipId}/members/${user?._id}`);
+              await apiClient.delete(`/api/fellowships/${fellowshipId}/members/${user?._id}`);
               navigation.goBack();
               navigation.goBack(); // Go back past the chat screen too
             } catch (err) {
@@ -147,7 +147,7 @@ export default function FellowshipDetailsScreen() {
         {
           text: 'Archive', style: 'destructive', onPress: async () => {
             try {
-              await axios.patch(`${API_URL}/api/fellowships/${fellowshipId}/archive`);
+              await apiClient.patch(`/api/fellowships/${fellowshipId}/archive`);
               navigation.goBack();
               navigation.goBack();
             } catch (err) {
@@ -162,7 +162,6 @@ export default function FellowshipDetailsScreen() {
   if (loading) {
     return (
       <>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
         <LoadingScreen message="Loading details..." />
       </>
     );
@@ -171,7 +170,6 @@ export default function FellowshipDetailsScreen() {
   if (!fellowship) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
         <Text style={{ color: colors.text, textAlign: 'center', marginTop: 40 }}>Fellowship not found.</Text>
       </View>
     );
@@ -181,8 +179,7 @@ export default function FellowshipDetailsScreen() {
   const members = fellowship.members.filter(m => m.role === 'member');
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
@@ -320,7 +317,7 @@ export default function FellowshipDetailsScreen() {
           )}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -333,7 +330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 14,
+    paddingTop: 14,
   },
   backBtn: {
     padding: 8,

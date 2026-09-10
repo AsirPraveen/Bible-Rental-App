@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, Switch, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,7 +7,7 @@ import { apiClient } from '@/services';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LoadingScreen from '@/components/LoadingScreen';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -357,6 +357,26 @@ const UserProfileScreen = () => {
     }
     setImage(null);
   };
+
+  // Leaving the screen mid-edit discards the edit, exactly as Cancel does.
+  // Without this the form stayed open with unsaved values and came back in that
+  // state on return, which reads as if the changes had been kept.
+  //
+  // Refs rather than deps: the cleanup must see the CURRENT editing state, and
+  // depending on it would re-subscribe (and fire the cleanup) on every toggle.
+  const isEditingRef = useRef(isEditing);
+  isEditingRef.current = isEditing;
+  const cancelEditRef = useRef(handleCancelEdit);
+  cancelEditRef.current = handleCancelEdit;
+
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        if (isEditingRef.current) cancelEditRef.current();
+      },
+      [],
+    ),
+  );
 
   const handleLogout = () => {
     Alert.alert(

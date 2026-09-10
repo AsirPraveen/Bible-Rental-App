@@ -16,6 +16,10 @@ import { useSystemBars } from '@/hooks/useSystemBars';
 export default function SongComponent() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  // Measured, not assumed: the FAB used a hardcoded bottom:80 that ignored
+  // both the real bar height and the navigation-bar inset, so it sat on top
+  // of the pagination controls. 0 when the bar is not rendered.
+  const [paginationHeight, setPaginationHeight] = useState(0);
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const { activeOrg } = useOrg();
@@ -144,7 +148,10 @@ export default function SongComponent() {
   const renderPagination = () => {
     if (totalPages <= 1) return null;
     return (
-      <View style={styles.paginationContainer}>
+      <View
+        style={styles.paginationContainer}
+        onLayout={e => setPaginationHeight(e.nativeEvent.layout.height)}
+      >
         <TouchableOpacity
           style={[styles.pageButton, currentPage === 1 && styles.disabledButton]}
           onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -286,7 +293,7 @@ export default function SongComponent() {
             <MaterialCommunityIcons
               name={onlyOrgSongs ? "checkbox-marked" : "checkbox-blank-outline"}
               size={15}
-              color={onlyOrgSongs ? "#fff" : colors.textSecondary}
+              color={onlyOrgSongs ? '#fff' : 'rgba(255,255,255,0.85)'}
             />
             <Text style={[styles.orgTogglePillText, onlyOrgSongs && styles.orgTogglePillTextActive]}>
               {activeOrg.name} Songs
@@ -322,7 +329,11 @@ export default function SongComponent() {
 
       {/* Floating Filter FAB overlay trigger */}
       <TouchableOpacity
-        style={styles.floatingFilterButton}
+        style={[
+          styles.floatingFilterButton,
+          // clears the measured pagination bar and the navigation-bar inset
+          { bottom: insets.bottom + paginationHeight + 16 },
+        ]}
         activeOpacity={0.8}
         onPress={() => setIsFilterModalVisible(true)}
       >
@@ -618,7 +629,9 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     paddingVertical: 8,
   },
   resultsCount: {
-    color: colors.tint,
+    // Sits on outer_container (colors.linearGradient[0]), which is dark in both
+    // themes -- colors.tint was #146C94 on #146C94 in light mode, i.e. invisible.
+    color: 'rgba(255,255,255,0.92)',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -627,7 +640,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.35)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -640,7 +653,8 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   orgTogglePillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    // Same dark surface as resultsCount above.
+    color: 'rgba(255,255,255,0.85)',
   },
   orgTogglePillTextActive: {
     color: '#fff',
@@ -754,7 +768,6 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   floatingFilterButton: {
     position: 'absolute',
     right: 20,
-    bottom: 80, // Anchored nicely above the pagination controls bar
     width: 56,
     height: 56,
     borderRadius: 28,

@@ -250,23 +250,25 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     marginRight: 38, // Balance the back button offset
   },
   headerTitle: {
-    fontSize: 22,
+    // Matches HistoricalMaps / ReadingPlanner / BookPdf so the screens read as
+    // one family; textLight rather than #fff so it follows the theme.
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.textLight,
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitleText: {
-    fontSize: 13,
-    color: '#fff',
+    fontSize: 14,
+    color: colors.textLight,
     textAlign: 'center',
     opacity: 0.9,
   },
   mainContainer: {
     flex: 1,
     backgroundColor: colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     overflow: 'hidden',
   },
   searchSection: {

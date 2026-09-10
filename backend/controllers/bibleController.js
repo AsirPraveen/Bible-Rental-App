@@ -133,6 +133,27 @@ const stripHtml = (html) =>
     .trim();
 
 /**
+ * Flatten markdown to plain text.
+ *
+ * The AI answers are rendered in a plain <Text>, which has no markdown support,
+ * so a reply like "**Peace (eirene)** - a biblical term..." showed its asterisks
+ * literally. The prompt asks for plain text, but a model instruction is not a
+ * guarantee, so strip it here as well. Wiktionary answers are already plain, and
+ * this keeps both sources looking the same in the card.
+ */
+const stripMarkdown = (text) =>
+  String(text)
+    .replace(/```[\s\S]*?```/g, '')            // fenced code
+    .replace(/`([^`]*)`/g, '$1')                // inline code
+    .replace(/\*\*([^*]+)\*\*/g, '$1')         // **bold**
+    .replace(/\_\_([^_]+)\_\_/g, '$1')         // __bold__
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1$2')  // *italics*
+    .replace(/^#{1,6}\s*/gm, '')             // headings
+    .replace(/^\s*[-*+]\s+/gm, '- ')         // normalise bullets
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+/**
  * Look a word up in Wiktionary.
  *
  * Replaces api.dictionaryapi.dev, which is English-only and has been answering
@@ -226,7 +247,12 @@ exports.getDictionaryMeaning = async (req, res) => {
     const groqModel = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     const isReasoningModel = /gpt-oss|o[1-9]|reason|deepseek-r/i.test(groqModel);
 
-    const prompt = `You are a biblical dictionary. Give a short, concise dictionary meaning and contextual significance for the word "${word}" found in the verse: "${verseContext}". Language: ${language}. Keep the response strictly under 50 words.`;
+    const prompt =
+      `You are a biblical dictionary. Give a short, concise dictionary meaning and ` +
+      `contextual significance for the word "${word}" found in the verse: "${verseContext}". ` +
+      `Language: ${language}. Keep the response strictly under 50 words. ` +
+      `Reply in plain text only: no markdown, no asterisks, no bold, no headings. ` +
+      `Do not repeat the word as a title -- start directly with the meaning.`;
 
     const response = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
@@ -258,7 +284,7 @@ exports.getDictionaryMeaning = async (req, res) => {
     const choice = response.data.choices?.[0];
     // A reasoning model that runs out of room can leave the answer in
     // `reasoning` with no final message; prefer content, fall back to that.
-    const meaning = (choice?.message?.content || choice?.message?.reasoning || '').trim();
+    const meaning = stripMarkdown(choice?.message?.content || choice?.message?.reasoning || '');
 
     if (!meaning) {
       console.error('Groq returned no content:', JSON.stringify({

@@ -81,7 +81,15 @@ export default function BiblicalArtifactsScreen() {
         onPress={() => navigation.navigate('ArtifactViewer', { artifactId: item.id })}
       >
         <LinearGradient
-          colors={colors.theme === 'dark' ? ['#1e293b', '#0f172a'] : ['#ffffff', '#f8fafc']}
+          // Card surface follows the house pattern used by AuthorBooks,
+          // BookDetails and the admin cards: the #AFD3E2 light blue in light
+          // mode, theme surfaces in dark. The previous slate/white pair was
+          // this screen's own invention and read as a flat white panel.
+          colors={
+            colors.theme === 'dark'
+              ? [colors.surface, colors.background]
+              : ['#C5DFEB', '#AFD3E2']
+          }
           style={styles.cardGradient}
         >
           {/* Card Icon & Accent Header */}

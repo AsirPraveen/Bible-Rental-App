@@ -15,6 +15,19 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   stickyHeader: {
     zIndex: 10,
   },
+  drawerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  drawerButtonIcon: { width: 28, height: 28, borderRadius: 14 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -249,10 +262,17 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
+  topBookTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   topBookTitle: {
+    // flex so a long title wraps inside the row instead of pushing the badge out
+    flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    marginBottom: 8,
     color: colors.text,
   },
   topBookMeta: {
@@ -270,12 +290,11 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     color: colors.textSecondary,
   },
   ratingContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    display: 'flex',
+    // Was position:'absolute' top/right, which laid the badge over the title --
+    // any title long enough to wrap ran underneath it.
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 8,
   },
   rating: {
     fontSize: 14,

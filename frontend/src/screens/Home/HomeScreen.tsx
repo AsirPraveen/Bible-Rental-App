@@ -7,7 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TextInput, ScrollView, Alert, Modal, Platform } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Bell, Heart } from 'lucide-react-native';
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { FlatList } from "react-native-gesture-handler";
 import Constants from 'expo-constants';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -307,6 +307,19 @@ const HomeView = () => {
         <View style={styles.stickyHeader}>
           <View style={styles.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {/* Opens the drawer. A visible affordance is needed because with Android
+                  gesture navigation the edge-swipe belongs to the system, leaving no
+                  way in. The app mark doubles as branding and echoes the drawer's own
+                  header. */}
+              <Pressable
+                onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Open menu"
+                style={({ pressed }) => [styles.drawerButton, pressed && { opacity: 0.6 }]}
+              >
+                <Image source={require('@/assets/icons/icon.png')} style={styles.drawerButtonIcon} />
+              </Pressable>
               <Text style={styles.logo}>{activeOrg ? activeOrg.name : APP_NAME}</Text>
               {isGameEnabled && (
                 <Pressable onPress={() => isGameEnabled && navigation.navigate('GameHome')} style={{ marginLeft: 15 }}>
@@ -530,14 +543,18 @@ const HomeView = () => {
                 >
                   <Image source={{ uri: book.cover_image || 'https://images.unsplash.com/photo-1667059634989-bee0954711f4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }} style={styles.topBookCover} />
                   <View style={styles.topBookInfo}>
-                    <Text style={styles.topBookTitle}>{book.book_name}</Text>
+                    {/* Title and likes share a row so a long title wraps beside the
+                        badge instead of running underneath it. */}
+                    <View style={styles.topBookTitleRow}>
+                      <Text style={styles.topBookTitle} numberOfLines={2}>{book.book_name}</Text>
+                      <View style={styles.ratingContainer}>
+                        <Text style={styles.likesCount}>{book.likes || 0}</Text>
+                        <Heart size={15} color={colors.tint} fill={colors.tint} />
+                      </View>
+                    </View>
                     <View style={styles.topBookMeta}>
                       <Text style={styles.topBookMetaText}>Published: {book.year_of_publication}</Text>
                       <Text style={styles.topBookMetaText}>Read by: {book.rent_count}</Text>
-                    </View>
-                    <View style={styles.ratingContainer}>
-                      <Text style={styles.likesCount}>{book.likes || 0}</Text>
-                      <Heart size={15} color={colors.tint} fill={colors.tint} />
                     </View>
                   </View>
                 </Pressable>

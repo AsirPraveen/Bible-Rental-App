@@ -151,12 +151,12 @@ export default function AuthorBooks() {
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author?.books || 0}</Text>
+            <Text style={styles.statValue} numberOfLines={1}>{author?.books || 0}</Text>
             <Text style={styles.statLabel}>Available Books</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author?.ministry || '0'}</Text>
+            <Text style={styles.statValue} numberOfLines={2}>{author?.ministry || '-'}</Text>
             <Text style={styles.statLabel}>Ministry</Text>
           </View>
         </View>
@@ -285,10 +285,16 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     fontWeight: '700',
     color: colors.tint,
     marginBottom: 4,
+    textAlign: 'center',
+    // A ministry name can be several words long. Without a reserved height the
+    // taller column pushed its label out of line with the other stat; capping
+    // the value at two lines and reserving room for two keeps both aligned.
+    minHeight: 46,
   },
   statLabel: {
     fontSize: 12,
     color: colors.secondary,
+    textAlign: 'center',
   },
   booksContainer: {
     padding: 24,

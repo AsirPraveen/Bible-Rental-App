@@ -69,12 +69,6 @@ export default {
       "expo-asset",
       "@react-native-google-signin/google-signin",
       [
-        "expo-camera",
-        {
-          cameraPermission: "Allow Youth Room to access your camera"
-        }
-      ],
-      [
         "expo-image-picker",
         {
           photosPermission: "Allow Youth Room to access your photos",

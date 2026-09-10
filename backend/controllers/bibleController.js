@@ -116,8 +116,17 @@ const fetchStandardDictionary = async (word) => {
     const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()"]/g, "").trim();
     if (!cleanWord) return null;
 
+    // Deliberately short. This is a free best-effort lookup that saves a Groq
+    // call when it works; if it does not answer quickly it is not worth waiting
+    // for, because the Groq fallback produces a better answer for this app
+    // anyway (a contextual biblical meaning rather than a generic definition).
+    //
+    // The provider has been observed responding in ~20s for every request, so
+    // this budget will usually be missed and the miss is logged as
+    // "Dictionary API failed for ... timeout of 1200ms exceeded". That log line
+    // is expected and harmless -- the lookup falls through to Groq.
     const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`, {
-      timeout: 4000 // 4 seconds timeout
+      timeout: 1200
     });
 
     if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {

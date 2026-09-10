@@ -63,6 +63,8 @@ export default {
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID ?? '',
     },
     plugins: [
+      // Must run before anything else touches build.gradle.
+      "./plugins/withReleaseSigning",
     [
       "expo-build-properties",
       {
@@ -70,6 +72,12 @@ export default {
           // R8 defaults to off in the generated project, which shipped five
           // unshrunk dex files (~48 MB). Enabling it cut the release APK by
           // roughly a third.
+          // Real Android phones are ARM. x86/x86_64 exist for emulators and a
+          // handful of ChromeOS devices, and shipping them doubled the APK:
+          // four copies of every .so, 68 MB of native libraries. Written into
+          // gradle.properties as reactNativeArchitectures, so unlike editing
+          // that generated file by hand this survives a prebuild.
+          buildArchs: ["armeabi-v7a", "arm64-v8a"],
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           // Reached reflectively, so R8 cannot see the references.

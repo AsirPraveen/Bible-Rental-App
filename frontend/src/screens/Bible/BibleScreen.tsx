@@ -23,6 +23,7 @@ import * as Speech from 'expo-speech';
 import Svg, { Rect, Path } from 'react-native-svg';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { verseTypography } from '@/utils/verseTypography';
 // Image generation is proxied by the backend. The Stability key must never be
 // bundled into the app — anyone can read it out of an APK.
 
@@ -1580,7 +1581,7 @@ const BibleComponent = () => {
                                   <Text style={[
                                     styles.verseBodyText,
                                     isSelected && styles.selectedVerseText,
-                                    { fontSize: verseFontSize, lineHeight: verseFontSize * 1.5 }
+                                    { fontSize: verseFontSize }, verseTypography(verse.text, verseFontSize)
                                   ]}>
                                     {verse.text}
                                   </Text>
@@ -1618,7 +1619,7 @@ const BibleComponent = () => {
                         cachedVerses.map((verse, index) => (
                           <View key={`ch${chapterNum}_${index}`} style={styles.verseRow}>
                             <Text style={styles.verseNumberText}>{verse.verseNumber}</Text>
-                            <Text style={[styles.verseBodyText, { fontSize: verseFontSize, lineHeight: verseFontSize * 1.5 }]}>
+                            <Text style={[styles.verseBodyText, { fontSize: verseFontSize }, verseTypography(verse.text, verseFontSize)]}>
                               {verse.text}
                             </Text>
                           </View>

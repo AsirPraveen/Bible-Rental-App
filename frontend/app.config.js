@@ -22,12 +22,14 @@ export default {
       // itself (READ_MEDIA_IMAGES etc). WRITE_EXTERNAL_STORAGE has had no
       // effect since Android 10 and READ_EXTERNAL_STORAGE was superseded in
       // Android 13 — declaring them only invites extra Play review questions.
-      permissions: [
-        "android.permission.CAMERA"
-      ],
+      permissions: [],
       blockedPermissions: [
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        // expo-image-picker declares CAMERA in its own manifest, so it has to
+        // be blocked rather than merely not requested. Nothing calls
+        // launchCameraAsync and the picker is configured for photos only.
+        "android.permission.CAMERA"
       ],
       // Android masks the foreground into a circle or squircle, so it must be
       // a PNG with alpha and the art must stay inside the central safe zone.
@@ -61,6 +63,39 @@ export default {
       googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID ?? '',
     },
     plugins: [
+    [
+      "expo-build-properties",
+      {
+        android: {
+          // R8 defaults to off in the generated project, which shipped five
+          // unshrunk dex files (~48 MB). Enabling it cut the release APK by
+          // roughly a third.
+          enableMinifyInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+          // Reached reflectively, so R8 cannot see the references.
+          extraProguardRules: [
+            "-keep class com.google.firebase.** { *; }",
+            "-dontwarn com.google.firebase.**",
+            "-keep public class com.horcrux.svg.** { *; }",
+            "-keep class com.facebook.hermes.unicode.** { *; }",
+            "-keep class com.facebook.jni.** { *; }",
+            "-keepclassmembers class * {",
+            "  @com.facebook.react.uimanager.annotations.ReactProp <methods>;",
+            "  @com.facebook.react.bridge.ReactMethod <methods>;",
+            "}",
+            "-keep class * extends com.facebook.react.bridge.NativeModule { *; }",
+            "-keep class * extends com.facebook.react.uimanager.ViewManager { *; }",
+          ].join("\n"),
+          packagingOptions: {
+            // ML Kit's barcode model arrives through expo-dev-launcher's AAR.
+            // The launcher's code is excluded from release builds but its
+            // native artefacts are merged regardless, and nothing in this app
+            // scans barcodes.
+            exclude: ["**/libbarhopper_v3.so"],
+          },
+        },
+      },
+    ],
       "expo-font",
       "expo-router",
       "expo-web-browser",

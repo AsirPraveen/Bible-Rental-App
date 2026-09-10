@@ -111,59 +111,85 @@ exports.getVerse = async (req, res) => {
   }
 };
 
-const fetchStandardDictionary = async (word) => {
+// Bible language names as the app sends them -> Wiktionary language codes.
+// Used only to PREFER the right section when a spelling exists in several
+// languages; an unknown name just falls back to whatever section is returned.
+const WIKTIONARY_LANG = {
+  english: 'en', tamil: 'ta', hindi: 'hi', telugu: 'te', malayalam: 'ml',
+  kannada: 'kn', marathi: 'mr', gujarati: 'gu', bengali: 'bn', punjabi: 'pa',
+  urdu: 'ur', spanish: 'es', french: 'fr', german: 'de', portuguese: 'pt',
+};
+
+const stripHtml = (html) =>
+  String(html)
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Look a word up in Wiktionary.
+ *
+ * Replaces api.dictionaryapi.dev, which is English-only and has been answering
+ * in ~20s (so it missed every timeout and the AI fallback did all the work).
+ * Wiktionary is keyless, answers in well under a second, and covers every
+ * language the reader offers -- which is what makes a dictionary-first lookup
+ * possible for a Tamil verse and not just an English one.
+ */
+const fetchWiktionary = async (word, language) => {
   try {
-    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()"]/g, "").trim();
+    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()"]/g, '').trim();
     if (!cleanWord) return null;
 
-    // Deliberately short. This is a free best-effort lookup that saves a Groq
-    // call when it works; if it does not answer quickly it is not worth waiting
-    // for, because the Groq fallback produces a better answer for this app
-    // anyway (a contextual biblical meaning rather than a generic definition).
-    //
-    // The provider has been observed responding in ~20s for every request, so
-    // this budget will usually be missed and the miss is logged as
-    // "Dictionary API failed for ... timeout of 1200ms exceeded". That log line
-    // is expected and harmless -- the lookup falls through to Groq.
-    // Tunable without a deploy. The right value is whatever this server can
-    // actually achieve, which is not knowable from a dev machine -- the elapsed
-    // time is logged on both paths below so it can be set from real data.
     const timeoutMs = Number(process.env.DICTIONARY_TIMEOUT_MS || 6000);
     const startedAt = Date.now();
 
-    const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`, {
-      timeout: timeoutMs
-    });
-    console.log(`Dictionary API answered for "${word}" in ${Date.now() - startedAt}ms`);
+    const { data } = await axios.get(
+      `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(cleanWord)}`,
+      {
+        timeout: timeoutMs,
+        // Wikimedia rejects the default axios User-Agent with 403. Their policy
+        // wants a descriptive agent with a contact, so send a real one.
+        headers: {
+          'User-Agent': 'YouthRoom/1.0 (https://github.com/AsirPraveen/Bible-Rental-App) axios',
+          Accept: 'application/json',
+        },
+      },
+    );
+    console.log(`Wiktionary answered for "${word}" in ${Date.now() - startedAt}ms`);
 
-    if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {
-      const entry = response.data[0];
-      const phonetic = entry.phonetic || (entry.phonetics && entry.phonetics.find(p => p.text)?.text) || '';
-      
-      let meaningText = phonetic ? `Pronunciation: ${phonetic}\n\n` : '';
-      
-      if (Array.isArray(entry.meanings)) {
-        entry.meanings.slice(0, 3).forEach((meaning) => {
-          const partOfSpeech = meaning.partOfSpeech || '';
-          meaningText += `[${partOfSpeech}]\n`;
-          if (Array.isArray(meaning.definitions)) {
-            meaning.definitions.slice(0, 2).forEach((def, dIdx) => {
-              meaningText += `${dIdx + 1}. ${def.definition}\n`;
-              if (def.example) {
-                meaningText += `   Example: "${def.example}"\n`;
-              }
-            });
-          }
-          meaningText += '\n';
-        });
-      }
-      return meaningText.trim();
+    if (!data || typeof data !== 'object') return null;
+
+    // Prefer the section matching what the user is reading, else the first one.
+    const preferred = WIKTIONARY_LANG[String(language || '').toLowerCase()];
+    const key = (preferred && data[preferred]) ? preferred : Object.keys(data)[0];
+    const entries = data[key];
+    if (!Array.isArray(entries) || entries.length === 0) return null;
+
+    let out = '';
+    for (const entry of entries.slice(0, 3)) {
+      const defs = (entry.definitions || [])
+        .map((d) => stripHtml(d.definition))
+        .filter((d) => d.length > 1)
+        .slice(0, 2);
+      if (!defs.length) continue;
+      out += `[${entry.partOfSpeech || 'definition'}]\n`;
+      defs.forEach((d) => { out += `- ${d}\n`; });
+      out += '\n';
     }
+
+    return out.trim() || null;
   } catch (error) {
-    // Expected while the provider is degraded; the caller falls through to AI.
-    console.log(`Dictionary API failed for "${word}":`, error.message);
+    // Expected when the word has no entry (404) or the API is slow; the caller
+    // falls through to the AI definition.
+    console.log(`Wiktionary failed for "${word}":`, error.message);
+    return null;
   }
-  return null;
 };
 
 exports.getDictionaryMeaning = async (req, res) => {
@@ -174,9 +200,15 @@ exports.getDictionaryMeaning = async (req, res) => {
       return res.status(400).json({ status: 'Error', message: 'Word is required' });
     }
 
-    // 1. Try standard dictionary if language is English
-    if (language && language.toLowerCase() === 'english') {
-      const standardMeaning = await fetchStandardDictionary(word);
+    // 1. Try a real dictionary first, in ANY language.
+    //
+    // This used to be gated on `language === 'english'`, which meant the reader's
+    // default (Tamil) skipped the dictionary entirely and every lookup was
+    // answered by the AI fallback. Wiktionary covers the other languages the
+    // reader offers, so the gate is no longer needed -- a word with no entry
+    // simply returns null and falls through to AI, which is the intended order.
+    {
+      const standardMeaning = await fetchWiktionary(word, language);
       if (standardMeaning) {
         return res.status(200).json({
           status: 'Ok',

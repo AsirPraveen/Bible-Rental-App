@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Keyboard, PanResponder, Animated, Modal, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Send, Info, Megaphone, ChevronDown, Plus, BarChart2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -121,7 +121,8 @@ export default function ChatScreen() {
   const route = useRoute<any>();
   const { user } = useAuth();
   const { colors } = useTheme();
-  useSystemBars({ top: colors.background });
+  const insets = useSafeAreaInsets();
+  useSystemBars({ top: colors.secondary, bottom: colors.background });
   const { socket } = useSocket();
 
   const { fellowshipId, fellowshipName, fellowshipType, fellowshipIcon } = route.params || {};
@@ -1142,12 +1143,15 @@ export default function ChatScreen() {
     : null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + 14 }]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft color="#fff" size={22} />
@@ -1245,7 +1249,7 @@ export default function ChatScreen() {
       )}
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {replyToMessage && (

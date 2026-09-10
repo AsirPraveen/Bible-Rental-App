@@ -9,10 +9,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '@/services';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function JoinOrgScreen({ navigation }: any) {
   const { refreshOrgs, switchOrg } = useOrg();
   const { isGuest } = useAuth();
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
@@ -102,7 +104,7 @@ export default function JoinOrgScreen({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.outerContainer}>
+    <SafeAreaView style={[styles.outerContainer, { paddingBottom: keyboardInset }]}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           

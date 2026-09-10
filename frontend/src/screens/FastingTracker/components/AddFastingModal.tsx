@@ -7,7 +7,9 @@ import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
+  const keyboardInset = useKeyboardInset();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [loading, setLoading] = useState(false);
@@ -146,7 +148,9 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Start a Fast</Text>
 
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: keyboardInset }}
+      >
             <Text style={styles.label}>Fast Type</Text>
             <View style={{ zIndex: 1000 }}>
                <DropDownPicker

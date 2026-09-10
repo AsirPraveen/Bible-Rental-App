@@ -8,7 +8,7 @@
 // ════════════════════════════════════════════════
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, Platform, ActivityIndicator, Linking, Modal, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -26,8 +26,11 @@ import { apiClient } from '@/services';
 import LoadingScreen from '@/components/LoadingScreen';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function NoteDetailScreen() {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
+  const insets = useSafeAreaInsets();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
@@ -445,7 +448,7 @@ export default function NoteDetailScreen() {
         onRequestClose={() => setSelectedHighlight(null)}
       >
         <Pressable style={styles.verseModalOverlay} onPress={() => setSelectedHighlight(null)}>
-          <Pressable style={styles.verseModalBox} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.verseModalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
             {selectedHighlight && (
               <>
                 {/* Accent header */}

@@ -57,3 +57,5 @@ app-example
 # Firebase secrets
 *firebase-adminsdk*.json
 google-services.json
+# Gradle build logs
+build-release.log

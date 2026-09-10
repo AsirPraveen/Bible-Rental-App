@@ -20,6 +20,7 @@ import { apiClient } from '@/services';
 import Toast from 'react-native-toast-message';
 import { API_BASE_URL } from '@/config/api';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 /** Routes these auth screens navigate to. Declared locally, matching the
  *  pattern the rest of the codebase already uses; a single shared param list
@@ -42,6 +43,7 @@ type AuthStackParamList = {
 
 function RegisterPage() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const keyboardInset = useKeyboardInset();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [name, setName] = useState('');
@@ -125,7 +127,7 @@ function RegisterPage() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ flexGrow: 1 }}
+      contentContainerStyle={[{ flexGrow: 1 }, { paddingBottom: keyboardInset }]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps={'always'}
       style={{ backgroundColor: colors.background }}>

@@ -11,7 +11,7 @@ import {
   Modal,
   ScrollView
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X, Heart } from 'lucide-react-native';
 import axios from "axios";
@@ -35,6 +35,7 @@ const AllBooks = () => {
     params?: { books?: any[] };
   }>();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const [books, setBooks] = useState(route.params?.books || []);
@@ -178,7 +179,7 @@ const AllBooks = () => {
         onRequestClose={() => setFilterModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter & Sort</Text>
               <Pressable onPress={() => setFilterModalVisible(false)}>
@@ -326,7 +327,7 @@ const AllBooks = () => {
             
           </View>
           <Pressable 
-              style={styles.applyButton}
+              style={[styles.applyButton, { marginBottom: insets.bottom }]}
               onPress={() => setFilterModalVisible(false)}
             >
               <Text style={styles.applyButtonText}>Apply</Text>

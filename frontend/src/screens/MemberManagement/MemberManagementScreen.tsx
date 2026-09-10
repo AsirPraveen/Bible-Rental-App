@@ -10,9 +10,11 @@ import { apiClient } from '@/services';
 import * as Clipboard from 'expo-clipboard';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function MemberManagementScreen({ navigation }: any) {
   const { activeOrg } = useOrg();
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const { user } = useAuth();
   const styles = getStyles(colors);
@@ -217,7 +219,7 @@ export default function MemberManagementScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.outerContainer}>
+    <SafeAreaView style={[styles.outerContainer, { paddingBottom: keyboardInset }]}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <View style={styles.container}>
           

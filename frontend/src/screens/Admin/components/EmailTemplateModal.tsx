@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import LoadingScreen from '@/components/LoadingScreen';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 interface EmailTemplateModalProps {
   isVisible: boolean;
   onClose: () => void;
@@ -26,6 +27,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
   const [body, setBody] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const keyboardInset = useKeyboardInset();
   const { colors, theme } = useTheme();
   const styles = getStyles(colors, theme);
 
@@ -108,7 +110,9 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({ isVisible, onCl
               <LoadingScreen variant="transparent" message="Loading template..." />
             </View>
           ) : (
-            <ScrollView style={styles.form}>
+            <ScrollView style={styles.form}
+        contentContainerStyle={{ paddingBottom: keyboardInset }}
+      >
               <Text style={styles.label}>Email Subject</Text>
               <TextInput
                 style={styles.input}

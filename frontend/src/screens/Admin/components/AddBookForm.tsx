@@ -20,6 +20,7 @@ import { Plus, BookOpen } from 'lucide-react-native';
 import { apiClient } from '@/services';
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const { width } = Dimensions.get('window');
 
 interface AddBookFormProps {
@@ -31,6 +32,7 @@ interface AddBookFormProps {
 }
 
 const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }: AddBookFormProps) => {
+  const keyboardInset = useKeyboardInset();
   const { colors, theme } = useTheme();
   const styles = getStyles(colors, theme);
   const [expandAnim] = useState(new Animated.Value(0));
@@ -358,7 +360,7 @@ const AddBookForm = ({ visible, onToggle, newBook, setNewBook, onAddBook }: AddB
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.addAuthorForm}>
+            <ScrollView contentContainerStyle={[styles.addAuthorForm, { paddingBottom: keyboardInset }]}>
               <Text style={styles.modalLabel}>Author Name *</Text>
               <TextInput
                 style={styles.modalInput}

@@ -8,8 +8,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '@/services';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function SuperAdminDashboard({ navigation }: any) {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const { logout, user: currentUser } = useAuth();
   const styles = getStyles(colors);
@@ -411,6 +413,7 @@ export default function SuperAdminDashboard({ navigation }: any) {
                   <Text style={styles.emptyText}>No organizations yet. Create one to get started!</Text>
                 </View>
               }
+              contentContainerStyle={{ paddingBottom: keyboardInset }}
             />
           )}
 

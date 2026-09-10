@@ -11,7 +11,7 @@ import {
   Modal,
   ScrollView
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, NavigationProp } from "@react-navigation/native";
 import { ArrowLeft, Search, Filter, SortAsc, SortDesc, X } from 'lucide-react-native';
 import axios from "axios";
@@ -35,6 +35,7 @@ const AllAuthors = () => {
     params?: { authors?: any[] };
   }>();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const [authors, setAuthors] = useState(route.params?.authors || []);
@@ -144,7 +145,7 @@ const AllAuthors = () => {
         onRequestClose={() => setFilterModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter & Sort</Text>
               <Pressable onPress={() => setFilterModalVisible(false)}>
@@ -171,7 +172,7 @@ const AllAuthors = () => {
             </ScrollView>
             
             <Pressable 
-              style={styles.applyButton}
+              style={[styles.applyButton, { marginBottom: insets.bottom }]}
               onPress={() => setFilterModalVisible(false)}
             >
               <Text style={styles.applyButtonText}>Apply</Text>

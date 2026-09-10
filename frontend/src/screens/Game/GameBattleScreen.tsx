@@ -9,12 +9,14 @@ import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const MOCK_BOSS = {
   id: 99, name: 'Goliath', sinWeakness: 'Courage', type: 'Pride', hp: 250, maxHp: 250, attack: 30, defense: 15, ability: 'Intimidate'
 };
 
 const GameBattle = ({ route, navigation }: any) => {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.theme === 'dark' ? '#111827' : colors.primary });
   const styles = getStyles(colors);
   const { levelData } = route.params || {};
@@ -627,7 +629,7 @@ const GameBattle = ({ route, navigation }: any) => {
           navigationBarTranslucent
           statusBarTranslucent visible={showQTE} transparent animationType="fade">
           <View style={styles.modalBg}>
-             <View style={styles.modalContent}>
+             <View style={[styles.modalContent, { paddingBottom: keyboardInset }]}>
                 <Text style={styles.modalTitle}>Critical Hit QTE!</Text>
                 <Text style={styles.modalDesc}>Complete the verse to unleash {activePlayer.ability}:</Text>
                 <Text style={styles.verseHint}>"{activePlayer.verseHidden}"</Text>

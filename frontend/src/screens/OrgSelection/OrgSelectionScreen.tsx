@@ -9,10 +9,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '@/services';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function OrgSelectionScreen({ navigation }: any) {
   const { memberships, loading, switchOrg, refreshOrgs } = useOrg();
   const { logout, user } = useAuth();
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
@@ -66,7 +68,7 @@ export default function OrgSelectionScreen({ navigation }: any) {
   // If SuperAdmin, show nothing while redirecting
   if (user?.globalRole === 'SuperAdmin') {
     return (
-      <SafeAreaView style={styles.outerContainer}>
+      <SafeAreaView style={[styles.outerContainer, { paddingBottom: keyboardInset }]}>
         <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
           <View style={styles.loaderContainer}>
             <ActivityIndicator size="large" color="#fff" />

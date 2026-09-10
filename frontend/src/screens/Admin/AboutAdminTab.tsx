@@ -18,6 +18,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { API_BASE_URL } from '@/config/api';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 type RootStackParamList = {
   Onboarding: undefined;
@@ -29,6 +30,7 @@ const AboutAdminTab = () => {
   const { logout } = useAuth();
   const { memberships, activeOrg, switchOrg } = useOrg();
   const { theme, colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0], bottom: colors.background });
   const styles = getStyles(colors);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -410,7 +412,7 @@ const AboutAdminTab = () => {
           </TouchableOpacity>
         </Modal>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: keyboardInset }]}>
           <View style={styles.container}>
             <View style={styles.profileCard}>
               <LinearGradient
@@ -632,12 +634,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+    // See UserProfileScreen: this container also hosts the absolutely
+    // positioned camera/delete buttons, so it must not clip to the circle.
     position: 'relative',
   },
   profileImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 70,
   },
   editImageButton: {
     position: 'absolute',

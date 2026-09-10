@@ -4,7 +4,9 @@ import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function AddPrayerRequestModal({ visible, onClose, onSuccess, currentUserId }: any) {
+  const keyboardInset = useKeyboardInset();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [requestText, setRequestText] = useState('');
@@ -42,7 +44,7 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
     <Modal
       navigationBarTranslucent visible={visible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { paddingBottom: keyboardInset }]}>
           <Text style={styles.title}>Share a Prayer Request</Text>
 
           <TextInput

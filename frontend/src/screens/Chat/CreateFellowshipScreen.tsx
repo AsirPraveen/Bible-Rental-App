@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Check, Search, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { apiClient } from '@/services';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const ICONS = ['📖', '🙏', '📢', '⛪', '🕊️', '✝️', '🔥', '💡', '🎵', '👑', '🌿', '💪'];
 
 type OrgMember = {
@@ -24,7 +25,9 @@ export default function CreateFellowshipScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { colors } = useTheme();
-  useSystemBars({ top: colors.background });
+  const keyboardInset = useKeyboardInset();
+  const insets = useSafeAreaInsets();
+  useSystemBars({ top: colors.secondary, bottom: colors.background });
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -94,12 +97,15 @@ export default function CreateFellowshipScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + 14 }]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft color="#fff" size={22} />
@@ -108,7 +114,7 @@ export default function CreateFellowshipScreen() {
         <View style={{ width: 38 }} />
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: keyboardInset }]} keyboardShouldPersistTaps="handled">
         {/* Name */}
         <View style={[styles.section, { backgroundColor: colors.theme === 'dark' ? colors.surface : '#fff' }]}>
           <Text style={[styles.label, { color: colors.text }]}>Fellowship Name *</Text>

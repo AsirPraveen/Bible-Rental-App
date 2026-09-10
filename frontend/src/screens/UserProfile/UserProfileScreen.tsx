@@ -18,6 +18,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { API_BASE_URL } from '@/config/api';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 type RootStackParamList = {
   Onboarding: undefined;
@@ -30,6 +31,7 @@ type RootStackParamList = {
 // ═══════════════════════════════════════════════════════════════════
 const GuestProfileScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { exitGuest } = useAuth();
   const { theme, colors, toggleTheme } = useTheme();
   useSystemBars({ top: colors.linearGradient[0], bottom: colors.background });
   const styles = getStyles(colors);
@@ -83,7 +85,10 @@ const GuestProfileScreen = () => {
                 {/* Sign In Button */}
                 <TouchableOpacity
                   style={styles.editButton}
-                  onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] })}
+                  onPress={async () => {
+                      await exitGuest();
+                      navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+                    }}
                 >
                   <LinearGradient
                     colors={colors.linearGradient}
@@ -112,6 +117,7 @@ const UserProfileScreen = () => {
   const { activeOrg, orgRole } = useOrg();
   const navigation = useNavigation<any>();
   const { theme, colors, toggleTheme } = useTheme();
+  const keyboardInset = useKeyboardInset();
   const styles = getStyles(colors);
 
   const [userData, setUserData] = useState<any>(null);
@@ -411,7 +417,7 @@ const UserProfileScreen = () => {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: keyboardInset }]}>
           <View style={styles.container}>
             <View style={styles.profileCard}>
 
@@ -672,17 +678,23 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+    // Deliberately NOT overflow:'hidden'. This container also hosts the
+    // absolutely-positioned camera and delete buttons, and a circular clip was
+    // masking them so they appeared to sit behind the avatar. The children that
+    // need rounding round themselves instead.
     position: 'relative',
   },
   profileImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 70,
   },
   editImageButton: {
     position: 'absolute',
     bottom: 10,
     right: 10,
+    zIndex: 2,
+    elevation: 2,
     backgroundColor: colors.primary,
     borderRadius: 20,
     padding: 8,
@@ -693,6 +705,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    borderRadius: 70,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',

@@ -179,7 +179,12 @@ exports.getDictionaryMeaning = async (req, res) => {
     const response = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
-        model: 'llama-3.1-8b-instant',
+        // Configurable, because Groq retires model ids on its own schedule and
+        // a hardcoded one turns that into a code deploy. When the id is stale the
+        // API answers 404 model_not_found, which now reaches the user verbatim.
+        // List what this key can actually use:
+        //   curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 150,
       },
@@ -195,7 +200,23 @@ exports.getDictionaryMeaning = async (req, res) => {
 
     res.status(200).json({ status: 'Ok', data: { word, meaning, source: 'ai' } });
   } catch (error) {
-    console.error('Error fetching meaning:', error.response?.data || error.message);
-    res.status(500).json({ status: 'Error', message: 'Failed to fetch dictionary meaning' });
+    const upstream = error.response?.data;
+    console.error('Error fetching meaning:', upstream || error.message);
+
+    // Surface WHY it failed. A flat "Failed to fetch dictionary meaning" told
+    // the user nothing and, combined with the client reporting every failure as
+    // a connectivity problem, sent people looking at their wifi when the real
+    // cause was upstream (a rejected key, a decommissioned model, a rate limit).
+    // Only the provider's own error text is forwarded -- never the request,
+    // which carries the API key.
+    const reason =
+      upstream?.error?.message ||
+      upstream?.message ||
+      (error.code === 'ECONNABORTED' ? 'The dictionary provider timed out.' : error.message);
+
+    res.status(502).json({
+      status: 'Error',
+      message: `Dictionary lookup failed: ${reason}`,
+    });
   }
 };

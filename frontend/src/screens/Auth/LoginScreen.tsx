@@ -25,6 +25,7 @@ import { WebView } from 'react-native-webview';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 /** Routes these auth screens navigate to. Declared locally, matching the
  *  pattern the rest of the codebase already uses; a single shared param list
@@ -78,6 +79,7 @@ function LoginPage() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { continueAsGuest, login } = useAuth();
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
 
@@ -341,7 +343,7 @@ function LoginPage() {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="always">
+    <ScrollView contentContainerStyle={[{ flexGrow: 1 }, { paddingBottom: keyboardInset }]} keyboardShouldPersistTaps="always">
       <View style={styles.mainContainer}>
         <View style={styles.logoContainer}>
           <Image style={styles.logo} source={require('@/assets/giver.jpg')} />

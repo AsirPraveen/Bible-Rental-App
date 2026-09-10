@@ -29,6 +29,7 @@ type AuthState = {
   loading: boolean;
   login: (userData: any, token: string) => void;
   logout: () => void;
+  exitGuest: () => Promise<void>;
   continueAsGuest: () => void;
 };
 
@@ -116,14 +117,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       delete apiClient.defaults.headers.common['x-organization-id'];
       await Notifications.cancelAllScheduledNotificationsAsync().catch(() => { });
 
-      // Native Google Sign-Out
+      // Native Google Sign-Out.
+      //
+      // signOut() is called unconditionally. It is a no-op when nobody is
+      // signed in, and the guard that used to wrap it -- GoogleSignin.isSignedIn()
+      // -- was removed from the library in v13 (this project is on v16, where the
+      // equivalent is hasPreviousSignIn). Calling it threw, the catch below
+      // swallowed it as "bypassed", and sign-out silently never happened -- so
+      // the next Google login skipped the account chooser and reused the
+      // previous account.
       try {
         if (GoogleSignin) {
-          const isSignedIn = await GoogleSignin.isSignedIn();
-          if (isSignedIn) {
-            await GoogleSignin.signOut();
-            console.log('[Auth] Native Google Sign-Out completed successfully.');
-          }
+          await GoogleSignin.signOut();
+          console.log('[Auth] Native Google Sign-Out completed successfully.');
         } else {
           console.log('[Auth] Native Google Sign-In not loaded (bypassed).');
         }
@@ -132,6 +138,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (e) {
       console.error('Error during logout', e);
+    }
+  };
+
+  /**
+   * Leave guest mode deliberately, e.g. tapping "Sign In / Create Account".
+   *
+   * The flag has to be cleared here, not on a successful login: it is persisted,
+   * so a guest who taps Sign In and then closes the app would still be flagged
+   * as a guest, and Onboarding's Get Started would route them straight back
+   * into guest mode instead of the login screen.
+   */
+  const exitGuest = async () => {
+    try {
+      setIsGuest(false);
+      setUser(null);
+      await AsyncStorage.setItem('isGuest', 'false');
+      await AsyncStorage.removeItem('activeOrgId');
+      delete apiClient.defaults.headers.common['x-organization-id'];
+    } catch (e) {
+      console.error('Error leaving guest mode', e);
     }
   };
 
@@ -222,7 +248,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isGuest, user, loading, login, logout, continueAsGuest }}>
+    <AuthContext.Provider value={{ isGuest, user, loading, login, logout, continueAsGuest, exitGuest }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,7 +10,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Slider from '@react-native-community/slider';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, Modal, ActivityIndicator, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -32,6 +32,7 @@ import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 const { tamilBibleData, bookTranslations } = getLocalBibleData();
 
@@ -48,6 +49,8 @@ const HIGHLIGHT_COLORS: { key: HighlightColor; label: string; emoji: string; col
 
 export default function NoteFormScreen() {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
+  const insets = useSafeAreaInsets();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
@@ -399,7 +402,7 @@ export default function NoteFormScreen() {
 
   // ══════════════════════════════════════════════
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior="padding">
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
@@ -603,7 +606,7 @@ export default function NoteFormScreen() {
       <Modal
         navigationBarTranslucent visible={showVerseModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowVerseModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowVerseModal(false)}>
-          <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>📖 Holy Bible Picker</Text>
               <TouchableOpacity onPress={() => setShowVerseModal(false)}>
@@ -698,7 +701,7 @@ export default function NoteFormScreen() {
       <Modal
         navigationBarTranslucent visible={showHlModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowHlModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowHlModal(false)}>
-          <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>✨ Highlight Verse</Text>
               <TouchableOpacity onPress={() => setShowHlModal(false)}>

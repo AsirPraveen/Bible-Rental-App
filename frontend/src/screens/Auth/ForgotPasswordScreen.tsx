@@ -18,10 +18,12 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const ForgotPassword = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
@@ -212,7 +214,7 @@ const ForgotPassword = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="always">
+      <ScrollView contentContainerStyle={[{ flexGrow: 1 }, { paddingBottom: keyboardInset }]} keyboardShouldPersistTaps="always">
       <View style={styles.mainContainer}>
         <View style={styles.logoContainer}>
           <Image style={styles.logo} source={require('@/assets/giver.jpg')} />

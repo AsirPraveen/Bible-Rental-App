@@ -127,7 +127,7 @@ export default function QuestionDetailsScreen() {
         {/* ── Content ─────────────────────────────────────────── */}
         <KeyboardAvoidingView 
           style={styles.container} 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
         >
           <FlatList
             data={question.answers || []}

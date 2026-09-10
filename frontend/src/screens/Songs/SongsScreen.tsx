@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Platform, Text, FlatList, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Chip, Searchbar } from 'react-native-paper';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Filter, X } from 'lucide-react-native';
@@ -15,6 +15,7 @@ import { useSystemBars } from '@/hooks/useSystemBars';
 
 export default function SongComponent() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const { activeOrg } = useOrg();
@@ -343,7 +344,7 @@ export default function SongComponent() {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter Library</Text>
               <TouchableOpacity

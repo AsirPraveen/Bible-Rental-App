@@ -9,9 +9,11 @@ import * as Clipboard from 'expo-clipboard';
 import { apiClient } from '@/services';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 export default function OrgSettingsScreen({ navigation }: any) {
   const { activeOrg, refreshOrgs } = useOrg();
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
@@ -129,7 +131,9 @@ export default function OrgSettingsScreen({ navigation }: any) {
             <Text style={styles.title}>Organization Settings</Text>
           </View>
 
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: keyboardInset }}
+      >
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>General Details</Text>
               

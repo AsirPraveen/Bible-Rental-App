@@ -12,6 +12,7 @@ import { Alert } from 'react-native';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 // ── Time-ago helper ──────────────────────────────────────────────
 function timeAgo(dateString: string): string {
   const now = Date.now();
@@ -37,6 +38,7 @@ type SortMode = 'newest' | 'mostReplies';
 
 export default function ForumListScreen() {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const { isGuest } = useAuth();
@@ -327,7 +329,7 @@ export default function ForumListScreen() {
         <Modal
           navigationBarTranslucent visible={modalVisible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: keyboardInset }]}>
               {/* Modal header */}
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Ask the Community</Text>

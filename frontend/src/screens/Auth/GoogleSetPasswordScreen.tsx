@@ -21,11 +21,13 @@ import { getStyles } from './styles'; // ← Use the same shared styles as Login
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const GoogleSetPassword = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { login } = useAuth();
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
 
@@ -95,7 +97,7 @@ const GoogleSetPassword = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="always">
+      <ScrollView contentContainerStyle={[{ flexGrow: 1 }, { paddingBottom: keyboardInset }]} keyboardShouldPersistTaps="always">
       <View style={styles.mainContainer}>
         {/* Same logo as Login */}
         <View style={styles.logoContainer}>

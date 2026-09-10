@@ -7,7 +7,7 @@
 // ════════════════════════════════════════════════
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Alert, Platform, Dimensions, Modal, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -25,6 +25,7 @@ import { useTheme, ColorsType } from '@/context/ThemeContext';
 import LoadingScreen from '@/components/LoadingScreen';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 const { width } = Dimensions.get('window');
 
@@ -35,6 +36,8 @@ const CATEGORIES = [
 
 export default function MessageNotesScreen() {
     const { colors } = useTheme();
+    const keyboardInset = useKeyboardInset();
+    const insets = useSafeAreaInsets();
     useSystemBars({ top: colors.primary });
     const styles = getStyles(colors);
     const navigation = useNavigation<any>();
@@ -404,7 +407,7 @@ export default function MessageNotesScreen() {
                 onRequestClose={() => { setShowRmModal(false); setRmFormMode('list'); }}
             >
                 <Pressable style={styles.modalOverlay} onPress={() => { setShowRmModal(false); setRmFormMode('list'); }}>
-                    <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
+                    <Pressable style={[styles.modalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>
                                 {rmFormMode === 'list' ? '⏰ Reminders' : editingReminder ? '✏️ Edit Reminder' : '✨ New Reminder'}

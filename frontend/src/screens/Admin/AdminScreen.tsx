@@ -10,12 +10,14 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 
 const BASE_URL = API_BASE_URL;
 console.log('API_URL admin screen:', BASE_URL); // Debug the API URL
 
 const AdminScreen = () => {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
@@ -186,7 +188,9 @@ const AdminScreen = () => {
         <Text style={styles.headerTitle}>Admin Dashboard</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: keyboardInset }}
+      >
         {/* Analytics Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Book Analytics</Text>

@@ -113,7 +113,7 @@ export default function ManageMapsTab() {
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
           style={styles.keyboardView}
         >
           <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>

@@ -9,8 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const RequestHistoryTab = () => {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const [requestHistory, setRequestHistory] = useState<any[]>([]);
@@ -82,7 +84,7 @@ const RequestHistoryTab = () => {
   return (
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
-        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.container} contentContainerStyle={[styles.scrollContainer, { paddingBottom: keyboardInset }]} showsVerticalScrollIndicator={false}>
           <Text style={styles.headerText}>Request History</Text>
 
           <View style={styles.formCard}>

@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '@/services';
 import { API_BASE_URL } from '../config/api';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Fellowship } from '@/types/models';
 import type { OrgFeatures } from '../context/OrganizationContext';
@@ -36,6 +37,7 @@ const Drawer = createDrawerNavigator();
 
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { colors, theme, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user, isGuest } = useAuth();
   const { orgRole, activeOrg } = useOrg();
   const navigation = useNavigation<NativeStackNavigationProp<DrawerStackParamList>>();

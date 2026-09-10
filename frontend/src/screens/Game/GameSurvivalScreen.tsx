@@ -9,6 +9,7 @@ import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 // Some base random enemies
 const ENEMY_TEMPLATES = [
   { name: 'Amalekite Raider', sinWeakness: 'Courage', type: 'Fear', hp: 80, attack: 15, defense: 5, ability: 'Ambush', imageUrl: 'https://images.unsplash.com/photo-1599727713385-d678393526ae?q=80&w=2000' },
@@ -29,6 +30,7 @@ const SURVIVAL_THEMES = [
 
 const GameSurvival = ({ navigation }: any) => {
   const { colors } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.theme === 'dark' ? '#451a03' : colors.primary });
   const styles = getStyles(colors);
 
@@ -465,7 +467,7 @@ const GameSurvival = ({ navigation }: any) => {
           navigationBarTranslucent
           statusBarTranslucent visible={showQTE} transparent animationType="fade">
           <View style={styles.modalBg}>
-             <View style={styles.modalContent}>
+             <View style={[styles.modalContent, { paddingBottom: keyboardInset }]}>
                 <Text style={styles.modalTitle}>Complete Verse!</Text>
                 <Text style={{color:'#A7F3D0', fontStyle:'italic', marginBottom:20}}>"{activePlayer.verseHidden}"</Text>
                 <TextInput style={{backgroundColor:'#FFF', width:'100%', padding:12, borderRadius:8, marginBottom:20}} placeholder="Missing word" value={qteAnswer} onChangeText={setQteAnswer} autoFocus />

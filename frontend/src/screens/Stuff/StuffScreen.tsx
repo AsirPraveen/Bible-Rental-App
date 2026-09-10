@@ -169,8 +169,10 @@ export default function StuffComponent() {
     const guestKey = GUEST_KEY_MAP[title];
     if (!guestKey) return false;
 
-    // Only Bible, HistoricalMaps and BiblicalArtifacts are global guest features configured by the SuperAdmin
-    if (guestKey === 'Bible' || guestKey === 'HistoricalMaps' || guestKey === 'BiblicalArtifacts') {
+    // Only Bible and HistoricalMaps are global guest features the SuperAdmin can
+    // open up. BiblicalArtifacts is deliberately NOT in this list: it always
+    // requires sign-in, so it falls through to the locked default below.
+    if (guestKey === 'Bible' || guestKey === 'HistoricalMaps') {
       return guestAccess[guestKey] === false;
     }
 

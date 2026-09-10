@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert, Image, ScrollView, Modal, TouchableOpacity, Dimensions, Platform, Animated, FlatList, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from 'react-native-paper';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient } from '@/services';
+import { apiClient, ApiError } from '@/services';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
@@ -36,6 +36,7 @@ const HIGHLIGHT_COLORS = [
 
 const BibleComponent = () => {
   const { colors, theme } = useTheme();
+  const insets = useSafeAreaInsets();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
@@ -350,7 +351,7 @@ const BibleComponent = () => {
       const selectedBook = books.find((b: any) => b.value === selectedBookNumber);
       if (selectedBook) {
         const chapterList = Array.from({ length: selectedBook.chapterCount }, (_, i) => ({
-          label: `Chapter ${i + 1}`,
+          label: `Ch. ${i + 1}`,
           value: i + 1,
         }));
         setChapters(chapterList);
@@ -884,7 +885,16 @@ const BibleComponent = () => {
         setLookupError(res.data.message || 'Failed to fetch meaning.');
       }
     } catch (e) {
-      setLookupError('Failed to fetch meaning. Please check your internet connection.');
+      // apiClient normalises failures into ApiError, which carries the real
+      // server message. Reporting a connection problem for a 500 sent the user
+      // chasing the wrong cause -- this endpoint returns a precise reason
+      // (e.g. GROQ_API_KEY not configured) that is worth surfacing.
+      const err = e as ApiError;
+      setLookupError(
+        err?.isNetworkError
+          ? 'Could not reach the server. Please check your internet connection.'
+          : err?.message || 'Failed to fetch meaning.',
+      );
     } finally {
       setLoadingMeaning(false);
     }
@@ -1377,23 +1387,6 @@ const BibleComponent = () => {
                 zIndexInverse={3000}
                 disabled={selectedBookNumber === null || chapters.length === 0}
               />
-              <View 
-                pointerEvents="none" 
-                style={{ 
-                  position: 'absolute', 
-                  left: 12, 
-                  right: 35,
-                  top: 0, 
-                  height: 45,
-                  justifyContent: 'center',
-                  zIndex: 2000,
-                  elevation: 2000,
-                }}
-              >
-                <Text style={styles.dropdownText}>
-                  {selectedChapter ? `Ch. ${selectedChapter}` : 'Ch.'}
-                </Text>
-              </View>
             </View>
           </View>
 
@@ -1958,7 +1951,7 @@ const BibleComponent = () => {
           onRequestClose={() => setIsCompareModalVisible(false)}
         >
           <View style={styles.compareModalOverlay}>
-            <View style={styles.compareModalContainer}>
+            <View style={[styles.compareModalContainer, { paddingBottom: insets.bottom }]}>
               <View style={styles.compareModalHeader}>
                 <Text style={styles.compareModalTitle}>Compare Versions</Text>
                 <TouchableOpacity

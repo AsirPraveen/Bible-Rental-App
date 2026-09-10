@@ -13,10 +13,12 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { API_BASE_URL } from '@/config/api';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const cloudinaryCloudName = Constants.expoConfig?.extra?.cloudinaryCloudName ?? '';
 
 const CreateBookTab = () => {
   const { colors, theme } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const [bookName, setBookName] = useState('');
@@ -844,7 +846,7 @@ const CreateBookTab = () => {
   return (
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: keyboardInset }]}>
           <View style={styles.container}>
             <View style={styles.headerRow}>
               <View style={{ width: 40 }} />

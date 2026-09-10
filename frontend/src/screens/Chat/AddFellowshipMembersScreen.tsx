@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Check, Search, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,7 +20,8 @@ export default function AddFellowshipMembersScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { colors } = useTheme();
-  useSystemBars({ top: colors.background });
+  const insets = useSafeAreaInsets();
+  useSystemBars({ top: colors.secondary, bottom: colors.background });
   const { fellowshipId } = route.params || {};
 
   const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
@@ -88,12 +89,15 @@ export default function AddFellowshipMembersScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <LinearGradient
         colors={[colors.secondary, colors.primary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + 14 }]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft color="#fff" size={22} />

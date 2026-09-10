@@ -9,10 +9,12 @@ import { useOrg } from '@/context/OrganizationContext';
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const PREDEFINED_TOPICS = ['Prayercell', 'Chorus', 'Worship', 'Skit Night'];
 
 const ManageSongsTab = () => {
   const { colors, theme } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors, theme);
   const { activeOrg } = useOrg();
@@ -344,7 +346,7 @@ const ManageSongsTab = () => {
             <IconButton icon="close" iconColor={colors.text} onPress={() => setModalVisible(false)} />
           </View>
 
-          <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent}>
+          <ScrollView style={styles.formScroll} contentContainerStyle={[styles.formContent, { paddingBottom: keyboardInset }]}>
             <Text style={styles.inputLabel}>Tamil Title *</Text>
             <TextInput
               style={styles.input}

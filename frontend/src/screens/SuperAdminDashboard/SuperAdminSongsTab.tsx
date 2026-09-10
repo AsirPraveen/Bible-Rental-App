@@ -7,10 +7,12 @@ import { apiClient } from '@/services';
 import { useTheme } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 const PREDEFINED_TOPICS = ['Prayercell', 'Chorus', 'Worship', 'Skit Night'];
 
 const SuperAdminSongsTab = ({ navigation }: any) => {
   const { colors, theme } = useTheme();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.background });
   const styles = getStyles(colors, theme);
   const [songs, setSongs] = useState<any[]>([]);
@@ -475,7 +477,7 @@ const SuperAdminSongsTab = ({ navigation }: any) => {
             <IconButton icon="close" iconColor={colors.text} onPress={() => setModalVisible(false)} />
           </View>
 
-          <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent}>
+          <ScrollView style={styles.formScroll} contentContainerStyle={[styles.formContent, { paddingBottom: keyboardInset }]}>
             <Text style={styles.inputLabel}>Tamil Title *</Text>
             <TextInput
               style={styles.input}

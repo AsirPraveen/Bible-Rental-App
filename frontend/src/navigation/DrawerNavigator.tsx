@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Fellowship } from '@/types/models';
 import type { OrgFeatures } from '../context/OrganizationContext';
+import { DrawerBrandHeader } from '@/components/DrawerBrandHeader';
 
 /** Routes reachable from the drawer. */
 type DrawerStackParamList = {
@@ -82,6 +83,9 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   return (
     <View style={{ flex: 1 }}>
       <DrawerContentScrollView {...props}>
+        {/* App icon above the first drawer item */}
+        <DrawerBrandHeader />
+
         <DrawerItemList {...props} />
 
         {/* ─── THE UPPER ROOM SECTION ─── */}

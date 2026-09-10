@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useOrg } from '../context/OrganizationContext';
 import { apiClient } from '@/services';
 import { API_BASE_URL } from '../config/api';
+import { DrawerBrandHeader } from '@/components/DrawerBrandHeader';
 const AdminDrawer = createDrawerNavigator();
 
 const AdminCustomDrawerContent = (props: any) => {
@@ -56,6 +57,9 @@ const AdminCustomDrawerContent = (props: any) => {
   return (
     <View style={{ flex: 1 }}>
       <DrawerContentScrollView {...props}>
+        {/* App icon above the first drawer item */}
+        <DrawerBrandHeader />
+
         <DrawerItemList {...props} />
 
         {/* ─── THE UPPER ROOM SECTION ─── */}

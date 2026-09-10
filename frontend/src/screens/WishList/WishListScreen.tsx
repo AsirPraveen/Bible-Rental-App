@@ -10,6 +10,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { verseTypography } from '@/utils/verseTypography';
 type Book = {
   book_id: string;
   book_name: string;
@@ -225,7 +226,7 @@ export default function Wishlist() {
             <Text style={styles.verseCardDate}>{formatDate(item.likedAt)}</Text>
           ) : null}
         </View>
-        <Text style={styles.verseCardText}>{item.text}</Text>
+        <Text style={[styles.verseCardText, verseTypography(item.text, 15)]}>{item.text}</Text>
       </Pressable>
     );
   };

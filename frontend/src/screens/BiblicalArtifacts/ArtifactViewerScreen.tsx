@@ -1522,7 +1522,9 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   viewerContainer: {
     height: '52%',
-    backgroundColor: colors.theme === 'dark' ? '#0f172a' : '#f8fafc',
+    // The canvas backdrop was near-white in light mode, which broke the
+    // blue tone the rest of the museum uses. Same family as the cards.
+    backgroundColor: colors.theme === 'dark' ? colors.linearGradient[0] : '#C5DFEB',
     position: 'relative',
     overflow: 'hidden',
     borderBottomWidth: 1,

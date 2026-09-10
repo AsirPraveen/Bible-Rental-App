@@ -1286,7 +1286,9 @@ export default function ChatScreen() {
         // inset double-counts, which is what left a gap after the keyboard
         // closed. max() rather than sum: while the keyboard is up it covers
         // the navigation bar, so only one of the two insets applies.
-        paddingBottom: Platform.OS === 'ios' ? 0 : Math.max(insets.bottom, keyboardInset),
+        // Nav-bar clearance at rest; once lifted, the keyboard sits where
+        // that clearance was, so a small resting padding is enough.
+        paddingBottom: Platform.OS === 'ios' ? 0 : (keyboardInset > 0 ? 8 : insets.bottom),
             backgroundColor: colors.theme === 'dark' ? colors.surface : '#F5F7FA', borderTopColor: colors.theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#E0E0E0' }]}>
             <TextInput
               style={[styles.textInput, {

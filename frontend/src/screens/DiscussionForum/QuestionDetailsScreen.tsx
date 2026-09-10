@@ -114,7 +114,11 @@ export default function QuestionDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.outer_container}>
+    <SafeAreaView
+      // No 'bottom': the reply bar applies that inset itself.
+      edges={['top', 'left', 'right']}
+      style={styles.outer_container}
+    >
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
         {/* ── Header ──────────────────────────────────────────── */}
         <View style={styles.headerContainer}>

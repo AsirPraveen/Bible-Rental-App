@@ -222,7 +222,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Start a Fast</Text>
 
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" nestedScrollEnabled
           >
             <Text style={styles.label}>Fast Type</Text>
             <View style={{ zIndex: 1000 }}>
@@ -235,14 +235,20 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
                 setItems={setTypeItems}
                 style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
                 textStyle={{ color: colors.text }}
-                dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
                 placeholderStyle={{ color: colors.textSecondary }}
                 zIndex={1000}
                 zIndexInverse={3000}
-                // MODAL, not SCROLLVIEW: this picker sits inside a Modal and a
-                // ScrollView, where the nested gesture never reaches the list, so a
-                // list longer than the visible area could not be scrolled at all.
-                listMode="MODAL"
+                // Inline dropdown, capped so a long list scrolls in place. It
+                // needs FLATLIST plus nestedScrollEnabled on the parent
+                // ScrollView; with SCROLLVIEW the nested gesture never reaches
+                // the list and it could not be scrolled at all.
+                listMode="FLATLIST"
+                dropDownContainerStyle={{
+                  backgroundColor: colors.cardBg,
+                  borderColor: colors.border,
+                  maxHeight: 220,
+                }}
+                flatListProps={{ nestedScrollEnabled: true }}
               />
             </View>
 

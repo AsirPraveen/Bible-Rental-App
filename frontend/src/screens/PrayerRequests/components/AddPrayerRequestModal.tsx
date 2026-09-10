@@ -43,8 +43,8 @@ export default function AddPrayerRequestModal({ visible, onClose, onSuccess, cur
   return (
     <Modal
       navigationBarTranslucent visible={visible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={[styles.modalContainer, { paddingBottom: 24 + keyboardInset }]}>
+      <View style={[styles.overlay, { paddingBottom: keyboardInset }]}>
+        <View style={styles.modalContainer}>
           <Text style={styles.title}>Share a Prayer Request</Text>
 
           <TextInput

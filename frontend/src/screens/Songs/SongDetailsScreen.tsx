@@ -248,6 +248,11 @@ export default function SongDetailsScreen() {
             ]}
           >
             <YoutubePlayer
+              // rel:false keeps the end screen to this channel instead of
+              // offering unrelated videos; modestbranding trims the chrome.
+              // (YouTube no longer honours rel=0 as "no suggestions at all",
+              // so this narrows them rather than removing them entirely.)
+              initialPlayerParams={{ rel: false, modestbranding: true }}
               onError={() => setVideoUnavailable(true)}
               onReady={() => setVideoReady(true)}
               height={(width - 32) * 0.5625}

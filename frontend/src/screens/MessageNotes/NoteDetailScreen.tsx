@@ -205,7 +205,14 @@ export default function NoteDetailScreen() {
       soundRef.current = sound;
       setPlayingId(voice.id);
       sound.setOnPlaybackStatusUpdate((status: any) => {
-        if (status.didJustFinish) setPlayingId(null);
+        if (!status.isLoaded) return;
+        // Skip updates mid-drag, or the thumb fights the finger.
+        if (!seeking) setPlaybackMs(status.positionMillis ?? 0);
+        if (status.durationMillis) setPlaybackDurationMs(status.durationMillis);
+        if (status.didJustFinish) {
+          setPlayingId(null);
+          setPlaybackMs(0);
+        }
       });
     } catch {
       Alert.alert('Error', 'Playback failed');
@@ -305,7 +312,9 @@ export default function NoteDetailScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: colors.background }]}
+        contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Action Bar */}
         <View style={styles.actionGrid}>
           <TouchableOpacity style={styles.actionItem} onPress={handleShare}>
@@ -400,7 +409,31 @@ export default function NoteDetailScreen() {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.voiceLabel}>{vn.label || 'Voice recording'}</Text>
-                  <Text style={styles.voiceDur}>{Math.round(vn.durationMs / 1000)} seconds</Text>
+                  {/* Always shown, so the track is discoverable before playing. While
+                      another memo is playing this one shows its own length at zero. */}
+                  <Slider
+                    style={styles.voiceSlider}
+                    minimumValue={0}
+                    maximumValue={(playingId === vn.id ? playbackDurationMs : 0) || vn.durationMs || 1}
+                    value={playingId === vn.id ? playbackMs : 0}
+                    minimumTrackTintColor={colors.primary}
+                    maximumTrackTintColor={colors.border}
+                    thumbTintColor={colors.primary}
+                    disabled={playingId !== vn.id}
+                    onSlidingStart={() => setSeeking(true)}
+                    onSlidingComplete={async (v: number) => {
+                      try {
+                        await soundRef.current?.setPositionAsync(v);
+                      } finally {
+                        setSeeking(false);
+                      }
+                    }}
+                  />
+                  <Text style={styles.voiceDur}>
+                    {formatMs(playingId === vn.id ? playbackMs : 0)}
+                    {' / '}
+                    {formatMs((playingId === vn.id ? playbackDurationMs : 0) || vn.durationMs)}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -525,7 +558,9 @@ const getHlLabel = (key: string) => {
 
 // ─── Styles ───────────────────────────────────────────────
 const getStyles = (colors: ColorsType) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  // Blue base: the header is colors.primary and runs under the status
+  // bar, so the screen behind it should match rather than flashing white.
+  container: { flex: 1, backgroundColor: colors.primary },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
 
   header: {

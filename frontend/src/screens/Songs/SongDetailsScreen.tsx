@@ -323,11 +323,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   languageToggle: {
     flexDirection: 'row',
     backgroundColor: colors.cardBg,
-    // marginBottom trimmed: this sat 16 above a title that added another
-    // 8, leaving a conspicuous gap before the lyrics.
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 6,
+    margin: 16,
     borderRadius: 12,
     padding: 4,
     elevation: 2,
@@ -360,10 +356,11 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   activeTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.tint,
+    // Sits on outer_container (colors.linearGradient[0]); see note below.
+    color: 'rgba(255,255,255,0.95)',
     textAlign: 'center',
-    marginBottom: 12,
-    marginTop: 0,
+    marginBottom: 16,
+    marginTop: 8,
   },
   videoPlayerContainer: {
     borderRadius: 12,
@@ -407,13 +404,13 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   metaLabel: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: colors.tint,
+    color: 'rgba(255,255,255,0.92)',
     width: 80,
   },
   metaValue: {
     flex: 1,
     fontSize: 13,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.80)',
   },
   topicsContainer: {
     flex: 1,

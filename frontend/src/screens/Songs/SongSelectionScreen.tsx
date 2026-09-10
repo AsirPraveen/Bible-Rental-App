@@ -168,6 +168,15 @@ const SongSelectionScreen = ({ route }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* A fresh fetch (tab switch or new search) resets to page 1. The only
+            loading UI was a pagination footer gated on currentPage > 1, so
+            switching Global/Org left the previous list on screen until data
+            arrived, which read as the app doing nothing. */}
+        {loading && currentPage === 1 ? (
+          <View style={styles.listLoader}>
+            <ActivityIndicator size="large" color={colors.tint} />
+          </View>
+        ) : (
         <FlatList
           data={songs}
           keyExtractor={(item) => item._id}
@@ -215,6 +224,7 @@ const SongSelectionScreen = ({ route }: any) => {
             ) : null
           }
         />
+        )}
 
         {/* Configuration Section at Bottom */}
         {selectedSongs.length > 0 && (
@@ -444,6 +454,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
     borderWidth: 1,
+  },
+  listLoader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 48,
   },
   songTabBtn: {
     flex: 1,

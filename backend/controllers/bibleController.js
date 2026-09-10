@@ -183,6 +183,9 @@ exports.getDictionaryMeaning = async (req, res) => {
       return res.status(500).json({ status: 'Error', message: 'GROQ_API_KEY is not configured in environment variables' });
     }
 
+    const groqModel = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    const isReasoningModel = /gpt-oss|o[1-9]|reason|deepseek-r/i.test(groqModel);
+
     const prompt = `You are a biblical dictionary. Give a short, concise dictionary meaning and contextual significance for the word "${word}" found in the verse: "${verseContext}". Language: ${language}. Keep the response strictly under 50 words.`;
 
     const response = await axios.post(
@@ -193,9 +196,16 @@ exports.getDictionaryMeaning = async (req, res) => {
         // API answers 404 model_not_found, which now reaches the user verbatim.
         // List what this key can actually use:
         //   curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"
-        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+        model: groqModel,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 150,
+        // Reasoning models (gpt-oss and friends) spend completion tokens on
+        // hidden reasoning before writing anything, and that spend counts
+        // against max_tokens. At 150 the budget was exhausted while reasoning,
+        // so the reply came back with finish_reason 'length' and an EMPTY
+        // content -- a dictionary card with a title and no text. Give it room,
+        // and ask for the shortest reasoning pass.
+        max_tokens: 512,
+        ...(isReasoningModel ? { reasoning_effort: 'low' } : {}),
       },
       {
         headers: {
@@ -205,7 +215,26 @@ exports.getDictionaryMeaning = async (req, res) => {
       }
     );
 
-    const meaning = response.data.choices[0].message.content.trim();
+    const choice = response.data.choices?.[0];
+    // A reasoning model that runs out of room can leave the answer in
+    // `reasoning` with no final message; prefer content, fall back to that.
+    const meaning = (choice?.message?.content || choice?.message?.reasoning || '').trim();
+
+    if (!meaning) {
+      console.error('Groq returned no content:', JSON.stringify({
+        model: groqModel,
+        finish_reason: choice?.finish_reason,
+        usage: response.data.usage,
+      }));
+      return res.status(502).json({
+        status: 'Error',
+        message:
+          `The AI model (${groqModel}) returned an empty answer` +
+          (choice?.finish_reason === 'length'
+            ? ' because it hit the token limit. Try a smaller GROQ_MODEL.'
+            : '.'),
+      });
+    }
 
     res.status(200).json({ status: 'Ok', data: { word, meaning, source: 'ai' } });
   } catch (error) {

@@ -82,6 +82,11 @@ const BibleComponent = () => {
   const [dictWord, setDictWord] = useState('');
   const [dictMeaning, setDictMeaning] = useState('');
   const [dictSource, setDictSource] = useState('');
+  // Both answers for the CURRENT word are kept, so switching the AI toggle
+  // swaps what is shown rather than calling the server again. Cleared whenever
+  // a different word is looked up.
+  const [dictBookMeaning, setDictBookMeaning] = useState('');
+  const [dictAiMeaning, setDictAiMeaning] = useState('');
   const [confirmWord, setConfirmWord] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
 
@@ -867,6 +872,28 @@ const BibleComponent = () => {
     setConfirmWord(cleanWord);
   };
 
+  // Switches the open lookup between the dictionary answer and the AI answer.
+  // Whichever side is already cached for this word is shown instantly; only a
+  // side we have never fetched costs a request.
+  const toggleDictSource = () => {
+    if (loadingMeaning) return;
+    if (dictSource === 'ai') {
+      if (dictBookMeaning) {
+        setDictMeaning(dictBookMeaning);
+        setDictSource('dictionary');
+      } else {
+        fetchWordMeaning(dictWord, false);
+      }
+      return;
+    }
+    if (dictAiMeaning) {
+      setDictMeaning(dictAiMeaning);
+      setDictSource('ai');
+    } else {
+      fetchWordMeaning(dictWord, true);
+    }
+  };
+
   const fetchWordMeaning = async (word: string, forceAi = false) => {
     try {
       setLoadingMeaning(true);
@@ -874,10 +901,19 @@ const BibleComponent = () => {
       const res = await apiClient.post(`/api/bible/dictionary`, {
         word,
         verseContext: selectedVerse?.text || '',
-        language
+        language,
+        // Tells the server to skip the dictionary. Set only by the AI toggle.
+        forceAi,
       });
       if (res.data.status === 'Ok') {
         const { meaning, source } = res.data.data;
+        if (word !== dictWord) {
+          // A different word: drop the previous word's cached answers.
+          setDictBookMeaning('');
+          setDictAiMeaning('');
+        }
+        if (source === 'ai') setDictAiMeaning(meaning);
+        else setDictBookMeaning(meaning);
         setDictWord(word);
         setDictMeaning(meaning);
         setDictSource(source);
@@ -1917,29 +1953,38 @@ const BibleComponent = () => {
                   onPress={() => setIsDictModalVisible(false)}
                 />
                 <View style={styles.dictModalContainer}>
-                  {/* AI tag. When the answer came from the dictionary this is a
-                      control: crossed out, and tapping it asks for the AI
-                      definition instead. When the answer is already from AI
-                      there is nothing to switch to, so it is inert. */}
-                  {dictSource === 'ai' ? (
-                    <View style={styles.aiTag}>
-                      <Text style={styles.aiTagText}>AI</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.aiTag, styles.aiTagOff]}
-                      onPress={() => fetchWordMeaning(dictWord, true)}
-                      disabled={loadingMeaning}
-                      accessibilityRole="button"
-                      accessibilityLabel="Explain this word with AI"
-                    >
-                      {loadingMeaning ? (
-                        <ActivityIndicator size="small" color={colors.textSecondary} />
-                      ) : (
-                        <Text style={[styles.aiTagText, styles.aiTagTextOff]}>AI</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
+                  {/* AI toggle. Filled when the shown answer is the AI one,
+                      outlined with a crossed "x" when it is the dictionary's.
+                      Tapping switches; a side already fetched for this word is
+                      restored from state instead of being requested again. */}
+                  <TouchableOpacity
+                    style={[styles.aiTag, dictSource !== 'ai' && styles.aiTagOff]}
+                    onPress={toggleDictSource}
+                    disabled={loadingMeaning}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: dictSource === 'ai' }}
+                    accessibilityLabel="Explain this word with AI"
+                  >
+                    {loadingMeaning ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={dictSource === 'ai' ? '#fff' : colors.textSecondary}
+                      />
+                    ) : (
+                      <View style={styles.aiTagRow}>
+                        <Text
+                          style={[styles.aiTagText, dictSource !== 'ai' && styles.aiTagTextOff]}
+                        >
+                          AI
+                        </Text>
+                        {dictSource !== 'ai' && (
+                          <Text style={[styles.aiTagText, styles.aiTagTextOff, styles.aiTagCross]}>
+                            &#10005;
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  </TouchableOpacity>
 
                   <Text style={styles.dictModalTitle}>Meaning of "{dictWord}"</Text>
 
@@ -2552,7 +2597,14 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   aiTagTextOff: {
     color: colors.textSecondary,
-    textDecorationLine: 'line-through',
+  },
+  aiTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aiTagCross: {
+    marginLeft: 3,
+    fontSize: 10,
   },
   aiTag: {
     position: 'absolute',

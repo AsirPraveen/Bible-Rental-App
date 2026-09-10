@@ -151,12 +151,16 @@ export default function AuthorBooks() {
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statValue} numberOfLines={1}>{author?.books || 0}</Text>
+            <View style={styles.statValueWrap}>
+                <Text style={styles.statValue} numberOfLines={1}>{author?.books || 0}</Text>
+              </View>
             <Text style={styles.statLabel}>Available Books</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{author?.ministry || '-'}</Text>
+            <View style={styles.statValueWrap}>
+                <Text style={styles.statValue}>{author?.ministry || '-'}</Text>
+              </View>
             <Text style={styles.statLabel}>Ministry</Text>
           </View>
         </View>
@@ -283,6 +287,10 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   statDivider: {
     width: 1,
     backgroundColor: colors.secondary,
+  },
+  statValueWrap: {
+    flex: 1,
+    justifyContent: 'center',
   },
   statValue: {
     fontSize: 18,

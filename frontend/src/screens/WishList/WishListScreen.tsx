@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Heart } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '@/services';
+import { awaitLikeSync } from '../../utils/likeSync';
 import { LinearGradient } from 'expo-linear-gradient';
 import LoadingScreen from '@/components/LoadingScreen';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
@@ -65,6 +66,9 @@ export default function Wishlist() {
 
   const fetchBooksWishlist = useCallback(async () => {
     try {
+      // A like made moments ago may still be in flight. Reading the server
+      // before it lands would show the pre-like list and hide the new song.
+      await awaitLikeSync();
       const token = await AsyncStorage.getItem('token');
       if (token) {
         const [userRes, booksRes] = await Promise.all([

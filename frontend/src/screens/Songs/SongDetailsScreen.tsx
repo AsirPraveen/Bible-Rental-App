@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Text, Platform, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '@/services';
+import { trackLikeSync } from '../../utils/likeSync';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import LoadingScreen from '@/components/LoadingScreen';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -55,7 +56,16 @@ export default function SongDetailsScreen() {
     fetchSongDetails();
   }, [songId]);
 
+  // Set as soon as the user taps the heart. The check below is asynchronous and
+  // can resolve after that tap; without this it would write the pre-tap server
+  // value back over the user's action, making the heart flicker.
+  const likeTouchedRef = useRef(false);
+
   useEffect(() => {
+    let cancelled = false;
+    const applyLiked = (value: boolean) => {
+      if (!cancelled && !likeTouchedRef.current) setIsLiked(value);
+    };
     const checkIfLiked = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
@@ -65,7 +75,7 @@ export default function SongDetailsScreen() {
             const data = response.data.data;
             if (data.likedSongs) {
               await AsyncStorage.setItem('@liked_songs', JSON.stringify(data.likedSongs));
-              setIsLiked(data.likedSongs.some((s: any) => s._id === songId));
+              applyLiked(data.likedSongs.some((s: any) => s._id === songId));
               return;
             }
           }
@@ -75,7 +85,7 @@ export default function SongDetailsScreen() {
         if (savedLikedSongs) {
           const parsed = JSON.parse(savedLikedSongs);
           if (Array.isArray(parsed)) {
-            setIsLiked(parsed.some((s: any) => s._id === songId));
+            applyLiked(parsed.some((s: any) => s._id === songId));
           }
         }
       } catch (err) {
@@ -85,10 +95,14 @@ export default function SongDetailsScreen() {
     if (song) {
       checkIfLiked();
     }
+    return () => {
+      cancelled = true;
+    };
   }, [songId, song]);
 
   const toggleLikeSong = async () => {
     if (!song) return;
+    likeTouchedRef.current = true;
     try {
       const savedLikedSongs = await AsyncStorage.getItem('@liked_songs');
       let likedList = savedLikedSongs ? JSON.parse(savedLikedSongs) : [];
@@ -114,9 +128,8 @@ export default function SongDetailsScreen() {
 
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        await apiClient.post(
-          `/api/users/toggle-liked-song`,
-          { songId: song._id }
+        await trackLikeSync(
+          apiClient.post(`/api/users/toggle-liked-song`, { songId: song._id })
         );
       }
     } catch (err) {

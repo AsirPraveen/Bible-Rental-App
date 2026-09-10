@@ -26,6 +26,10 @@ export default function SongDetailsScreen() {
   // A YouTube link can point at a video that is private, deleted or
   // region-locked; hide the player instead of showing its error box.
   const [videoUnavailable, setVideoUnavailable] = useState(false);
+  // The player has to mount before it can report an error, and while it
+  // mounts it paints black. Keep it collapsed until onReady confirms it
+  // actually works, so a dead link never flashes a black box.
+  const [videoReady, setVideoReady] = useState(false);
   const [language, setLanguage] = useState<'Tamil' | 'English'>('Tamil');
   const [fontSize, setFontSize] = useState(14);
   const [isLiked, setIsLiked] = useState(false);
@@ -237,9 +241,15 @@ export default function SongDetailsScreen() {
           )}
         </View>
         {videoId && !videoUnavailable && (
-          <View style={styles.videoPlayerContainer}>
+          <View
+            style={[
+              styles.videoPlayerContainer,
+              !videoReady && { height: 0, opacity: 0, marginVertical: 0, overflow: 'hidden' },
+            ]}
+          >
             <YoutubePlayer
               onError={() => setVideoUnavailable(true)}
+              onReady={() => setVideoReady(true)}
               height={(width - 32) * 0.5625}
               play={false}
               videoId={videoId}

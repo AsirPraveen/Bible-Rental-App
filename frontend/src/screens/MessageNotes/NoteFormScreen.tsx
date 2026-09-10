@@ -51,7 +51,7 @@ export default function NoteFormScreen() {
   const { colors } = useTheme();
   const keyboardInset = useKeyboardInset();
   const insets = useSafeAreaInsets();
-  useSystemBars({ top: colors.background });
+  useSystemBars({ top: colors.primary });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -402,7 +402,13 @@ export default function NoteFormScreen() {
 
   // ══════════════════════════════════════════════
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior="padding">
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      // Android is handled by the keyboard inset on the scroll content below.
+      // With behavior="padding" this view's own background stayed visible as a
+      // white band above the navigation bar after the keyboard closed.
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
@@ -439,7 +445,9 @@ export default function NoteFormScreen() {
 
         {/* ── Category ── */}
         <Text style={styles.label}>Category</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 2 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 2 }}
+        contentContainerStyle={{ paddingBottom: 24 + keyboardInset }}
+      >
           {CATEGORIES.map(cat => {
             const m = CATEGORY_META[cat];
             const active = category === cat;
@@ -606,7 +614,7 @@ export default function NoteFormScreen() {
       <Modal
         navigationBarTranslucent visible={showVerseModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowVerseModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowVerseModal(false)}>
-          <Pressable style={[styles.modalBox, { paddingBottom: 40 + insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalBox, { paddingBottom: 40 + Math.max(insets.bottom, keyboardInset) }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>📖 Holy Bible Picker</Text>
               <TouchableOpacity onPress={() => setShowVerseModal(false)}>
@@ -701,7 +709,7 @@ export default function NoteFormScreen() {
       <Modal
         navigationBarTranslucent visible={showHlModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowHlModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowHlModal(false)}>
-          <Pressable style={[styles.modalBox, { paddingBottom: 40 + insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalBox, { paddingBottom: 40 + Math.max(insets.bottom, keyboardInset) }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>✨ Highlight Verse</Text>
               <TouchableOpacity onPress={() => setShowHlModal(false)}>

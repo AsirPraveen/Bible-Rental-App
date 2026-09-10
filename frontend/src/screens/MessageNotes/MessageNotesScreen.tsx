@@ -398,7 +398,7 @@ export default function MessageNotesScreen() {
 
             {/* ── Standalone Reminders Modal ── */}
             <Modal
-              navigationBarTranslucent
+                navigationBarTranslucent
                 visible={showRmModal}
                 transparent
                 statusBarTranslucent={true}
@@ -407,7 +407,7 @@ export default function MessageNotesScreen() {
                 onRequestClose={() => { setShowRmModal(false); setRmFormMode('list'); }}
             >
                 <Pressable style={styles.modalOverlay} onPress={() => { setShowRmModal(false); setRmFormMode('list'); }}>
-                    <Pressable style={[styles.modalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
+                    <Pressable style={[styles.modalBox, { paddingBottom: Math.max(insets.bottom, keyboardInset) }]} onPress={(e) => e.stopPropagation()}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>
                                 {rmFormMode === 'list' ? '⏰ Reminders' : editingReminder ? '✏️ Edit Reminder' : '✨ New Reminder'}

@@ -1146,7 +1146,9 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView
-      edges={['left', 'right', 'bottom']}
+      // No 'bottom' here: the input bar applies that inset itself, and
+      // claiming it in both places doubled the gap above the navigation bar.
+      edges={['left', 'right']}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <LinearGradient

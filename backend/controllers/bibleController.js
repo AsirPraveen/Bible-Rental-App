@@ -215,20 +215,22 @@ const fetchWiktionary = async (word, language) => {
 
 exports.getDictionaryMeaning = async (req, res) => {
   try {
-    const { word, verseContext, language } = req.body;
+    const { word, verseContext, language, forceAi } = req.body;
 
     if (!word) {
       return res.status(400).json({ status: 'Error', message: 'Word is required' });
     }
 
-    // 1. Try a real dictionary first, in ANY language.
+    // 1. Try a real dictionary first, in ANY language -- unless the caller
+    //    explicitly asked for the AI definition, which is what the AI toggle
+    //    in the reader does once a dictionary result has already been shown.
     //
     // This used to be gated on `language === 'english'`, which meant the reader's
     // default (Tamil) skipped the dictionary entirely and every lookup was
     // answered by the AI fallback. Wiktionary covers the other languages the
     // reader offers, so the gate is no longer needed -- a word with no entry
     // simply returns null and falls through to AI, which is the intended order.
-    {
+    if (!forceAi) {
       const standardMeaning = await fetchWiktionary(word, language);
       if (standardMeaning) {
         return res.status(200).json({

@@ -421,8 +421,8 @@ const BibleComponent = () => {
             cachedCurrent
               ? Promise.resolve('__cached__')
               : apiClient.get(`/api/bible/chapter`, {
-                  params: { language, bookNumber: selectedBookNumber, chapterNumber: selectedChapter }
-                })
+                params: { language, bookNumber: selectedBookNumber, chapterNumber: selectedChapter }
+              })
           ];
 
           if (selectedChapter > 1 && !versesCache.current.has(cacheKey(selectedChapter - 1))) {
@@ -867,7 +867,7 @@ const BibleComponent = () => {
     setConfirmWord(cleanWord);
   };
 
-  const fetchWordMeaning = async (word: string) => {
+  const fetchWordMeaning = async (word: string, forceAi = false) => {
     try {
       setLoadingMeaning(true);
       setLookupError(null);
@@ -1917,11 +1917,28 @@ const BibleComponent = () => {
                   onPress={() => setIsDictModalVisible(false)}
                 />
                 <View style={styles.dictModalContainer}>
-                  {/* Blue AI Tag in the top-right corner */}
-                  {dictSource === 'ai' && (
+                  {/* AI tag. When the answer came from the dictionary this is a
+                      control: crossed out, and tapping it asks for the AI
+                      definition instead. When the answer is already from AI
+                      there is nothing to switch to, so it is inert. */}
+                  {dictSource === 'ai' ? (
                     <View style={styles.aiTag}>
                       <Text style={styles.aiTagText}>AI</Text>
                     </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.aiTag, styles.aiTagOff]}
+                      onPress={() => fetchWordMeaning(dictWord, true)}
+                      disabled={loadingMeaning}
+                      accessibilityRole="button"
+                      accessibilityLabel="Explain this word with AI"
+                    >
+                      {loadingMeaning ? (
+                        <ActivityIndicator size="small" color={colors.textSecondary} />
+                      ) : (
+                        <Text style={[styles.aiTagText, styles.aiTagTextOff]}>AI</Text>
+                      )}
+                    </TouchableOpacity>
                   )}
 
                   <Text style={styles.dictModalTitle}>Meaning of "{dictWord}"</Text>
@@ -2527,6 +2544,15 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
     position: 'relative',
+  },
+  aiTagOff: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+  },
+  aiTagTextOff: {
+    color: colors.textSecondary,
+    textDecorationLine: 'line-through',
   },
   aiTag: {
     position: 'absolute',

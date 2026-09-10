@@ -40,7 +40,7 @@ const SuperAdminCustomDrawerContent = (props: any) => {
       </DrawerContentScrollView>
 
       {/* Theme Toggle Footer */}
-      <View style={[styles.drawerFooter, { borderTopColor: colors.border, paddingBottom: 20 + insets.bottom }]}>
+      <View style={[styles.drawerFooter, { borderTopColor: colors.border, height: 60 + insets.bottom, paddingBottom: insets.bottom }]}>
         <TouchableOpacity
           onPress={toggleTheme}
           activeOpacity={0.7}
@@ -158,9 +158,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   drawerFooter: {
-    padding: 20,
+    // Height comes from the inset inline; matches the bottom tab bar.
+    paddingHorizontal: 20,
     borderTopWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   themeBtn: {
     width: 44,

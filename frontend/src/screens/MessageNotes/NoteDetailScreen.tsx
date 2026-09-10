@@ -12,6 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import Slider from '@react-native-community/slider';
 import {
   getNoteById, deleteNote, addReminder, deleteReminder,
   generateTitle, exportNoteAsText
@@ -27,11 +28,18 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
 import { useKeyboardInset } from '@/hooks/useKeyboardInset';
+const formatMs = (ms: number) => {
+  const total = Math.max(0, Math.round((ms || 0) / 1000));
+  const m = Math.floor(total / 60);
+  const sec = total % 60;
+  return `${m}:${String(sec).padStart(2, '0')}`;
+};
+
 export default function NoteDetailScreen() {
   const { colors } = useTheme();
   const keyboardInset = useKeyboardInset();
   const insets = useSafeAreaInsets();
-  useSystemBars({ top: colors.background });
+  useSystemBars({ top: colors.primary });
   const styles = getStyles(colors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -41,6 +49,11 @@ export default function NoteDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
+  // Playback position for the memo currently playing, so the track can be
+  // shown and dragged rather than only started and stopped.
+  const [playbackMs, setPlaybackMs] = useState(0);
+  const [playbackDurationMs, setPlaybackDurationMs] = useState(0);
+  const [seeking, setSeeking] = useState(false);
   const { isGuest, user } = useAuth();
   const [selectedHighlight, setSelectedHighlight] = useState<VerseHighlight | null>(null);
 
@@ -448,7 +461,7 @@ export default function NoteDetailScreen() {
         onRequestClose={() => setSelectedHighlight(null)}
       >
         <Pressable style={styles.verseModalOverlay} onPress={() => setSelectedHighlight(null)}>
-          <Pressable style={[styles.verseModalBox, { paddingBottom: 30 + insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.verseModalBox, { paddingBottom: 30 + Math.max(insets.bottom, keyboardInset) }]} onPress={(e) => e.stopPropagation()}>
             {selectedHighlight && (
               <>
                 {/* Accent header */}
@@ -560,6 +573,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 15, backgroundColor: colors.cardBg, padding: 15, borderRadius: 16, marginBottom: 10, elevation: 2 },
   playBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   voiceLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
+  voiceSlider: { width: '100%', height: 28, marginTop: 2 },
   voiceDur: { fontSize: 12, color: colors.textSecondary },
 
   reminderCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg, padding: 15, borderRadius: 16, marginBottom: 10, elevation: 2 },

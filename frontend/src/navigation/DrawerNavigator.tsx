@@ -170,12 +170,15 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
 
       {/* Theme Toggle Footer */}
       <View style={{
-        padding: 20,
-        // Under edge-to-edge the drawer draws behind the Android nav bar.
-        paddingBottom: 20 + insets.bottom,
+        // Matches the bottom tab bar's 60 + inset, so the drawer footer and
+        // the tab bar read as one band rather than two different heights.
+        height: 60 + insets.bottom,
+        paddingBottom: insets.bottom,
+        paddingHorizontal: 20,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255, 255, 255, 0.1)',
         alignItems: 'center',
+        justifyContent: 'center',
       }}>
         <TouchableOpacity
           onPress={toggleTheme}

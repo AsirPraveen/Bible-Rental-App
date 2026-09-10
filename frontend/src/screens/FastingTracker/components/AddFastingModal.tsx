@@ -56,6 +56,30 @@ const FAST_TYPES: { label: string; value: string; description: string }[] = [
     description:
       'Rest and simple food while recovering from exhaustion.\n1 Kings 19:4-8.',
   },
+  {
+    label: 'Sunrise to Sunset Fast',
+    value: 'Sunrise to Sunset Fast',
+    description:
+      'No food from dawn until evening, then a simple meal.\nJudges 20:26; 2 Samuel 1:12.',
+  },
+  {
+    label: 'Ezra Fast',
+    value: 'Ezra Fast',
+    description:
+      "Seeking God's protection and direction before a decision.\nEzra 8:21-23.",
+  },
+  {
+    label: 'Ninevite Fast',
+    value: 'Ninevite Fast',
+    description:
+      'A whole community turning back to God, food and drink set aside.\nJonah 3:5-8.',
+  },
+  {
+    label: 'Nazirite Vow',
+    value: 'Nazirite Vow',
+    description:
+      'Abstaining from wine and grape products for a set season.\nNumbers 6:1-4.',
+  },
   { label: 'Others', value: 'Others', description: '' },
 ];
 
@@ -199,25 +223,27 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
           <Text style={styles.title}>Start a Fast</Text>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: keyboardInset }}
-      >
+          >
             <Text style={styles.label}>Fast Type</Text>
             <View style={{ zIndex: 1000 }}>
-               <DropDownPicker
-                  open={openType}
-                  value={type}
-                  items={typeItems}
-                  setOpen={setOpenType}
-                  setValue={setType}
-                  setItems={setTypeItems}
-                  style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
-                  textStyle={{ color: colors.text }}
-                  dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
-                  placeholderStyle={{ color: colors.textSecondary }}
-                  zIndex={1000}
-                  zIndexInverse={3000}
-                  listMode="SCROLLVIEW"
-               />
+              <DropDownPicker
+                open={openType}
+                value={type}
+                items={typeItems}
+                setOpen={setOpenType}
+                setValue={setType}
+                setItems={setTypeItems}
+                style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+                textStyle={{ color: colors.text }}
+                dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
+                placeholderStyle={{ color: colors.textSecondary }}
+                zIndex={1000}
+                zIndexInverse={3000}
+                // MODAL, not SCROLLVIEW: this picker sits inside a Modal and a
+                // ScrollView, where the nested gesture never reaches the list, so a
+                // list longer than the visible area could not be scrolled at all.
+                listMode="MODAL"
+              />
             </View>
 
             {/* What the selected fast actually involves, so the name is not
@@ -259,32 +285,32 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
 
             <Text style={styles.label}>Alert Me</Text>
             <View style={{ zIndex: 900 }}>
-               <DropDownPicker
-                  open={openNotify}
-                  value={notifyInterval}
-                  items={notifyItems}
-                  setOpen={setOpenNotify}
-                  setValue={setNotifyInterval}
-                  setItems={setNotifyItems}
-                  style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
-                  textStyle={{ color: colors.text }}
-                  dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
-                  placeholderStyle={{ color: colors.textSecondary }}
-                  zIndex={900}
-                  zIndexInverse={2000}
-                  listMode="SCROLLVIEW"
-               />
+              <DropDownPicker
+                open={openNotify}
+                value={notifyInterval}
+                items={notifyItems}
+                setOpen={setOpenNotify}
+                setValue={setNotifyInterval}
+                setItems={setNotifyItems}
+                style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+                textStyle={{ color: colors.text }}
+                dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
+                placeholderStyle={{ color: colors.textSecondary }}
+                zIndex={900}
+                zIndexInverse={2000}
+                listMode="SCROLLVIEW"
+              />
             </View>
 
             <Text style={styles.label}>Notes / Purpose</Text>
             <TextInput
-               style={[styles.input, styles.textArea]}
-               placeholder="Praying for..."
-               placeholderTextColor={colors.textSecondary}
-               multiline
-               numberOfLines={3}
-               value={notes}
-               onChangeText={setNotes}
+              style={[styles.input, styles.textArea]}
+              placeholder="Praying for..."
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={3}
+              value={notes}
+              onChangeText={setNotes}
             />
 
             <View style={styles.buttonRow}>
@@ -309,9 +335,9 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
             minimumDate={new Date()}
             date={startDate || new Date()}
             onConfirm={(date) => { 
-                date.setSeconds(0, 0);
-                setStartDate(date); 
-                setStartDatePickerVisibility(false); 
+              date.setSeconds(0, 0);
+              setStartDate(date);
+              setStartDatePickerVisibility(false);
             }}
             onCancel={() => setStartDatePickerVisibility(false)}
           />
@@ -321,9 +347,9 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
             minimumDate={startDate || new Date()}
             date={endDate || startDate || new Date()}
             onConfirm={(date) => { 
-                date.setSeconds(0, 0);
-                setEndDate(date); 
-                setEndDatePickerVisibility(false); 
+              date.setSeconds(0, 0);
+              setEndDate(date);
+              setEndDatePickerVisibility(false);
             }}
             onCancel={() => setEndDatePickerVisibility(false)}
           />

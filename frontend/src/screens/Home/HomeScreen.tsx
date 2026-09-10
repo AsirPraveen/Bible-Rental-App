@@ -17,26 +17,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useOrg } from '@/context/OrganizationContext';
 import { apiClient } from '@/services';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { usePocketVerse } from '@/hooks/usePocketVerse';
+import { PocketVerseStrip, PocketVersePicker } from '@/components/PocketVerse';
 
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
 
-const CATEGORIES = [
-  { id: '1', name: 'Bible', color: '#146C94' },
-  { id: '2', name: 'Prayer', color: '#146C94' },
-  { id: '3', name: 'Fellowship', color: '#146C94' },
-  { id: '4', name: 'Faith', color: '#146C94' },
-  { id: '5', name: 'Brotherhood', color: '#146C94' },
-  { id: '6', name: 'Worship', color: '#146C94' },
-  { id: '7', name: 'Grace', color: '#146C94' },
-  { id: '8', name: 'Salvation', color: '#146C94' },
-  { id: '9', name: 'Hope', color: '#146C94' },
-  { id: '10', name: 'Love', color: '#146C94' },
-  { id: '11', name: 'Charity', color: '#146C94' },
-  { id: '12', name: 'Holiness', color: '#146C94' },
-  { id: '13', name: 'Forgiveness', color: '#146C94' },
-  { id: '14', name: 'Eternal Life', color: '#146C94' }
-
-];
 
 // Custom Skeleton Animation Component
 type SkeletonBoxProps = {
@@ -223,20 +208,9 @@ const HomeView = () => {
   }
 
 
-  // Inside HomeView component
-  const scrollX = React.useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(scrollX, {
-        toValue: -CATEGORIES.length * 120, // width * items
-        duration: 27000, // speed (ms)
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
-
-  const categoryItemWidth = 120; // adjust based on your button width
+  // Pocket verse: the one verse the reader carries for the day.
+  const { verse: pocketVerse, isStale: isPocketVerseStale, setPocketVerse } = usePocketVerse();
+  const [isPocketVersePickerOpen, setIsPocketVersePickerOpen] = useState(false);
 
   async function fetchBooks() {
     try {
@@ -410,32 +384,19 @@ const HomeView = () => {
         </View>
 
         <ScrollView style={styles.container}>
-          {/* Categories Section (Auto-scrolling) */}
-          <View style={{ height: 50, overflow: 'hidden' }}>
-            <Animated.View
-              style={{
-                flexDirection: 'row',
-                transform: [{ translateX: scrollX }],
-              }}
-            >
-              {/* Duplicate categories for infinite loop */}
-              {[...CATEGORIES, ...CATEGORIES].map((category, index) => (
-                <Pressable
-                  key={`${category.id}-${index}`}
-                  style={[
-                    styles.categoryButton,
-                    { width: categoryItemWidth },
-                  ]}
-                >
-                  <Text
-                    style={styles.categoryText}
-                  >
-                    {category.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </Animated.View>
-          </View>
+          {/* Pocket Verse: one verse chosen for the day, scrolling on repeat
+              the way a folded slip of paper gets re-read from a pocket. */}
+          <PocketVerseStrip
+            verse={pocketVerse}
+            isStale={isPocketVerseStale}
+            onPress={() => setIsPocketVersePickerOpen(true)}
+          />
+
+          <PocketVersePicker
+            visible={isPocketVersePickerOpen}
+            onClose={() => setIsPocketVersePickerOpen(false)}
+            onSelect={setPocketVerse}
+          />
 
           {/* Books Section — hidden when the org has book rental switched off */}
           {isBookRentalEnabled && (<>

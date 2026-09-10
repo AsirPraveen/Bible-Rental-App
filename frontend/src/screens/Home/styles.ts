@@ -133,21 +133,6 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     marginBottom: 24,
     marginTop: 4,
   },
-  categoryButton: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.12)' : colors.primary,
-    borderWidth: 1.5,
-    borderColor: colors.theme === 'dark' ? colors.tint : 'transparent',
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.theme === 'dark' ? colors.tint : colors.textLight,
-  },
   section: {
     paddingHorizontal: 16,
     marginBottom: 24,

@@ -125,9 +125,16 @@ const fetchStandardDictionary = async (word) => {
     // this budget will usually be missed and the miss is logged as
     // "Dictionary API failed for ... timeout of 1200ms exceeded". That log line
     // is expected and harmless -- the lookup falls through to Groq.
+    // Tunable without a deploy. The right value is whatever this server can
+    // actually achieve, which is not knowable from a dev machine -- the elapsed
+    // time is logged on both paths below so it can be set from real data.
+    const timeoutMs = Number(process.env.DICTIONARY_TIMEOUT_MS || 6000);
+    const startedAt = Date.now();
+
     const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`, {
-      timeout: 1200
+      timeout: timeoutMs
     });
+    console.log(`Dictionary API answered for "${word}" in ${Date.now() - startedAt}ms`);
 
     if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {
       const entry = response.data[0];
@@ -153,6 +160,7 @@ const fetchStandardDictionary = async (word) => {
       return meaningText.trim();
     }
   } catch (error) {
+    // Expected while the provider is degraded; the caller falls through to AI.
     console.log(`Dictionary API failed for "${word}":`, error.message);
   }
   return null;

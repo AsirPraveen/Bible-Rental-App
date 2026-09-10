@@ -156,7 +156,7 @@ export default function AuthorBooks() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue} numberOfLines={2}>{author?.ministry || '-'}</Text>
+            <Text style={styles.statValue}>{author?.ministry || '-'}</Text>
             <Text style={styles.statLabel}>Ministry</Text>
           </View>
         </View>
@@ -275,6 +275,10 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   stat: {
     flex: 1,
     alignItems: 'center',
+    // The row stretches both columns to the tallest, and pinning the label to
+    // the end keeps the two labels aligned however many lines the value wraps
+    // to -- so a long ministry name can show in full without skewing the row.
+    justifyContent: 'space-between',
   },
   statDivider: {
     width: 1,
@@ -286,10 +290,6 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     color: colors.tint,
     marginBottom: 4,
     textAlign: 'center',
-    // A ministry name can be several words long. Without a reserved height the
-    // taller column pushed its label out of line with the other stat; capping
-    // the value at two lines and reserving room for two keeps both aligned.
-    minHeight: 46,
   },
   statLabel: {
     fontSize: 12,

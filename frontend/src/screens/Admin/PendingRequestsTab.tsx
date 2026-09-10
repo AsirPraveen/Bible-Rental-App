@@ -98,7 +98,7 @@ const PendingRequestsTab = () => {
   return (
     <SafeAreaView style={styles.outer_container}>
       <LinearGradient colors={colors.linearGradient} style={styles.gradient}>
-        <ScrollView style={styles.container} contentContainerStyle={[styles.scrollContainer, { paddingBottom: keyboardInset }]} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.container} contentContainerStyle={[styles.scrollContainer, { paddingBottom: 30 + keyboardInset }]} showsVerticalScrollIndicator={false}>
           <Text style={styles.headerText}>Pending Requests</Text>
 
           <View style={styles.formCard}>

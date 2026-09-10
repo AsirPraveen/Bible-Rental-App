@@ -303,8 +303,13 @@ export default function SongComponent() {
       </View>
 
       <View style={styles.container}>
+        {/* The loader replaces the LIST only. It used to replace the pagination
+            too, and LoadingScreen paints a full-screen gradient, so paging
+            covered the controls that triggered it. */}
         {loading && !isRefreshing ? (
-          <LoadingScreen message="Searching library..." />
+          <View style={{ flex: 1 }}>
+            <LoadingScreen message="Searching library..." />
+          </View>
         ) : (
           <>
             <FlatList
@@ -322,9 +327,9 @@ export default function SongComponent() {
                 </View>
               }
             />
-            {songs.length > 0 && renderPagination()}
           </>
         )}
+        {songs.length > 0 && renderPagination()}
       </View>
 
       {/* Floating Filter FAB overlay trigger */}
@@ -355,7 +360,7 @@ export default function SongComponent() {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
+          <View style={[styles.modalContent, { paddingBottom: 20 + insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter Library</Text>
               <TouchableOpacity

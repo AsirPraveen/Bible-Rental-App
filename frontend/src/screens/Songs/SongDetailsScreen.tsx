@@ -23,6 +23,9 @@ export default function SongDetailsScreen() {
   const { songId } = route.params;
   const [song, setSong] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  // A YouTube link can point at a video that is private, deleted or
+  // region-locked; hide the player instead of showing its error box.
+  const [videoUnavailable, setVideoUnavailable] = useState(false);
   const [language, setLanguage] = useState<'Tamil' | 'English'>('Tamil');
   const [fontSize, setFontSize] = useState(14);
   const [isLiked, setIsLiked] = useState(false);
@@ -233,9 +236,10 @@ export default function SongDetailsScreen() {
             </View>
           )}
         </View>
-        {videoId && (
+        {videoId && !videoUnavailable && (
           <View style={styles.videoPlayerContainer}>
             <YoutubePlayer
+              onError={() => setVideoUnavailable(true)}
               height={(width - 32) * 0.5625}
               play={false}
               videoId={videoId}
@@ -319,7 +323,11 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   languageToggle: {
     flexDirection: 'row',
     backgroundColor: colors.cardBg,
-    margin: 16,
+    // marginBottom trimmed: this sat 16 above a title that added another
+    // 8, leaving a conspicuous gap before the lyrics.
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 6,
     borderRadius: 12,
     padding: 4,
     elevation: 2,
@@ -354,8 +362,8 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     fontWeight: 'bold',
     color: colors.tint,
     textAlign: 'center',
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: 12,
+    marginTop: 0,
   },
   videoPlayerContainer: {
     borderRadius: 12,

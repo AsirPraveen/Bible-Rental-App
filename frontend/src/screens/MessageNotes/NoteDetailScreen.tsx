@@ -448,7 +448,7 @@ export default function NoteDetailScreen() {
         onRequestClose={() => setSelectedHighlight(null)}
       >
         <Pressable style={styles.verseModalOverlay} onPress={() => setSelectedHighlight(null)}>
-          <Pressable style={[styles.verseModalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.verseModalBox, { paddingBottom: 30 + insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
             {selectedHighlight && (
               <>
                 {/* Accent header */}

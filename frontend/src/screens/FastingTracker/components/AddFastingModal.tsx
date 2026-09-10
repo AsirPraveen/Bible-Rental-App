@@ -8,6 +8,57 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useKeyboardInset } from '@/hooks/useKeyboardInset';
+/**
+ * Fasts described in Scripture, with a short note and the passage they come
+ * from. Shown under the picker so someone choosing a fast knows what they are
+ * committing to rather than guessing from the name.
+ */
+const FAST_TYPES: { label: string; value: string; description: string }[] = [
+  {
+    label: 'Daniel Fast',
+    value: 'Daniel Fast',
+    description:
+      'Vegetables, fruit and water only — no meat, bread or wine.\nDaniel 1:12 and 10:2-3.',
+  },
+  {
+    label: 'Partial Fast',
+    value: 'Partial Fast',
+    description:
+      'Giving up certain foods, or eating only within set hours.\nDaniel 10:2-3.',
+  },
+  {
+    label: 'Water Fast',
+    value: 'Water Fast',
+    description:
+      'No food, water only, for a set number of days.\nMatthew 4:2.',
+  },
+  {
+    label: 'Absolute Fast',
+    value: 'Absolute Fast',
+    description:
+      'Neither food nor water. Kept short, and undertaken with care.\nEsther 4:16; Acts 9:9.',
+  },
+  {
+    label: 'Esther Fast',
+    value: 'Esther Fast',
+    description:
+      'Three days without food or water, sought for deliverance.\nEsther 4:16.',
+  },
+  {
+    label: 'Corporate Fast',
+    value: 'Corporate Fast',
+    description:
+      'A congregation fasting together for a shared purpose.\nJoel 2:15-16; Acts 13:2-3.',
+  },
+  {
+    label: 'Elijah Fast',
+    value: 'Elijah Fast',
+    description:
+      'Rest and simple food while recovering from exhaustion.\n1 Kings 19:4-8.',
+  },
+  { label: 'Others', value: 'Others', description: '' },
+];
+
 export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
   const keyboardInset = useKeyboardInset();
   const { colors } = useTheme();
@@ -25,10 +76,9 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
   // Dropdown states for Type
   const [openType, setOpenType] = useState(false);
   const [type, setType] = useState('Others');
-  const [typeItems, setTypeItems] = useState([
-    { label: 'Daniel Fast', value: 'Daniel Fast' },
-    { label: 'Others', value: 'Others' }
-  ]);
+  const [typeItems, setTypeItems] = useState(
+    FAST_TYPES.map(f => ({ label: f.label, value: f.value })),
+  );
 
   // Dropdown states for Notifications
   const [openNotify, setOpenNotify] = useState(false);
@@ -144,7 +194,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
   return (
     <Modal
       navigationBarTranslucent visible={visible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { paddingBottom: keyboardInset }]}>
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Start a Fast</Text>
 
@@ -169,6 +219,16 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
                   listMode="SCROLLVIEW"
                />
             </View>
+
+            {/* What the selected fast actually involves, so the name is not
+                the only guide. Hidden for "Others", which has no definition. */}
+            {!!FAST_TYPES.find(f => f.value === type)?.description && (
+              <View style={styles.fastInfoBox}>
+                <Text style={styles.fastInfoText}>
+                  {FAST_TYPES.find(f => f.value === type)?.description}
+                </Text>
+              </View>
+            )}
 
             {type === 'Others' && (
               <View>
@@ -301,6 +361,20 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 6,
     fontWeight: '600',
+  },
+  fastInfoBox: {
+    marginTop: 10,
+    marginBottom: 4,
+    padding: 10,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.secondary,
+    backgroundColor: colors.theme === 'dark' ? colors.inputBg : '#AFD3E2',
+  },
+  fastInfoText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.text,
   },
   dropdown: {
     borderColor: colors.border,

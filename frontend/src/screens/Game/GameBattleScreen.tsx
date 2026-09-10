@@ -629,7 +629,7 @@ const GameBattle = ({ route, navigation }: any) => {
           navigationBarTranslucent
           statusBarTranslucent visible={showQTE} transparent animationType="fade">
           <View style={styles.modalBg}>
-             <View style={[styles.modalContent, { paddingBottom: keyboardInset }]}>
+             <View style={[styles.modalContent, { paddingBottom: 24 + keyboardInset }]}>
                 <Text style={styles.modalTitle}>Critical Hit QTE!</Text>
                 <Text style={styles.modalDesc}>Complete the verse to unleash {activePlayer.ability}:</Text>
                 <Text style={styles.verseHint}>"{activePlayer.verseHidden}"</Text>

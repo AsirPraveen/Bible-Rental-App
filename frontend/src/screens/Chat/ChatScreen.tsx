@@ -13,6 +13,7 @@ import Lottie from 'lottie-react-native';
 import LoadingScreen from '@/components/LoadingScreen';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 type MessageType = {
   _id: string;
   text: string;
@@ -122,7 +123,8 @@ export default function ChatScreen() {
   const { user } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  useSystemBars({ top: colors.secondary, bottom: colors.background });
+  const keyboardInset = useKeyboardInset();
+  useSystemBars({ top: colors.linearGradient[0], bottom: colors.background });
   const { socket } = useSocket();
 
   const { fellowshipId, fellowshipName, fellowshipType, fellowshipIcon } = route.params || {};
@@ -1148,7 +1150,7 @@ export default function ChatScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <LinearGradient
-        colors={[colors.secondary, colors.primary]}
+        colors={colors.linearGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.header, { paddingTop: insets.top + 14 }]}
@@ -1249,7 +1251,7 @@ export default function ChatScreen() {
       )}
 
       <KeyboardAvoidingView
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {replyToMessage && (
@@ -1277,7 +1279,13 @@ export default function ChatScreen() {
         )}
 
         {canPost ? (
-          <View style={[styles.inputBar, { backgroundColor: colors.theme === 'dark' ? colors.surface : '#F5F7FA', borderTopColor: colors.theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#E0E0E0' }]}>
+          <View style={[styles.inputBar, {
+            // Android drives this manually. KeyboardAvoidingView plus a manual
+        // inset double-counts, which is what left a gap after the keyboard
+        // closed. max() rather than sum: while the keyboard is up it covers
+        // the navigation bar, so only one of the two insets applies.
+        paddingBottom: Platform.OS === 'ios' ? 0 : Math.max(insets.bottom, keyboardInset),
+            backgroundColor: colors.theme === 'dark' ? colors.surface : '#F5F7FA', borderTopColor: colors.theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#E0E0E0' }]}>
             <TextInput
               style={[styles.textInput, {
                 backgroundColor: colors.theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#fff',
@@ -1297,7 +1305,7 @@ export default function ChatScreen() {
               style={[styles.sendBtn, { opacity: inputText.trim() ? 1 : 0.4 }]}
             >
               <LinearGradient
-                colors={[colors.secondary, colors.primary]}
+                colors={colors.linearGradient}
                 style={styles.sendBtnGradient}
               >
                 <Send color="#fff" size={18} />

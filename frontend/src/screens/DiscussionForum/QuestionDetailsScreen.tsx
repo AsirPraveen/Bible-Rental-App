@@ -9,6 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // ── Time-ago helper ──────────────────────────────────────────────
 function timeAgo(dateString: string): string {
   const now = Date.now();
@@ -32,6 +34,8 @@ function timeAgo(dateString: string): string {
 
 export default function QuestionDetailsScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
   useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
   const route = useRoute<any>();
@@ -127,7 +131,7 @@ export default function QuestionDetailsScreen() {
         {/* ── Content ─────────────────────────────────────────── */}
         <KeyboardAvoidingView 
           style={styles.container} 
-          behavior="padding"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <FlatList
             data={question.answers || []}
@@ -192,7 +196,9 @@ export default function QuestionDetailsScreen() {
           />
 
           {/* ── Input area ────────────────────────────────────── */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, {
+          paddingBottom: Platform.OS === 'ios' ? 12 : 12 + Math.max(insets.bottom, keyboardInset),
+        }]}>
             <TextInput
               style={styles.input}
               placeholder="Write a reply..."

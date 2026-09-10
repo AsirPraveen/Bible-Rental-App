@@ -171,6 +171,8 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       {/* Theme Toggle Footer */}
       <View style={{
         padding: 20,
+        // Under edge-to-edge the drawer draws behind the Android nav bar.
+        paddingBottom: 20 + insets.bottom,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255, 255, 255, 0.1)',
         alignItems: 'center',

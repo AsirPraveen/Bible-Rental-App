@@ -27,7 +27,7 @@ export default function CreateFellowshipScreen() {
   const { colors } = useTheme();
   const keyboardInset = useKeyboardInset();
   const insets = useSafeAreaInsets();
-  useSystemBars({ top: colors.secondary, bottom: colors.background });
+  useSystemBars({ top: colors.linearGradient[0], bottom: colors.background });
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -102,7 +102,7 @@ export default function CreateFellowshipScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <LinearGradient
-        colors={[colors.secondary, colors.primary]}
+        colors={colors.linearGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.header, { paddingTop: insets.top + 14 }]}
@@ -114,7 +114,7 @@ export default function CreateFellowshipScreen() {
         <View style={{ width: 38 }} />
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: keyboardInset }]} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 100 + keyboardInset }]} keyboardShouldPersistTaps="handled">
         {/* Name */}
         <View style={[styles.section, { backgroundColor: colors.theme === 'dark' ? colors.surface : '#fff' }]}>
           <Text style={[styles.label, { color: colors.text }]}>Fellowship Name *</Text>
@@ -275,7 +275,7 @@ export default function CreateFellowshipScreen() {
           style={{ opacity: creating || !name.trim() ? 0.5 : 1 }}
         >
           <LinearGradient
-            colors={[colors.secondary, colors.primary]}
+            colors={colors.linearGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.createBtn}

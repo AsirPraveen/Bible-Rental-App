@@ -21,7 +21,7 @@ export default function AddFellowshipMembersScreen() {
   const route = useRoute<any>();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  useSystemBars({ top: colors.secondary, bottom: colors.background });
+  useSystemBars({ top: colors.linearGradient[0], bottom: colors.background });
   const { fellowshipId } = route.params || {};
 
   const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
@@ -94,7 +94,7 @@ export default function AddFellowshipMembersScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <LinearGradient
-        colors={[colors.secondary, colors.primary]}
+        colors={colors.linearGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.header, { paddingTop: insets.top + 14 }]}
@@ -176,7 +176,7 @@ export default function AddFellowshipMembersScreen() {
         <TouchableOpacity onPress={handleAdd} disabled={adding || selectedMembers.length === 0}
           style={{ opacity: adding || selectedMembers.length === 0 ? 0.5 : 1 }}>
           <LinearGradient
-            colors={[colors.secondary, colors.primary]}
+            colors={colors.linearGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.addBtn}

@@ -43,7 +43,8 @@ const ReadingTrackerComponent = () => {
   // Keyed `${book}-${chapter}` -> read?
   const [completedChapters, setCompletedChapters] = useState<CompletedChapters>({});
   const [expandedBook, setExpandedBook] = useState<string | null>(null);
-  const [expandedTestament, setExpandedTestament] = useState<string | null>('Old Testament');
+  // Both testaments start collapsed so the list opens at a readable size.
+  const [expandedTestament, setExpandedTestament] = useState<string | null>(null);
 
   // Treasures in Heaven states
   const [treasuresInHeaven, setTreasuresInHeaven] = useState(0);

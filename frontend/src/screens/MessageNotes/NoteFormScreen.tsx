@@ -606,7 +606,7 @@ export default function NoteFormScreen() {
       <Modal
         navigationBarTranslucent visible={showVerseModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowVerseModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowVerseModal(false)}>
-          <Pressable style={[styles.modalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalBox, { paddingBottom: 40 + insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>📖 Holy Bible Picker</Text>
               <TouchableOpacity onPress={() => setShowVerseModal(false)}>
@@ -701,7 +701,7 @@ export default function NoteFormScreen() {
       <Modal
         navigationBarTranslucent visible={showHlModal} transparent statusBarTranslucent={true} animationType="fade" onRequestClose={() => setShowHlModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowHlModal(false)}>
-          <Pressable style={[styles.modalBox, { paddingBottom: insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalBox, { paddingBottom: 40 + insets.bottom + keyboardInset }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>✨ Highlight Verse</Text>
               <TouchableOpacity onPress={() => setShowHlModal(false)}>

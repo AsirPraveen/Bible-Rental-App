@@ -467,7 +467,7 @@ const GameSurvival = ({ navigation }: any) => {
           navigationBarTranslucent
           statusBarTranslucent visible={showQTE} transparent animationType="fade">
           <View style={styles.modalBg}>
-             <View style={[styles.modalContent, { paddingBottom: keyboardInset }]}>
+             <View style={[styles.modalContent, { paddingBottom: 24 + keyboardInset }]}>
                 <Text style={styles.modalTitle}>Complete Verse!</Text>
                 <Text style={{color:'#A7F3D0', fontStyle:'italic', marginBottom:20}}>"{activePlayer.verseHidden}"</Text>
                 <TextInput style={{backgroundColor:'#FFF', width:'100%', padding:12, borderRadius:8, marginBottom:20}} placeholder="Missing word" value={qteAnswer} onChangeText={setQteAnswer} autoFocus />

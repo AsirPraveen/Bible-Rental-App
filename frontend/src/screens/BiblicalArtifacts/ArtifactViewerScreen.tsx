@@ -28,7 +28,7 @@ export default function ArtifactViewerScreen() {
   const route = useRoute<any>();
   const { artifactId } = route.params;
   const { colors, theme } = useTheme();
-  useSystemBars({ top: colors.background });
+  useSystemBars({ top: colors.linearGradient[0] });
   const styles = getStyles(colors);
 
   const [artifact, setArtifact] = useState<any | null>(null);
@@ -1477,7 +1477,9 @@ export default function ArtifactViewerScreen() {
 const getStyles = (colors: ColorsType) => StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    // Matches BiblicalArtifactsScreen, and matches LoadingScreen's gradient so
+    // there is no white flash between the loader and this screen.
+    backgroundColor: colors.linearGradient[0],
   },
   poiSection: {
     marginBottom: 16,
@@ -1592,7 +1594,9 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   instructionOverlay: {
     position: 'absolute',
-    bottom: 12,
+    // Above the rotate toggle, which owns bottom:12 on the right. Both sat at
+    // the same offset, so the centred pill ran under the button.
+    bottom: 54,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
@@ -1637,6 +1641,9 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   scrollInfo: {
     flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   infoContent: {
     padding: 20,

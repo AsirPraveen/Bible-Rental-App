@@ -346,7 +346,7 @@ const ManageSongsTab = () => {
             <IconButton icon="close" iconColor={colors.text} onPress={() => setModalVisible(false)} />
           </View>
 
-          <ScrollView style={styles.formScroll} contentContainerStyle={[styles.formContent, { paddingBottom: keyboardInset }]}>
+          <ScrollView style={styles.formScroll} contentContainerStyle={[styles.formContent, { paddingBottom: 20 + keyboardInset }]}>
             <Text style={styles.inputLabel}>Tamil Title *</Text>
             <TextInput
               style={styles.input}

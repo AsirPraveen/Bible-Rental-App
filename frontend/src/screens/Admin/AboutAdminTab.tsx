@@ -432,7 +432,7 @@ const AboutAdminTab = () => {
           </TouchableOpacity>
         </Modal>
 
-        <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: keyboardInset }]}>
+        <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 20 + keyboardInset }]}>
           <View style={styles.container}>
             <View style={styles.profileCard}>
               <LinearGradient

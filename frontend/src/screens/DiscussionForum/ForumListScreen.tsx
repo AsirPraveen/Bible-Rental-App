@@ -329,7 +329,7 @@ export default function ForumListScreen() {
         <Modal
           navigationBarTranslucent visible={modalVisible} animationType="fade" transparent={true} statusBarTranslucent={true} onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { paddingBottom: keyboardInset }]}>
+            <View style={[styles.modalContent, { paddingBottom: 22 + keyboardInset }]}>
               {/* Modal header */}
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Ask the Community</Text>

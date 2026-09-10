@@ -33,7 +33,7 @@ export default function FellowshipDetailsScreen() {
   const { user } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  useSystemBars({ top: colors.secondary, bottom: colors.background });
+  useSystemBars({ top: colors.linearGradient[0], bottom: colors.background });
   const { fellowshipId } = route.params || {};
 
   const [fellowship, setFellowship] = useState<FellowshipType | null>(null);
@@ -182,10 +182,10 @@ export default function FellowshipDetailsScreen() {
   return (
     <SafeAreaView
       edges={['left', 'right', 'bottom']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.linearGradient[0] }]}
     >
       <LinearGradient
-        colors={[colors.secondary, colors.primary]}
+        colors={colors.linearGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.header, { paddingTop: insets.top + 14 }]}
@@ -345,6 +345,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#fff',
+  },
+  sheet: {
+    // colour applied inline -- this StyleSheet is static, with no theme access
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   content: { padding: 16, paddingBottom: 40 },
   infoCard: {

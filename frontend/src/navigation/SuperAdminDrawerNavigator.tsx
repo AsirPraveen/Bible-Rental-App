@@ -10,11 +10,13 @@ import { SuperAdminDashboardScreen as SuperAdminDashboard } from '@/screens/Supe
 import { SuperAdminSongsTab } from '@/screens/SuperAdminDashboard';
 import { GuestSettingsTab } from '@/screens/Admin';
 import { ManageMapsTab } from '@/screens/Admin';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SuperAdminDrawer = createDrawerNavigator();
 
 const SuperAdminCustomDrawerContent = (props: any) => {
   const { colors, theme, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const drawerStatus = useDrawerStatus();
 
@@ -38,7 +40,7 @@ const SuperAdminCustomDrawerContent = (props: any) => {
       </DrawerContentScrollView>
 
       {/* Theme Toggle Footer */}
-      <View style={[styles.drawerFooter, { borderTopColor: colors.border }]}>
+      <View style={[styles.drawerFooter, { borderTopColor: colors.border, paddingBottom: 20 + insets.bottom }]}>
         <TouchableOpacity
           onPress={toggleTheme}
           activeOpacity={0.7}

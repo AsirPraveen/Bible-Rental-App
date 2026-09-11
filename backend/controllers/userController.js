@@ -59,13 +59,25 @@ exports.deleteUser = async (req, res) => {
  */
 exports.getAccountDeletionStatus = async (req, res) => {
   try {
-    const blockers = [
-      ...(await findPolicyBlockers(req.user)),
-      ...(await findDeletionBlockers(req.user)),
-    ];
+    // Two different questions, deliberately reported separately.
+    //
+    // featureEnabled answers "is deletion switched on for this member", across
+    // the platform switch and EVERY organization they belong to. When it is
+    // false the app hides the control entirely.
+    //
+    // canDelete additionally covers situations the member can act on — being
+    // the last admin of an organization. Those must still show the button, or
+    // there is no way to learn why deletion is unavailable.
+    const policyBlockers = await findPolicyBlockers(req.user);
+    const accountBlockers = policyBlockers.length === 0
+      ? await findDeletionBlockers(req.user)
+      : [];
+    const blockers = [...policyBlockers, ...accountBlockers];
+
     res.send({
       status: 'Ok',
       data: {
+        featureEnabled: policyBlockers.length === 0,
         canDelete: blockers.length === 0,
         blockers,
         confirmationEmail: req.user.email,

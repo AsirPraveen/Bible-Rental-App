@@ -17,6 +17,7 @@ import { apiClient } from '@/services';
 const DANGER = '#E53935';
 
 type Status = {
+  featureEnabled: boolean;
   canDelete: boolean;
   blockers: string[];
   confirmationEmail: string;
@@ -52,15 +53,22 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
   const [confirmEmail, setConfirmEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // Visibility comes from the SAME endpoint that enforces deletion, not from
+  // /api/app-settings. That route resolves only the ACTIVE organization, so a
+  // member of two orgs where just one has deletion switched off would have
+  // seen the button and then been refused with a 403.
   useEffect(() => {
     let cancelled = false;
     apiClient
-      .get('/api/app-settings')
+      .get('/api/users/account-deletion-status')
       .then((res) => {
-        const settings = res.data?.data ?? res.data;
-        if (!cancelled) setIsEnabled(settings?.isAccountDeletionEnabled !== false);
+        if (cancelled) return;
+        const data = res.data?.status === 'Ok' ? res.data.data : null;
+        setIsEnabled(!!data && data.featureEnabled !== false);
+        // Reuse it when the modal opens, so tapping is instant.
+        if (data) setStatus(data);
       })
-      // On a network failure, stay hidden rather than showing a control that
+      // On a network failure, stay hidden rather than offering a control that
       // would fail at the point of use.
       .catch(() => { if (!cancelled) setIsEnabled(false); });
     return () => { cancelled = true; };
@@ -68,14 +76,24 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
 
   const open = async () => {
     setIsOpen(true);
-    setStatus(null);
     setConfirmEmail('');
     setError(null);
-    setIsChecking(true);
+    // Only show the spinner when there is nothing cached to show meanwhile.
+    setIsChecking(!status);
     try {
       const res = await apiClient.get('/api/users/account-deletion-status');
-      if (res.data.status === 'Ok') setStatus(res.data.data);
-      else setError('Could not check your account. Please try again.');
+      if (res.data.status === 'Ok') {
+        const fresh = res.data.data;
+        setStatus(fresh);
+        // Switched off while the screen sat open: hide it again rather than
+        // offering a button the server would now refuse.
+        if (fresh.featureEnabled === false) {
+          setIsEnabled(false);
+          setIsOpen(false);
+        }
+      } else {
+        setError('Could not check your account. Please try again.');
+      }
     } catch {
       setError('Could not check your account. Please try again.');
     } finally {

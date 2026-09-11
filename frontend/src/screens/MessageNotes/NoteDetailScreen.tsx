@@ -295,10 +295,13 @@ export default function NoteDetailScreen() {
   const metaColor = colors.theme === 'dark' ? colors.tint : (meta?.color || colors.primary);
   const metaBg = colors.theme === 'dark' ? colors.inputBg : (meta?.bg || '#F6F1F1');
 
+  // No top edge below: the header pads itself by the real inset. Claiming the
+  // edge here as well as the header's own paddingTop: 50 stacked two
+  // status-bar allowances and left a band of empty blue above the title.
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+      <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + 12 }]}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -564,7 +567,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
 
   header: {
-    paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20,
+    paddingBottom: 25, paddingHorizontal: 20,
     borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
     elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10,
   },

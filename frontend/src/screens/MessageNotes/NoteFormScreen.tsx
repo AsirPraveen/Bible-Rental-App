@@ -440,14 +440,21 @@ export default function NoteFormScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 + keyboardInset }]}
         keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
         {/* ── Category ── */}
         <Text style={styles.label}>Category</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 2 }}
-        contentContainerStyle={{ paddingBottom: 24 + keyboardInset }}
-      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 2 }}
+          // Deliberately no keyboard inset: this scrolls sideways, so bottom
+          // padding here just makes the chip row taller when the keyboard opens.
+          contentContainerStyle={{ paddingBottom: 4 }}
+        >
           {CATEGORIES.map(cat => {
             const m = CATEGORY_META[cat];
             const active = category === cat;

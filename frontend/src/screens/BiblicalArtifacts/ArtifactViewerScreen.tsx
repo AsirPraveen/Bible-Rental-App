@@ -1413,7 +1413,7 @@ export default function ArtifactViewerScreen() {
 
             {/* Bible Verse Header */}
             <View style={styles.verseBox}>
-              <BookOpen size={16} color="#EA1E63" style={{ marginRight: 6 }} />
+              <BookOpen size={16} color={colors.tint} style={{ marginRight: 6 }} />
               <Text style={styles.verseReference}>{artifact.reference}</Text>
             </View>
 
@@ -1666,7 +1666,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   verseReference: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#EA1E63',
+    color: colors.tint,
   },
   descriptionText: {
     fontSize: 14,

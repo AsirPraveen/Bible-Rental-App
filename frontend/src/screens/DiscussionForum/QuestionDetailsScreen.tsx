@@ -133,8 +133,14 @@ export default function QuestionDetailsScreen() {
         </View>
 
         {/* ── Content ─────────────────────────────────────────── */}
-        <KeyboardAvoidingView 
-          style={styles.container} 
+        <KeyboardAvoidingView
+          style={[
+            styles.container,
+            // behavior={undefined} is a no-op on Android, so the whole content
+            // area is lifted by the measured keyboard height instead. Margin
+            // moves the bar; padding would only make it taller.
+            Platform.OS === 'ios' ? undefined : { marginBottom: keyboardInset },
+          ]}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <FlatList
@@ -200,9 +206,14 @@ export default function QuestionDetailsScreen() {
           />
 
           {/* ── Input area ────────────────────────────────────── */}
+          {/* Padding here only clears the gesture bar. Adding the keyboard
+              height to it grew the bar downwards instead of moving it, which
+              is what hid the lower half of the field behind the keyboard. */}
           <View style={[styles.inputContainer, {
-          paddingBottom: Platform.OS === 'ios' ? 12 : 12 + Math.max(insets.bottom, keyboardInset),
-        }]}>
+            paddingBottom: Platform.OS === 'ios'
+              ? 12
+              : 12 + (keyboardInset > 0 ? 0 : insets.bottom),
+          }]}>
             <TextInput
               style={styles.input}
               placeholder="Write a reply..."

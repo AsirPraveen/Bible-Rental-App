@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
 import AddFastingModal from './components/AddFastingModal';
+import { describeFastType } from './fastTypes';
 import LoadingScreen from '@/components/LoadingScreen';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/config/api';
@@ -77,6 +78,10 @@ export default function FastingTrackerScreen() {
     }
   };
 
+  // Which fast's description is on screen, as { title, body }. The list can
+  // be long, so this is one shared sheet rather than per-row expanding state.
+  const [fastInfo, setFastInfo] = useState<{ title: string; body: string } | null>(null);
+
   const renderItem = ({ item }: { item: any }) => {
     const isEditingAllowed = item.status === 'Active';
     const statusGradient = getStatusColor(item.status);
@@ -86,7 +91,25 @@ export default function FastingTrackerScreen() {
         <LinearGradient colors={colors.theme === 'dark' ? [colors.cardBg, colors.cardBg] : ['#ffffff', '#f8fdfd']} style={styles.card}>
           <View style={styles.header}>
             <View style={styles.typeContainer}>
-              <Text style={styles.type}>{item.type}</Text>
+              <View style={styles.typeRow}>
+                <Text style={styles.type}>{item.type}</Text>
+                {/* Only the named fasts have a definition; "Others" is
+                    whatever the member typed, so there is nothing to show. */}
+                {!!describeFastType(item.type) && (
+                  <TouchableOpacity
+                    onPress={() => setFastInfo({
+                      title: item.type,
+                      body: describeFastType(item.type) as string,
+                    })}
+                    hitSlop={10}
+                    style={styles.infoButton}
+                    accessibilityRole="button"
+                    accessibilityLabel={`What is a ${item.type}?`}
+                  >
+                    <Info size={14} color={colors.tint} />
+                  </TouchableOpacity>
+                )}
+              </View>
               {item.type === 'Others' && item.customType ? (
                 <Text style={styles.customType}>({item.customType})</Text>
               ) : null}
@@ -190,7 +213,27 @@ export default function FastingTrackerScreen() {
           )}
         </View>
 
-        <AddFastingModal 
+        <Modal
+        visible={!!fastInfo}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        navigationBarTranslucent
+        onRequestClose={() => setFastInfo(null)}
+      >
+        <View style={styles.infoOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFastInfo(null)} />
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>{fastInfo?.title}</Text>
+            <Text style={styles.infoBody}>{fastInfo?.body}</Text>
+            <TouchableOpacity style={styles.infoClose} onPress={() => setFastInfo(null)}>
+              <Text style={styles.infoCloseText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <AddFastingModal 
           visible={modalVisible} 
           onClose={() => setModalVisible(false)} 
           onSuccess={fetchPlans} 
@@ -292,6 +335,47 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     flex: 1,
     paddingRight: 10,
   },
+  typeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoButton: {
+    marginLeft: 6,
+    padding: 2,
+  },
+  infoOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  infoCard: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 20,
+    backgroundColor: colors.cardBg,
+  },
+  infoTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.tint,
+    marginBottom: 10,
+  },
+  infoBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.text,
+  },
+  infoClose: {
+    marginTop: 18,
+    alignSelf: 'flex-end',
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+  },
+  infoCloseText: { color: colors.textLight, fontWeight: '700' },
   type: {
     fontSize: 20,
     fontWeight: '800',

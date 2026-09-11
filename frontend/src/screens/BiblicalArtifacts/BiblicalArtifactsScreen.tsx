@@ -57,22 +57,26 @@ export default function BiblicalArtifactsScreen() {
 
   const renderArtifactItem = ({ item }: { item: any }) => {
     // Custom category colors for premium aesthetic
+    // One blue family rather than seven unrelated hues (gold, green, red,
+    // brown, maroon, purple), which made the screen look like a different app
+    // from the rest. The shades stay far enough apart to tell categories
+    // apart, but all sit in the house blue/teal range.
     const categoryColors: Record<string, string> = {
-      'Tabernacle': '#D4AF37',
-      'Genesis': '#2E7D32',
-      'Temple': '#C62828',
-      'Exodus': '#92400E',
-      'Gospels': '#0E7490',
-      'Passion': '#7B1E3A',
-      'Apostles': '#4C1D95',
+      'Tabernacle': '#146C94',
+      'Genesis': '#0E7490',
+      'Temple': '#1E40AF',
+      'Exodus': '#0369A1',
+      'Gospels': '#0891B2',
+      'Passion': '#1E3A8A',
+      'Apostles': '#3730A3',
       // Category names used by the original seed, kept so older data still
-      // renders with its own colour rather than falling back to gold.
-      'Israel': '#92400E',
-      'Gospel': '#0E7490',
-      'Acts': '#4C1D95',
-      'General': '#1565C0',
+      // renders with its own colour rather than falling back to the default.
+      'Israel': '#0369A1',
+      'Gospel': '#0891B2',
+      'Acts': '#3730A3',
     };
-    const color = categoryColors[item.category] || '#D4AF37';
+
+    const color = categoryColors[item.category] || '#146C94';
 
     return (
       <TouchableOpacity
@@ -94,7 +98,7 @@ export default function BiblicalArtifactsScreen() {
         >
           {/* Card Icon & Accent Header */}
           <View style={styles.cardHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.theme === 'dark' ? 'rgba(212, 175, 55, 0.12)' : '#FEF3C7' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.12)' : '#DDF2FD' }]}>
               <Box color={color} size={28} />
             </View>
             <View style={[styles.categoryBadge, { backgroundColor: color }]}>
@@ -106,7 +110,7 @@ export default function BiblicalArtifactsScreen() {
           <View style={styles.cardBody}>
             <Text style={styles.cardName}>{item.name}</Text>
             <View style={styles.referenceContainer}>
-              <BookOpen size={14} color="#EA1E63" style={{ marginRight: 4 }} />
+              <BookOpen size={14} color={colors.tint} style={{ marginRight: 4 }} />
               <Text style={styles.cardReference}>{item.reference}</Text>
             </View>
             <Text style={styles.cardDesc} numberOfLines={3}>
@@ -389,7 +393,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   cardReference: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#EA1E63',
+    color: colors.tint,
   },
   cardDesc: {
     fontSize: 13,

@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import { apiClient } from '@/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ColorsType } from '@/context/ThemeContext';
+import { FAST_TYPES } from '../fastTypes';
 import { API_BASE_URL } from '@/config/api';
 import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 /**
@@ -13,75 +14,7 @@ import { useKeyboardInset } from '@/hooks/useKeyboardInset';
  * from. Shown under the picker so someone choosing a fast knows what they are
  * committing to rather than guessing from the name.
  */
-const FAST_TYPES: { label: string; value: string; description: string }[] = [
-  {
-    label: 'Daniel Fast',
-    value: 'Daniel Fast',
-    description:
-      'Vegetables, fruit and water only — no meat, bread or wine.\nDaniel 1:12 and 10:2-3.',
-  },
-  {
-    label: 'Partial Fast',
-    value: 'Partial Fast',
-    description:
-      'Giving up certain foods, or eating only within set hours.\nDaniel 10:2-3.',
-  },
-  {
-    label: 'Water Fast',
-    value: 'Water Fast',
-    description:
-      'No food, water only, for a set number of days.\nMatthew 4:2.',
-  },
-  {
-    label: 'Absolute Fast',
-    value: 'Absolute Fast',
-    description:
-      'Neither food nor water. Kept short, and undertaken with care.\nEsther 4:16; Acts 9:9.',
-  },
-  {
-    label: 'Esther Fast',
-    value: 'Esther Fast',
-    description:
-      'Three days without food or water, sought for deliverance.\nEsther 4:16.',
-  },
-  {
-    label: 'Corporate Fast',
-    value: 'Corporate Fast',
-    description:
-      'A congregation fasting together for a shared purpose.\nJoel 2:15-16; Acts 13:2-3.',
-  },
-  {
-    label: 'Elijah Fast',
-    value: 'Elijah Fast',
-    description:
-      'Rest and simple food while recovering from exhaustion.\n1 Kings 19:4-8.',
-  },
-  {
-    label: 'Sunrise to Sunset Fast',
-    value: 'Sunrise to Sunset Fast',
-    description:
-      'No food from dawn until evening, then a simple meal.\nJudges 20:26; 2 Samuel 1:12.',
-  },
-  {
-    label: 'Ezra Fast',
-    value: 'Ezra Fast',
-    description:
-      "Seeking God's protection and direction before a decision.\nEzra 8:21-23.",
-  },
-  {
-    label: 'Ninevite Fast',
-    value: 'Ninevite Fast',
-    description:
-      'A whole community turning back to God, food and drink set aside.\nJonah 3:5-8.',
-  },
-  {
-    label: 'Nazirite Vow',
-    value: 'Nazirite Vow',
-    description:
-      'Abstaining from wine and grape products for a set season.\nNumbers 6:1-4.',
-  },
-  { label: 'Others', value: 'Others', description: '' },
-];
+
 
 export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
   const keyboardInset = useKeyboardInset();
@@ -222,10 +155,22 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Start a Fast</Text>
 
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" nestedScrollEnabled
+          {/* While a dropdown is open the parent must stop scrolling, or it
+              swallows the drag and the option list cannot be scrolled at all.
+              nestedScrollEnabled alone was not enough inside a Modal. */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            scrollEnabled={!openType && !openNotify}
           >
             <Text style={styles.label}>Fast Type</Text>
-            <View style={{ zIndex: 1000 }}>
+            <View style={{
+              zIndex: 1000,
+              // The description sits directly under the field when there is
+              // one, so the field's own bottom margin would double the gap.
+              marginBottom: FAST_TYPES.find(f => f.value === type)?.description ? 0 : 16,
+            }}>
               <DropDownPicker
                 open={openType}
                 value={type}
@@ -290,7 +235,7 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
             </TouchableOpacity>
 
             <Text style={styles.label}>Alert Me</Text>
-            <View style={{ zIndex: 900 }}>
+            <View style={{ zIndex: 900, marginBottom: 16 }}>
               <DropDownPicker
                 open={openNotify}
                 value={notifyInterval}
@@ -395,8 +340,8 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     fontWeight: '600',
   },
   fastInfoBox: {
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 6,
+    marginBottom: 16,
     padding: 10,
     borderRadius: 8,
     borderLeftWidth: 3,
@@ -410,7 +355,6 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   dropdown: {
     borderColor: colors.border,
-    marginBottom: 16,
     backgroundColor: colors.inputBg,
   },
   input: {

@@ -14,12 +14,6 @@ router.put('/notification-settings', auth, userController.updateNotificationSett
 router.post('/toggle-liked-verse', auth, userController.toggleLikedVerse);
 router.post('/toggle-liked-song', auth, orgScope, userController.toggleLikedSong);
 
-// Self-service account deletion (Google Play requirement). Scoped to the
-// caller's own account — deliberately not org-scoped, since an account can
-// span several organizations and all of it goes.
-router.get('/account-deletion-status', auth, userController.getAccountDeletionStatus);
-router.delete('/me', auth, userController.deleteOwnAccount);
-
 // Admin only routes
 router.get('/get-all-user', auth, orgScope, adminAuth, userController.getAllUsers);
 router.post('/delete-user', auth, orgScope, adminAuth, userController.deleteUser);

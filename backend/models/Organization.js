@@ -30,6 +30,10 @@ const organizationSchema = new mongoose.Schema({
 
     // Surfaced to the client as isGameEnabled / isImageGenEnabled.
     game: { type: Boolean, default: true },
+
+    // Lets members delete their own account. Effective only while the platform
+    // switch (AppSettings.isAccountDeletionEnabled) is also on.
+    accountDeletion: { type: Boolean, default: true },
     imageGeneration: { type: Boolean, default: true },
 
     // Gate the cards on the Stuff screen. PascalCase keys match the screen

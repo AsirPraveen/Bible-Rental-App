@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { SuperAdminDashboardScreen as SuperAdminDashboard } from '@/screens/SuperAdminDashboard';
 import { SuperAdminSongsTab } from '@/screens/SuperAdminDashboard';
 import { GuestSettingsTab } from '@/screens/Admin';
+import { PlatformSettingsScreen } from '@/screens/PlatformSettings';
 import { ManageMapsTab } from '@/screens/Admin';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -114,6 +115,19 @@ const SuperAdminDrawerNavigator = () => {
           drawerIcon: ({ focused, size }) => (
             <Icon
               name="account-cog-outline"
+              size={size}
+              color={focused ? colors.tint : colors.textSecondary}
+            />
+          ),
+        }}
+      />
+      <SuperAdminDrawer.Screen
+        name="Platform Settings"
+        component={PlatformSettingsScreen}
+        options={{
+          drawerIcon: ({ focused, size }) => (
+            <Icon
+              name="tune-variant"
               size={size}
               color={focused ? colors.tint : colors.textSecondary}
             />

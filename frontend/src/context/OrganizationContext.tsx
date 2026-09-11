@@ -29,6 +29,8 @@ export type Organization = {
     upperRoom: boolean;
     game: boolean;
     imageGeneration: boolean;
+    /** Members may delete their own account, unless the platform switch is off. */
+    accountDeletion: boolean;
     Bible: boolean;
     Songs: boolean;
     HistoricalMaps: boolean;

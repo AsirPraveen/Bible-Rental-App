@@ -1,5 +1,7 @@
 require('dotenv').config();
 const User = require('../models/UserDetails');
+const { findDeletionBlockers, deleteAccount } = require('../services/accountDeletionService');
+const { findPolicyBlockers } = require('../services/accountDeletionPolicy');
 
 exports.updateUser = async (req, res) => {
   const { name, mobile, gender, profession, image } = req.body;
@@ -45,6 +47,87 @@ exports.deleteUser = async (req, res) => {
     res.send({ status: "Ok", data: "User removed from this organization" });
   } catch (error) {
     res.send({ error });
+  }
+};
+
+/**
+ * Tells the app whether this account can be deleted, and what it will cost.
+ *
+ * The confirmation screen calls this first so a member who cannot delete yet
+ * (the only admin of an organization, say) is told before typing anything,
+ * rather than after.
+ */
+exports.getAccountDeletionStatus = async (req, res) => {
+  try {
+    const blockers = [
+      ...(await findPolicyBlockers(req.user)),
+      ...(await findDeletionBlockers(req.user)),
+    ];
+    res.send({
+      status: 'Ok',
+      data: {
+        canDelete: blockers.length === 0,
+        blockers,
+        confirmationEmail: req.user.email,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to check account deletion status:', error);
+    res.status(500).send({ status: 'error', message: 'Could not check the account.' });
+  }
+};
+
+/**
+ * Deletes the signed-in user's own account. Required by Google Play for any
+ * app that lets people create an account.
+ *
+ * Deliberately scoped to `req.user` and never to an id from the body: an
+ * endpoint that deletes whoever the caller names is a takeover waiting to
+ * happen. Admin removal stays in deleteUser, which is a different operation
+ * (it drops an org membership rather than erasing an account).
+ *
+ * The caller must retype their own email address. Deletion is irreversible
+ * and there is no undo, so a mistyped confirmation is far cheaper than a
+ * mis-tapped button.
+ */
+exports.deleteOwnAccount = async (req, res) => {
+  try {
+    const { confirmEmail } = req.body;
+
+    if (
+      typeof confirmEmail !== 'string' ||
+      confirmEmail.trim().toLowerCase() !== String(req.user.email).toLowerCase()
+    ) {
+      return res.status(400).send({
+        status: 'error',
+        message: 'Type your email address exactly to confirm.',
+      });
+    }
+
+    const policyBlockers = await findPolicyBlockers(req.user);
+    if (policyBlockers.length > 0) {
+      return res.status(403).send({
+        status: 'error',
+        message: policyBlockers[0],
+        blockers: policyBlockers,
+      });
+    }
+
+    const blockers = await findDeletionBlockers(req.user);
+    if (blockers.length > 0) {
+      return res.status(409).send({ status: 'error', message: blockers[0], blockers });
+    }
+
+    await deleteAccount(req.user);
+
+    console.log(`[Account] Deleted account ${req.user._id}`);
+    res.send({ status: 'Ok', data: 'Your account and personal data have been deleted.' });
+  } catch (error) {
+    console.error('Failed to delete account:', error);
+    res.status(500).send({
+      status: 'error',
+      message: 'Could not delete the account. Nothing was removed — please try again.',
+    });
   }
 };
 

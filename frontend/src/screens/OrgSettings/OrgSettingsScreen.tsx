@@ -30,6 +30,11 @@ export default function OrgSettingsScreen({ navigation }: any) {
   const [songs, setSongs] = useState(true);
   const [game, setGame] = useState(true);
   const [imageGeneration, setImageGeneration] = useState(true);
+  const [accountDeletion, setAccountDeletion] = useState(true);
+  // The platform master switch. When the app administrator has turned account
+  // deletion off, this org's toggle cannot re-enable it, so it is shown locked
+  // with the reason rather than hidden or silently ineffective.
+  const [deletionAllowedGlobally, setDeletionAllowedGlobally] = useState(true);
   
 
 
@@ -51,10 +56,25 @@ export default function OrgSettingsScreen({ navigation }: any) {
       setSongs(activeOrg.features?.Songs ?? true);
       setGame(activeOrg.features?.game ?? true);
       setImageGeneration(activeOrg.features?.imageGeneration ?? true);
+      setAccountDeletion(activeOrg.features?.accountDeletion ?? true);
 
 
     }
   }, [activeOrg]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get('/api/app-settings')
+      .then((res) => {
+        const settings = res.data?.data ?? res.data;
+        if (!cancelled) {
+          setDeletionAllowedGlobally(settings?.isAccountDeletionEnabledGlobal !== false);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const handleCopyInvite = async () => {
     if (inviteCode) {
@@ -102,6 +122,7 @@ export default function OrgSettingsScreen({ navigation }: any) {
           Songs: songs,
           game,
           imageGeneration,
+          accountDeletion,
         }
       });
 
@@ -210,6 +231,22 @@ export default function OrgSettingsScreen({ navigation }: any) {
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>AI Verse Image Generator</Text>
                 <Switch value={imageGeneration} onValueChange={setImageGeneration} trackColor={{ false: colors.border, true: colors.tint }} />
+              </View>
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={styles.toggleLabel}>Members Can Delete Their Account</Text>
+                  {!deletionAllowedGlobally && (
+                    <Text style={styles.toggleLockNote}>
+                      Turned off for the whole app by the app administrator.
+                    </Text>
+                  )}
+                </View>
+                <Switch
+                  value={accountDeletion && deletionAllowedGlobally}
+                  onValueChange={setAccountDeletion}
+                  disabled={!deletionAllowedGlobally}
+                  trackColor={{ false: colors.border, true: colors.tint }}
+                />
               </View>
             </View>
 
@@ -362,6 +399,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
+  },
+  toggleLockNote: {
+    marginTop: 3,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.textSecondary,
   },
   toggleSub: {
     fontSize: 11,

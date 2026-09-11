@@ -1,5 +1,6 @@
 const AppSettings = require('../models/AppSettings');
 const Organization = require('../models/Organization');
+const { isGloballyEnabled } = require('../services/accountDeletionPolicy');
 
 const DEFAULT_FEATURES = {
   Bible: true,
@@ -19,6 +20,7 @@ const DEFAULT_FEATURES = {
 const getAppSettings = async (req, res) => {
   try {
     const orgId = req.headers['x-organization-id'];
+    const deletionGlobal = await isGloballyEnabled();
     
     // Default global settings
     let globalSettings = await AppSettings.findOne();
@@ -42,6 +44,12 @@ const getAppSettings = async (req, res) => {
               ? org.isGuestLoginEnabled
               : globalSettings.isGuestLoginEnabled,
             isGameEnabled: org.features?.game !== false,
+            // AND rather than the fallback used above: an org cannot re-enable
+            // deletion once the platform switch is off.
+            isAccountDeletionEnabled:
+              deletionGlobal && org.features?.accountDeletion !== false,
+            // Lets the org admin screen explain WHY its toggle is locked.
+            isAccountDeletionEnabledGlobal: deletionGlobal,
             isImageGenEnabled: org.features?.imageGeneration !== false,
             guestAccess: org.guestAccess || globalSettings.guestAccess,
             features
@@ -56,6 +64,8 @@ const getAppSettings = async (req, res) => {
       data: {
         isGuestLoginEnabled: globalSettings.isGuestLoginEnabled,
         isGameEnabled: globalSettings.isGameEnabled !== false,
+        isAccountDeletionEnabled: deletionGlobal,
+        isAccountDeletionEnabledGlobal: deletionGlobal,
         isImageGenEnabled: globalSettings.isImageGenEnabled !== false,
         guestAccess: globalSettings.guestAccess,
         features: DEFAULT_FEATURES
@@ -120,7 +130,10 @@ const updateOrgSettings = async (req, res) => {
  */
 const updateGlobalSettings = async (req, res) => {
   try {
-    const { isGameEnabled, isImageGenEnabled, isGuestLoginEnabled, guestAccess } = req.body;
+    const {
+      isGameEnabled, isImageGenEnabled, isGuestLoginEnabled, guestAccess,
+      isAccountDeletionEnabled,
+    } = req.body;
 
     let settings = await AppSettings.findOne();
     if (!settings) settings = new AppSettings();
@@ -128,6 +141,9 @@ const updateGlobalSettings = async (req, res) => {
     if (isGuestLoginEnabled !== undefined) settings.isGuestLoginEnabled = isGuestLoginEnabled;
     if (isGameEnabled !== undefined) settings.isGameEnabled = isGameEnabled;
     if (isImageGenEnabled !== undefined) settings.isImageGenEnabled = isImageGenEnabled;
+    if (isAccountDeletionEnabled !== undefined) {
+      settings.isAccountDeletionEnabled = isAccountDeletionEnabled;
+    }
     if (guestAccess && typeof guestAccess === 'object') {
       settings.guestAccess = { ...settings.guestAccess, ...guestAccess };
     }

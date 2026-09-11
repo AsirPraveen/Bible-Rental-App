@@ -147,6 +147,7 @@ export default function PocketVersePicker({ visible, onClose, onSelect }: Props)
     if (step === 'language') {
       return (
         <FlatList
+          key="languages"
           data={languages}
           keyExtractor={(item) => item}
           renderItem={({ item }) => (
@@ -162,6 +163,7 @@ export default function PocketVersePicker({ visible, onClose, onSelect }: Props)
     if (step === 'book') {
       return (
         <FlatList
+          key="books"
           data={books}
           keyExtractor={(item) => `${item.bookNumber}`}
           renderItem={({ item }) => (
@@ -178,6 +180,12 @@ export default function PocketVersePicker({ visible, onClose, onSelect }: Props)
       const chapters = Array.from({ length: book?.chapterCount || 0 }, (_, i) => i + 1);
       return (
         <FlatList
+          // Every step renders a FlatList at this same position, so React
+          // reuses one instance. Moving from the single-column book list to
+          // this 5-column grid then trips RN's "Changing numColumns on the fly
+          // is not supported" invariant and closes the app. Distinct keys force
+          // a fresh instance per step instead.
+          key="chapters"
           data={chapters}
           keyExtractor={(item) => `${item}`}
           numColumns={5}
@@ -194,6 +202,7 @@ export default function PocketVersePicker({ visible, onClose, onSelect }: Props)
 
     return (
       <FlatList
+        key="verses"
         data={verses}
         keyExtractor={(item) => `${item.verseNumber}`}
         renderItem={({ item }) => (

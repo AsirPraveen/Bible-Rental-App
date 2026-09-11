@@ -5,6 +5,7 @@ import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '@/services';
 import { trackLikeSync } from '../../utils/likeSync';
+import * as Clipboard from 'expo-clipboard';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import LoadingScreen from '@/components/LoadingScreen';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -68,19 +69,10 @@ export default function SongDetailsScreen() {
     };
     const checkIfLiked = async () => {
       try {
-        const token = await AsyncStorage.getItem('token');
-        if (token) {
-          const response = await apiClient.post(`/api/auth/userdata`, { token });
-          if (response.data.status === 'Ok') {
-            const data = response.data.data;
-            if (data.likedSongs) {
-              await AsyncStorage.setItem('@liked_songs', JSON.stringify(data.likedSongs));
-              applyLiked(data.likedSongs.some((s: any) => s._id === songId));
-              return;
-            }
-          }
-        }
-        
+        // Local first. The stored list is already correct in the overwhelming
+        // majority of cases, and reading it is instant — waiting on the server
+        // before painting is what made an already-liked song show an empty
+        // heart for the first second after opening the screen.
         const savedLikedSongs = await AsyncStorage.getItem('@liked_songs');
         if (savedLikedSongs) {
           const parsed = JSON.parse(savedLikedSongs);
@@ -88,17 +80,37 @@ export default function SongDetailsScreen() {
             applyLiked(parsed.some((s: any) => s._id === songId));
           }
         }
+
+        // Then reconcile with the server, which is authoritative across
+        // devices. applyLiked still refuses to overwrite a tap made meanwhile.
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const response = await apiClient.post(`/api/auth/userdata`, { token });
+          if (response.data.status === 'Ok') {
+            const data = response.data.data;
+            // Only trust the server list while the user has not just changed
+            // it. This response was in flight before their tap, so writing it
+            // to storage would erase the like they just made — which is why a
+            // newly liked song went missing from the wishlist until the next
+            // server round trip. applyLiked already guards the UI; the storage
+            // write needs the same guard.
+            if (data.likedSongs && !likeTouchedRef.current && !cancelled) {
+              await AsyncStorage.setItem('@liked_songs', JSON.stringify(data.likedSongs));
+              applyLiked(data.likedSongs.some((s: any) => s._id === songId));
+            }
+          }
+        }
       } catch (err) {
         console.error('Error checking liked songs:', err);
       }
     };
-    if (song) {
-      checkIfLiked();
-    }
+    // Deliberately not waiting for `song` to load: the heart only needs
+    // songId, and gating on the song fetch delayed it by a second round trip.
+    checkIfLiked();
     return () => {
       cancelled = true;
     };
-  }, [songId, song]);
+  }, [songId]);
 
   const toggleLikeSong = async () => {
     if (!song) return;
@@ -135,6 +147,28 @@ export default function SongDetailsScreen() {
     } catch (err) {
       console.error('Error toggling song like:', err);
     }
+  };
+
+  const [copied, setCopied] = useState(false);
+
+  /** Copies the lyrics in the language currently on screen, titled. */
+  const handleCopyLyrics = async () => {
+    if (!song) return;
+    const title = language === 'Tamil'
+      ? (song.titleTamil || song.titleEnglish)
+      : (song.titleEnglish || song.titleTamil);
+    const body = language === 'Tamil'
+      ? (song.lyricsTamil || song.lyricsEnglish)
+      : (song.lyricsEnglish || song.lyricsTamil);
+    if (!body) return;
+
+    await Clipboard.setStringAsync(`${title}
+
+${body}`);
+    // A tick in place of the icon says "done" without a toast covering the
+    // lyrics the user is about to paste.
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
   };
 
   const handleZoomIn = () => setFontSize(prev => Math.min(prev + 2, 32));
@@ -216,6 +250,20 @@ export default function SongDetailsScreen() {
         </Text>
 
         <View style={styles.lyricsCard}>
+          <TouchableOpacity
+            style={styles.copyButton}
+            onPress={handleCopyLyrics}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Copy lyrics with title"
+          >
+            <MaterialCommunityIcons
+              name={copied ? 'check' : 'content-copy'}
+              size={18}
+              color={copied ? '#2E7D32' : colors.textSecondary}
+            />
+          </TouchableOpacity>
+
           <Text style={[styles.lyrics, { fontSize }]}>
             {language === 'Tamil' ? (song.lyricsTamil || song.lyricsEnglish) : song.lyricsEnglish}
           </Text>
@@ -401,7 +449,19 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  copyButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 2,
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: colors.theme === 'dark'
+      ? 'rgba(255,255,255,0.06)'
+      : 'rgba(0,0,0,0.04)',
+  },
   lyricsCard: {
+    position: 'relative',
     backgroundColor: colors.cardBg,
     borderRadius: 16,
     padding: 24,
@@ -413,6 +473,7 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     marginBottom: 20,
   },
   lyrics: {
+    paddingTop: 4,
     lineHeight: 32,
     color: colors.text,
     textAlign: 'center',

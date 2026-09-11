@@ -87,6 +87,10 @@ const BibleComponent = () => {
   // a different word is looked up.
   const [dictBookMeaning, setDictBookMeaning] = useState('');
   const [dictAiMeaning, setDictAiMeaning] = useState('');
+  // Null until we have asked. False means the dictionary had nothing for this
+  // word and the server fell back to AI, so there is no second source to
+  // switch to and the tag must not act like a toggle.
+  const [hasBookEntry, setHasBookEntry] = useState<boolean | null>(null);
   const [confirmWord, setConfirmWord] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
 
@@ -875,8 +879,11 @@ const BibleComponent = () => {
   // Switches the open lookup between the dictionary answer and the AI answer.
   // Whichever side is already cached for this word is shown instantly; only a
   // side we have never fetched costs a request.
+  /** False when the tag is a label rather than a switch. */
+  const canToggleDictSource = !(dictSource === 'ai' && hasBookEntry === false);
+
   const toggleDictSource = () => {
-    if (loadingMeaning) return;
+    if (loadingMeaning || !canToggleDictSource) return;
     if (dictSource === 'ai') {
       if (dictBookMeaning) {
         setDictMeaning(dictBookMeaning);
@@ -911,7 +918,10 @@ const BibleComponent = () => {
           // A different word: drop the previous word's cached answers.
           setDictBookMeaning('');
           setDictAiMeaning('');
+          setHasBookEntry(null);
         }
+        // An unforced request answered by AI means the dictionary had no entry.
+        if (!forceAi) setHasBookEntry(source === 'dictionary');
         if (source === 'ai') setDictAiMeaning(meaning);
         else setDictBookMeaning(meaning);
         setDictWord(word);
@@ -1960,8 +1970,8 @@ const BibleComponent = () => {
                   <TouchableOpacity
                     style={[styles.aiTag, dictSource !== 'ai' && styles.aiTagOff]}
                     onPress={toggleDictSource}
-                    disabled={loadingMeaning}
-                    accessibilityRole="switch"
+                    disabled={loadingMeaning || !canToggleDictSource}
+                    accessibilityRole={canToggleDictSource ? 'switch' : 'text'}
                     accessibilityState={{ checked: dictSource === 'ai' }}
                     accessibilityLabel="Explain this word with AI"
                   >
@@ -1978,7 +1988,13 @@ const BibleComponent = () => {
                           AI
                         </Text>
                         {dictSource !== 'ai' && (
-                          <Text style={[styles.aiTagText, styles.aiTagTextOff, styles.aiTagCross]}>
+                          // Absolutely positioned so the cross sits ON the
+                          // letters — "AI" struck through — rather than reading
+                          // as the two separate glyphs "AI X".
+                          <Text
+                            pointerEvents="none"
+                            style={[styles.aiTagText, styles.aiTagTextOff, styles.aiTagCross]}
+                          >
                             &#10005;
                           </Text>
                         )}
@@ -2601,10 +2617,16 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   aiTagRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   aiTagCross: {
-    marginLeft: 3,
-    fontSize: 10,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 15,
+    opacity: 0.9,
   },
   aiTag: {
     position: 'absolute',

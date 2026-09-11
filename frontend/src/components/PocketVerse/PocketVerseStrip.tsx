@@ -140,7 +140,11 @@ const getStyles = (colors: any) =>
     empty: {
       justifyContent: 'center',
       borderStyle: 'dashed',
-      backgroundColor: 'transparent',
+      // No transparent background here: the strip sits directly on the header
+      // gradient, whose first stop in light mode is the very colour of
+      // colors.tint — the prompt was invisible against it. Keeping the surface
+      // from `strip` gives the text something to sit on in both themes.
+      borderColor: colors.tint,
     },
     emptyText: {
       marginLeft: 8,

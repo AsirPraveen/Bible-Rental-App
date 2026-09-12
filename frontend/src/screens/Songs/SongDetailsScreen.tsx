@@ -309,11 +309,13 @@ ${body}`);
             ]}
           >
             <YoutubePlayer
-              // rel:false keeps the end screen to this channel instead of
-              // offering unrelated videos; modestbranding trims the chrome.
-              // (YouTube no longer honours rel=0 as "no suggestions at all",
-              // so this narrows them rather than removing them entirely.)
-              initialPlayerParams={{ rel: false, modestbranding: true }}
+              // YouTube dropped rel=0 as "no related videos" — it now only
+              // limits them to the same channel. The way to keep the player on
+              // this song alone is to give it a playlist containing just this
+              // video: the end screen then replays it instead of showing a
+              // grid of other videos. modestbranding trims the chrome.
+              playList={[videoId]}
+              initialPlayerParams={{ rel: false, modestbranding: true, loop: true }}
               onError={() => setVideoUnavailable(true)}
               onReady={() => setVideoReady(true)}
               height={(width - 32) * 0.5625}

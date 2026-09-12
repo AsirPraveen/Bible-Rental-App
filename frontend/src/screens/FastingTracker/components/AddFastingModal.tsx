@@ -155,14 +155,9 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Start a Fast</Text>
 
-          {/* While a dropdown is open the parent must stop scrolling, or it
-              swallows the drag and the option list cannot be scrolled at all.
-              nestedScrollEnabled alone was not enough inside a Modal. */}
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-            scrollEnabled={!openType && !openNotify}
           >
             <Text style={styles.label}>Fast Type</Text>
             <View style={{
@@ -183,17 +178,22 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
                 placeholderStyle={{ color: colors.textSecondary }}
                 zIndex={1000}
                 zIndexInverse={3000}
-                // Inline dropdown, capped so a long list scrolls in place. It
-                // needs FLATLIST plus nestedScrollEnabled on the parent
-                // ScrollView; with SCROLLVIEW the nested gesture never reaches
-                // the list and it could not be scrolled at all.
-                listMode="FLATLIST"
+                // MODAL rather than an inline list. Inline was tried twice —
+                // FLATLIST with nestedScrollEnabled, then disabling the parent
+                // ScrollView while open — and on device the options still could
+                // not be scrolled: this picker is already inside a Modal, and
+                // the nested scroll gesture never reaches the list there.
+                // MODAL gives the options their own scrollable surface, which
+                // does not depend on nested-scroll behaviour at all.
+                listMode="MODAL"
+                modalTitle="Fast Type"
+                modalProps={{ animationType: 'slide', statusBarTranslucent: true }}
+                modalContentContainerStyle={{ backgroundColor: colors.background }}
                 dropDownContainerStyle={{
                   backgroundColor: colors.cardBg,
                   borderColor: colors.border,
                   maxHeight: 220,
                 }}
-                flatListProps={{ nestedScrollEnabled: true }}
               />
             </View>
 
@@ -243,13 +243,16 @@ export default function AddFastingModal({ visible, onClose, onSuccess }: any) {
                 setOpen={setOpenNotify}
                 setValue={setNotifyInterval}
                 setItems={setNotifyItems}
+                listMode="MODAL"
+                modalTitle="Alert Me"
+                modalProps={{ animationType: 'slide', statusBarTranslucent: true }}
+                modalContentContainerStyle={{ backgroundColor: colors.background }}
                 style={[styles.dropdown, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
                 textStyle={{ color: colors.text }}
                 dropDownContainerStyle={{ backgroundColor: colors.cardBg, borderColor: colors.border }}
                 placeholderStyle={{ color: colors.textSecondary }}
                 zIndex={900}
                 zIndexInverse={2000}
-                listMode="SCROLLVIEW"
               />
             </View>
 

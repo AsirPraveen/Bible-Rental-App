@@ -51,8 +51,13 @@ export default function PrayerRequestsScreen() {
     fetchUserAndRequests();
   }, []);
 
+  // Which request is mid-toggle. Keyed by id rather than a single boolean so
+  // one pending tap does not freeze every other card's button.
+  const [prayingId, setPrayingId] = useState<string | null>(null);
+
   const handlePray = async (id: string) => {
-    if (!currentUserId) return;
+    if (!currentUserId || prayingId) return;
+    setPrayingId(id);
     try {
       const res = await apiClient.put(`/api/prayer-requests/${id}/pray`, { userId: currentUserId });
       if (res.data.status === 'Success') {
@@ -73,6 +78,8 @@ export default function PrayerRequestsScreen() {
       }
     } catch (error) {
       console.error('Error incrementing pray count', error);
+    } finally {
+      setPrayingId(null);
     }
   };
 
@@ -94,6 +101,7 @@ export default function PrayerRequestsScreen() {
         <View style={styles.footer}>
           <TouchableOpacity 
             style={[styles.prayButton, hasPrayed ? styles.prayButtonActive : styles.prayButtonInactive]} 
+            disabled={prayingId === item._id}
             onPress={() => {
               if (isGuest) {
                 Alert.alert('Login Required', 'Please login to pray for requests.');
@@ -102,7 +110,13 @@ export default function PrayerRequestsScreen() {
               handlePray(item._id);
             }}
           >
-            <Heart color={hasPrayed ? "#fff" : colors.primary} size={16} fill={hasPrayed ? "#fff" : "transparent"} />
+            {/* The spinner replaces the heart rather than the whole label, so
+                the button keeps its width and the row does not jump. */}
+            {prayingId === item._id ? (
+              <ActivityIndicator size="small" color={hasPrayed ? '#fff' : colors.primary} />
+            ) : (
+              <Heart color={hasPrayed ? "#fff" : colors.primary} size={16} fill={hasPrayed ? "#fff" : "transparent"} />
+            )}
             <Text style={[styles.prayText, hasPrayed ? styles.prayTextActive : styles.prayTextInactive]}>
               {hasPrayed ? 'Praying' : 'Pray'} ({prayCount})
             </Text>

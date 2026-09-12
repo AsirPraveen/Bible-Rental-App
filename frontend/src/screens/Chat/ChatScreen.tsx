@@ -1253,6 +1253,11 @@ export default function ChatScreen() {
       )}
 
       <KeyboardAvoidingView
+        // On Android behavior={undefined} is a no-op, so nothing here lifted
+        // the input bar at all — the bar simply stayed under the keyboard.
+        // The measured keyboard height is applied as a margin instead; padding
+        // would only make the bar taller.
+        style={Platform.OS === 'ios' ? undefined : { marginBottom: keyboardInset }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, Pressable, Platform, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Heart } from 'lucide-react-native';
+import { ArrowLeft, Heart, Copy, Check } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '@/services';
 import { awaitLikeSync } from '../../utils/likeSync';
@@ -12,6 +12,7 @@ import { useTheme, ColorsType } from '@/context/ThemeContext';
 import { API_BASE_URL } from '@/config/api';
 import { useSystemBars } from '@/hooks/useSystemBars';
 import { verseTypography } from '@/utils/verseTypography';
+import * as Clipboard from 'expo-clipboard';
 type Book = {
   book_id: string;
   book_name: string;
@@ -218,6 +219,18 @@ export default function Wishlist() {
     }
   };
 
+  // Citation of the verse most recently copied, so the tick shows on that one
+  // card rather than every card at once.
+  const [copiedVerseKey, setCopiedVerseKey] = useState<string | null>(null);
+
+  const copyVerse = async (item: any) => {
+    await Clipboard.setStringAsync(`${item.text}
+
+${item.citation}`);
+    setCopiedVerseKey(item.key);
+    setTimeout(() => setCopiedVerseKey(null), 1800);
+  };
+
   const renderVerseCard = ({ item }: { item: any }) => {
     return (
       <Pressable 
@@ -226,9 +239,22 @@ export default function Wishlist() {
       >
         <View style={styles.verseHeaderRow}>
           <Text style={styles.verseCardCitation}>{item.citation}</Text>
-          {item.likedAt ? (
-            <Text style={styles.verseCardDate}>{formatDate(item.likedAt)}</Text>
-          ) : null}
+          <View style={styles.verseHeaderRight}>
+            {item.likedAt ? (
+              <Text style={styles.verseCardDate}>{formatDate(item.likedAt)}</Text>
+            ) : null}
+            <TouchableOpacity
+              onPress={() => copyVerse(item)}
+              hitSlop={10}
+              style={styles.verseCopyButton}
+              accessibilityRole="button"
+              accessibilityLabel={`Copy ${item.citation}`}
+            >
+              {copiedVerseKey === item.key
+                ? <Check size={16} color="#2E7D32" />
+                : <Copy size={16} color={colors.textSecondary} />}
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={[styles.verseCardText, verseTypography(item.text, 15)]}>{item.text}</Text>
       </Pressable>
@@ -595,6 +621,14 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  verseHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verseCopyButton: {
+    marginLeft: 10,
+    padding: 2,
   },
   verseCardCitation: {
     fontSize: 15,

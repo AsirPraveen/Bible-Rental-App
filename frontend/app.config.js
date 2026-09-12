@@ -65,6 +65,7 @@ export default {
     plugins: [
       // Must run before anything else touches build.gradle.
       "./plugins/withReleaseSigning",
+      "./plugins/withNavigationBarContrast",
     [
       "expo-build-properties",
       {

@@ -1615,7 +1615,10 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   rotateToggleBtn: {
     position: 'absolute',
-    bottom: 12,
+    // The details sheet is pulled up over the viewer by 16 (its marginTop), so
+    // anything at bottom: 12 ends up touching it. Clear the overlap and leave
+    // a real gap.
+    bottom: 34,
     right: 16,
     backgroundColor: colors.tint,
     paddingHorizontal: 12,
@@ -1631,7 +1634,9 @@ const getStyles = (colors: ColorsType) => StyleSheet.create({
   },
   detailsSheet: {
     flex: 1,
-    backgroundColor: colors.cardBg,
+    // The house light-blue in light mode, matching AuthorBooks, BookDetails
+    // and the artifact list, rather than a flat white panel.
+    backgroundColor: colors.theme === 'dark' ? colors.cardBg : '#DDF2FD',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     elevation: 10,

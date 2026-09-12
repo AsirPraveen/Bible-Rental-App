@@ -22,6 +22,10 @@ type Props = {
  * width, so the second copy is in the first one's place at the moment the loop
  * restarts and the seam is invisible. The width is measured rather than assumed
  * because verses vary from a few words to a long sentence, in any script.
+ *
+ * Styled as a solid blue pill in light mode, matching the category strip this
+ * replaced and the header gradient it sits on. A white surface here read as a
+ * second search bar.
  */
 export default function PocketVerseStrip({ verse, isStale, onPress }: Props) {
   const { colors } = useTheme();
@@ -55,7 +59,7 @@ export default function PocketVerseStrip({ verse, isStale, onPress }: Props) {
   if (!verse) {
     return (
       <Pressable style={[styles.strip, styles.empty]} onPress={onPress}>
-        <MaterialCommunityIcons name="bookmark-plus-outline" size={18} color={colors.tint} />
+        <MaterialCommunityIcons name="bookmark-plus-outline" size={17} color={styles.text.color} />
         <Text style={styles.emptyText}>Set today&apos;s Pocket Verse</Text>
       </Pressable>
     );
@@ -64,16 +68,15 @@ export default function PocketVerseStrip({ verse, isStale, onPress }: Props) {
   return (
     <Pressable style={styles.strip} onPress={onPress}>
       <View style={styles.badge}>
-        <MaterialCommunityIcons
-          name="bookmark-outline"
-          size={15}
-          color={colors.theme === 'dark' ? colors.tint : colors.textLight}
-        />
+        <MaterialCommunityIcons name="bookmark" size={14} color={styles.text.color} />
       </View>
 
       <View style={styles.track}>
         <Animated.View style={[styles.row, { transform: [{ translateX }] }]}>
-          {/* Only the first copy is measured; both render identical content. */}
+          {/* Only the first copy is measured; both render identical content.
+              flexShrink: 0 keeps the line at its natural width — inside a row
+              it was otherwise squeezed to the track and ellipsised, which is
+              where the "..." came from. */}
           <Text
             onLayout={onCopyLayout}
             numberOfLines={1}
@@ -99,30 +102,36 @@ export default function PocketVerseStrip({ verse, isStale, onPress }: Props) {
   );
 }
 
-const getStyles = (colors: any) =>
-  StyleSheet.create({
+const getStyles = (colors: any) => {
+  const onBlue = colors.theme === 'dark' ? colors.tint : colors.textLight;
+
+  return StyleSheet.create({
     strip: {
-      height: 52,
+      height: 50,
       marginHorizontal: 16,
-      marginBottom: 4,
+      marginBottom: 6,
       paddingLeft: 10,
-      paddingRight: 8,
+      paddingRight: 10,
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: 14,
+      borderRadius: 25,
       overflow: 'hidden',
-      backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.10)' : colors.cardBg,
-      borderWidth: 1,
-      borderColor: colors.theme === 'dark' ? colors.border : 'rgba(20, 108, 148, 0.18)',
+      // Matches the category pills this replaced: a solid blue pill in light
+      // mode, a tinted glass pill in dark.
+      backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.12)' : colors.primary,
+      borderWidth: 1.5,
+      borderColor: colors.theme === 'dark' ? colors.tint : 'rgba(255,255,255,0.25)',
     },
     badge: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 10,
-      backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.16)' : colors.primary,
+      marginRight: 8,
+      backgroundColor: colors.theme === 'dark'
+        ? 'rgba(56, 189, 248, 0.16)'
+        : 'rgba(255, 255, 255, 0.18)',
     },
     track: {
       flex: 1,
@@ -133,35 +142,34 @@ const getStyles = (colors: any) =>
     },
     text: {
       fontSize: FONT_SIZE,
+      flexShrink: 0,
       // A gap after each copy so the end of one does not touch the next.
       paddingRight: 48,
-      color: colors.theme === 'dark' ? colors.textLight : colors.text,
+      color: onBlue,
     },
     empty: {
       justifyContent: 'center',
       borderStyle: 'dashed',
-      // No transparent background here: the strip sits directly on the header
-      // gradient, whose first stop in light mode is the very colour of
-      // colors.tint — the prompt was invisible against it. Keeping the surface
-      // from `strip` gives the text something to sit on in both themes.
-      borderColor: colors.tint,
     },
     emptyText: {
       marginLeft: 8,
       fontSize: 14,
       fontWeight: '600',
-      color: colors.tint,
+      color: onBlue,
     },
     newDay: {
       marginLeft: 8,
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 8,
-      backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.16)' : colors.primary,
+      backgroundColor: colors.theme === 'dark'
+        ? 'rgba(56, 189, 248, 0.16)'
+        : 'rgba(255, 255, 255, 0.2)',
     },
     newDayText: {
       fontSize: 10,
       fontWeight: '700',
-      color: colors.theme === 'dark' ? colors.tint : colors.textLight,
+      color: onBlue,
     },
   });
+};

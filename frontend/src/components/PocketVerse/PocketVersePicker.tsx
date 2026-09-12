@@ -15,6 +15,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { apiClient } from '@/services';
 import { verseTypography } from '@/utils/verseTypography';
 import { PocketVerse } from '@/hooks/usePocketVerse';
+import { POCKET_VERSE_BLURB } from './PocketVerseDetail';
 
 type Book = { bookNumber: number; bookName: string; chapterCount: number };
 type Verse = { verseNumber: number; text: string };
@@ -177,7 +178,12 @@ export default function PocketVersePicker({ visible, onClose, onSelect }: Props)
     }
 
     if (step === 'chapter') {
-      const chapters = Array.from({ length: book?.chapterCount || 0 }, (_, i) => i + 1);
+      const count = book?.chapterCount || 0;
+      const chapters: number[] = Array.from({ length: count }, (_, i) => i + 1);
+      // Pad the last row to a full five with placeholders. Flexible chips share
+      // the row evenly, which removes the gap down the right-hand edge, but
+      // without padding a short final row would stretch its chips instead.
+      while (chapters.length % 5 !== 0) chapters.push(-chapters.length);
       return (
         <FlatList
           // Every step renders a FlatList at this same position, so React
@@ -192,9 +198,11 @@ export default function PocketVersePicker({ visible, onClose, onSelect }: Props)
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.grid}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.chip} onPress={() => chooseChapter(item)}>
-              <Text style={styles.chipText}>{item}</Text>
-            </TouchableOpacity>
+            item < 0 ? <View style={[styles.chip, styles.chipFiller]} /> : (
+              <TouchableOpacity style={styles.chip} onPress={() => chooseChapter(item)}>
+                <Text style={styles.chipText}>{item}</Text>
+              </TouchableOpacity>
+            )
           )}
         />
       );
@@ -244,6 +252,11 @@ export default function PocketVersePicker({ visible, onClose, onSelect }: Props)
             <View style={styles.headerSpacer} />
           </View>
           <Text style={styles.subtitle}>Carry it with you for the day</Text>
+          {step === 'language' && (
+            <View style={styles.blurbBox}>
+              <Text style={styles.blurbText}>{POCKET_VERSE_BLURB}</Text>
+            </View>
+          )}
           <View style={styles.body}>{renderBody()}</View>
         </View>
       </View>
@@ -282,6 +295,18 @@ const getStyles = (colors: any) =>
       marginBottom: 10,
     },
     body: { flex: 1 },
+    blurbBox: {
+      marginBottom: 12,
+      padding: 12,
+      borderRadius: 12,
+      backgroundColor: colors.theme === 'dark' ? 'rgba(56, 189, 248, 0.08)' : '#DDF2FD',
+    },
+    blurbText: {
+      fontSize: 12.5,
+      lineHeight: 19,
+      fontStyle: 'italic',
+      color: colors.theme === 'dark' ? colors.textSecondary : colors.primary,
+    },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
     errorText: { color: colors.textSecondary, fontSize: 14, textAlign: 'center' },
     retryButton: {
@@ -305,12 +330,13 @@ const getStyles = (colors: any) =>
       borderColor: colors.border,
     },
     rowText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
-    grid: { paddingBottom: 8 },
-    gridRow: { justifyContent: 'flex-start' },
+    grid: { paddingBottom: 8, marginHorizontal: -4 },
+    gridRow: { justifyContent: 'space-between' },
     chip: {
-      width: 52,
-      height: 44,
-      margin: 4,
+      flex: 1,
+      height: 46,
+      marginHorizontal: 4,
+      marginVertical: 4,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: 10,
@@ -319,6 +345,7 @@ const getStyles = (colors: any) =>
       borderColor: colors.border,
     },
     chipText: { fontSize: 15, fontWeight: '600', color: colors.text },
+    chipFiller: { backgroundColor: 'transparent', borderColor: 'transparent' },
     verseRow: {
       flexDirection: 'row',
       paddingVertical: 12,

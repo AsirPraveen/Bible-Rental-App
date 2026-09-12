@@ -18,7 +18,7 @@ import { useOrg } from '@/context/OrganizationContext';
 import { apiClient } from '@/services';
 import { useSystemBars } from '@/hooks/useSystemBars';
 import { usePocketVerse } from '@/hooks/usePocketVerse';
-import { PocketVerseStrip, PocketVersePicker } from '@/components/PocketVerse';
+import { PocketVerseStrip, PocketVersePicker, PocketVerseDetail } from '@/components/PocketVerse';
 
 const APP_NAME = Constants.expoConfig?.extra?.appName ?? '';
 
@@ -211,6 +211,15 @@ const HomeView = () => {
   // Pocket verse: the one verse the reader carries for the day.
   const { verse: pocketVerse, isStale: isPocketVerseStale, setPocketVerse } = usePocketVerse();
   const [isPocketVersePickerOpen, setIsPocketVersePickerOpen] = useState(false);
+  const [isPocketVerseDetailOpen, setIsPocketVerseDetailOpen] = useState(false);
+
+  // Tapping the strip reads the verse; changing it is a deliberate second step
+  // from inside that view. With no verse set yet there is nothing to read, so
+  // the tap goes straight to choosing one.
+  const openPocketVerse = () => {
+    if (pocketVerse) setIsPocketVerseDetailOpen(true);
+    else setIsPocketVersePickerOpen(true);
+  };
 
   async function fetchBooks() {
     try {
@@ -389,7 +398,18 @@ const HomeView = () => {
           <PocketVerseStrip
             verse={pocketVerse}
             isStale={isPocketVerseStale}
-            onPress={() => setIsPocketVersePickerOpen(true)}
+            onPress={openPocketVerse}
+          />
+
+          <PocketVerseDetail
+            visible={isPocketVerseDetailOpen}
+            verse={pocketVerse}
+            isStale={isPocketVerseStale}
+            onClose={() => setIsPocketVerseDetailOpen(false)}
+            onChangeVerse={() => {
+              setIsPocketVerseDetailOpen(false);
+              setIsPocketVersePickerOpen(true);
+            }}
           />
 
           <PocketVersePicker

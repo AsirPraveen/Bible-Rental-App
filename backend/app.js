@@ -36,6 +36,7 @@ const imageGenRoutes = require('./routes/imageGenRoutes');
 const cron = require('node-cron');
 const { notifyUserById } = require('./utils/notificationService');
 const ReadingStat = require('./models/ReadingStat');
+const { purgeDueAccounts } = require('./services/accountDeletionService');
 
 const mongoUrl = process.env.MONGO_URL;
 const PORT = process.env.PORT || 5001;
@@ -145,6 +146,24 @@ const currentHourIn = (timeZone) => {
  * Runs every hour on the minute 0 and notifies users whose configured reminder
  * hour matches the current hour IN THEIR OWN TIMEZONE.
  */
+/**
+ * Carries out account deletions whose seven-day grace period has run out.
+ *
+ * Daily rather than hourly: the window is measured in days, so checking more
+ * often would only add load. Runs at 03:15, away from the top of the hour the
+ * reading reminders use.
+ */
+cron.schedule('15 3 * * *', async () => {
+  try {
+    const { considered, deleted } = await purgeDueAccounts();
+    if (considered > 0) {
+      console.log(`[Cron] Account deletions: ${deleted} of ${considered} due accounts erased.`);
+    }
+  } catch (err) {
+    console.error('[Cron] Account deletion sweep failed:', err.message);
+  }
+});
+
 cron.schedule('0 * * * *', async () => {
   console.log('[Cron] Checking reading reminders...');
 

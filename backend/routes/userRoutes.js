@@ -19,6 +19,9 @@ router.post('/toggle-liked-song', auth, orgScope, userController.toggleLikedSong
 // span several organizations and all of it goes.
 router.get('/account-deletion-status', auth, userController.getAccountDeletionStatus);
 router.delete('/me', auth, userController.deleteOwnAccount);
+// Cancelling is intentionally unguarded by the deletion policy — keeping an
+// account must never be harder than losing one.
+router.post('/me/cancel-deletion', auth, userController.cancelOwnAccountDeletion);
 
 // Admin only routes
 router.get('/get-all-user', auth, orgScope, adminAuth, userController.getAllUsers);

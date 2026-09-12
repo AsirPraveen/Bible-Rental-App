@@ -28,6 +28,15 @@ const Organization = require('../models/Organization');
  * keeps working everywhere and no screen has to learn to render a null author.
  */
 
+/**
+ * How long a member has to change their mind.
+ *
+ * Deletion is irreversible once it runs, and people ask for it in a bad hour.
+ * The request is recorded, the account stays usable, and nothing is destroyed
+ * until the period has run out.
+ */
+const GRACE_PERIOD_DAYS = 7;
+
 /** Reserved TLD (RFC 2606), so nobody can ever register it and sign in as this. */
 const TOMBSTONE_EMAIL = 'deleted-member@youthroom.invalid';
 const TOMBSTONE_NAME = 'Deleted member';
@@ -153,7 +162,57 @@ async function deleteAccount(user) {
   await User.deleteOne({ _id: userId });
 }
 
+/** The moment a request made now would be carried out. */
+function deletionDueDate(requestedAt) {
+  const due = new Date(requestedAt);
+  due.setDate(due.getDate() + GRACE_PERIOD_DAYS);
+  return due;
+}
+
+/** Records the request. Nothing is destroyed here. */
+async function scheduleDeletion(user) {
+  const requestedAt = new Date();
+  await User.updateOne({ _id: user._id }, { $set: { deletionRequestedAt: requestedAt } });
+  return { requestedAt, scheduledFor: deletionDueDate(requestedAt) };
+}
+
+/** Takes the request back. Safe to call when none is outstanding. */
+async function cancelDeletion(user) {
+  await User.updateOne({ _id: user._id }, { $set: { deletionRequestedAt: null } });
+}
+
+/**
+ * Erases every account whose grace period has run out.
+ *
+ * Accounts are handled one at a time rather than in one sweeping query: each
+ * deletion touches a dozen collections, and one failure must not stop the
+ * others from being processed.
+ */
+async function purgeDueAccounts() {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - GRACE_PERIOD_DAYS);
+
+  const due = await User.find({ deletionRequestedAt: { $ne: null, $lte: cutoff } });
+  let deleted = 0;
+
+  for (const user of due) {
+    try {
+      await deleteAccount(user);
+      deleted++;
+    } catch (err) {
+      console.error(`[Deletion] Failed to purge account ${user._id}:`, err.message);
+    }
+  }
+
+  return { considered: due.length, deleted };
+}
+
 module.exports = {
+  GRACE_PERIOD_DAYS,
+  deletionDueDate,
+  scheduleDeletion,
+  cancelDeletion,
+  purgeDueAccounts,
   TOMBSTONE_EMAIL,
   TOMBSTONE_NAME,
   findDeletionBlockers,

@@ -27,9 +27,9 @@ const Organization = require('../models/Organization');
 
 async function isGloballyEnabled() {
   const settings = await AppSettings.findOne();
-  // No settings document yet means nothing has been configured, and the model
-  // default is on.
-  return settings ? settings.isAccountDeletionEnabled !== false : true;
+  // Off unless switched on. Account deletion is irreversible, so it is opt-in
+  // at every level: an unconfigured platform is a platform that never decided.
+  return settings ? settings.isAccountDeletionEnabled === true : false;
 }
 
 /**
@@ -48,7 +48,8 @@ async function findPolicyBlockers(user) {
   if (orgIds.length === 0) return [];
 
   const orgs = await Organization.find({ _id: { $in: orgIds } }).select('name features');
-  const blocking = orgs.filter(org => org.features?.accountDeletion === false);
+  // Opt-in, so anything other than an explicit true blocks.
+  const blocking = orgs.filter(org => org.features?.accountDeletion !== true);
 
   return blocking.map(
     org => `Account deletion is turned off by the admins of "${org.name}".`

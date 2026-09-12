@@ -7,7 +7,7 @@ const AppSettingsSchema = new mongoose.Schema({
   // Platform master switch for self-service account deletion. This one
   // CASCADES rather than acting as a fallback: when it is off, no organization
   // can turn deletion back on. Every other flag here is only a default.
-  isAccountDeletionEnabled: { type: Boolean, default: true },
+  isAccountDeletionEnabled: { type: Boolean, default: false },
   // A guest has no organization, so getAppSettings serves THIS document to
   // them — which makes these the flags the SuperAdmin's Guest Settings screen
   // actually controls. Org-level guestAccess governs signed-in browsing.

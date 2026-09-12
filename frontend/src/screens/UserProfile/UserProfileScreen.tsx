@@ -408,18 +408,6 @@ const UserProfileScreen = () => {
     );
   };
 
-  // The account is already gone server-side by the time this runs, so this is
-  // only local teardown: drop the session and send them back to the start.
-  const handleAccountDeleted = async () => {
-    try {
-      await logout();
-      await AsyncStorage.removeItem('userType');
-    } catch (error) {
-      console.error('Error clearing session after deletion:', error);
-    } finally {
-      navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
-    }
-  };
 
   if (loading) {
     return <LoadingScreen message="Loading profile..." />;
@@ -645,7 +633,7 @@ const UserProfileScreen = () => {
 
               </View>
 
-              {!isGuest && <DeleteAccountSection onDeleted={handleAccountDeleted} />}
+              {!isGuest && <DeleteAccountSection />}
 
             </View>
           </View>

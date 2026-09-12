@@ -14,6 +14,12 @@ const UserDetailSchema = new mongoose.Schema(
     // Global platform role (only 'SuperAdmin' or null for regular users)
     globalRole: { type: String, enum: ['SuperAdmin', null], default: null },
 
+    // When the member asked for their account to be deleted. The account stays
+    // usable through the grace period so the request can be taken back; a
+    // scheduled job erases it once the period has run out. Null for everyone
+    // who has not asked.
+    deletionRequestedAt: { type: Date, default: null },
+
     // Organization memberships — a user can belong to multiple orgs
     memberships: [{
       organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },

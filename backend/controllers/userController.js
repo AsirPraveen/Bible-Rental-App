@@ -1,6 +1,12 @@
 require('dotenv').config();
 const User = require('../models/UserDetails');
-const { findDeletionBlockers, deleteAccount } = require('../services/accountDeletionService');
+const {
+  findDeletionBlockers,
+  scheduleDeletion,
+  cancelDeletion,
+  deletionDueDate,
+  GRACE_PERIOD_DAYS,
+} = require('../services/accountDeletionService');
 const { findPolicyBlockers } = require('../services/accountDeletionPolicy');
 
 exports.updateUser = async (req, res) => {
@@ -74,6 +80,8 @@ exports.getAccountDeletionStatus = async (req, res) => {
       : [];
     const blockers = [...policyBlockers, ...accountBlockers];
 
+    const requestedAt = req.user.deletionRequestedAt || null;
+
     res.send({
       status: 'Ok',
       data: {
@@ -81,6 +89,11 @@ exports.getAccountDeletionStatus = async (req, res) => {
         canDelete: blockers.length === 0,
         blockers,
         confirmationEmail: req.user.email,
+        gracePeriodDays: GRACE_PERIOD_DAYS,
+        // Non-null while a request is outstanding, so the app can offer to
+        // take it back instead of offering to delete again.
+        deletionRequestedAt: requestedAt,
+        deletionScheduledFor: requestedAt ? deletionDueDate(requestedAt) : null,
       },
     });
   } catch (error) {
@@ -130,16 +143,43 @@ exports.deleteOwnAccount = async (req, res) => {
       return res.status(409).send({ status: 'error', message: blockers[0], blockers });
     }
 
-    await deleteAccount(req.user);
+    const { scheduledFor } = await scheduleDeletion(req.user);
 
-    console.log(`[Account] Deleted account ${req.user._id}`);
-    res.send({ status: 'Ok', data: 'Your account and personal data have been deleted.' });
+    console.log(`[Account] Deletion requested for ${req.user._id}, due ${scheduledFor.toISOString()}`);
+    res.send({
+      status: 'Ok',
+      data: `Your account is scheduled for deletion on ${scheduledFor.toDateString()}.`,
+      scheduledFor,
+      gracePeriodDays: GRACE_PERIOD_DAYS,
+    });
   } catch (error) {
     console.error('Failed to delete account:', error);
     res.status(500).send({
       status: 'error',
-      message: 'Could not delete the account. Nothing was removed — please try again.',
+      message: 'Could not schedule the deletion. Nothing was removed — please try again.',
     });
+  }
+};
+
+/**
+ * Takes back a pending deletion request.
+ *
+ * Deliberately carries no confirmation step and no policy check: keeping an
+ * account must never be harder than losing one, and a member whose
+ * organization switched deletion off mid-window must still be able to cancel.
+ */
+exports.cancelOwnAccountDeletion = async (req, res) => {
+  try {
+    if (!req.user.deletionRequestedAt) {
+      return res.send({ status: 'Ok', data: 'There was nothing to cancel.' });
+    }
+
+    await cancelDeletion(req.user);
+    console.log(`[Account] Deletion cancelled for ${req.user._id}`);
+    res.send({ status: 'Ok', data: 'Your account will be kept.' });
+  } catch (error) {
+    console.error('Failed to cancel account deletion:', error);
+    res.status(500).send({ status: 'error', message: 'Could not cancel the deletion.' });
   }
 };
 

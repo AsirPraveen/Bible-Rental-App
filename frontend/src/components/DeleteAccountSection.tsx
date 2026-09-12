@@ -21,12 +21,13 @@ type Status = {
   canDelete: boolean;
   blockers: string[];
   confirmationEmail: string;
+  gracePeriodDays: number;
+  /** Non-null while a deletion request is outstanding. */
+  deletionRequestedAt: string | null;
+  deletionScheduledFor: string | null;
 };
 
-type Props = {
-  /** Called once the account is gone, so the screen can sign out and navigate. */
-  onDeleted: () => void;
-};
+
 
 /**
  * "Delete my account", as required by Google Play for any app offering
@@ -38,7 +39,9 @@ type Props = {
  * retyped their own email address. A mistyped confirmation costs seconds; a
  * mis-tapped one costs the account.
  */
-export default function DeleteAccountSection({ onDeleted }: Props) {
+// No onDeleted callback: requesting deletion no longer signs anyone out. The
+// account stays usable through the grace period precisely so it can be kept.
+export default function DeleteAccountSection() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -52,6 +55,7 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Visibility comes from the SAME endpoint that enforces deletion, not from
   // /api/app-settings. That route resolves only the ACTIVE organization, so a
@@ -106,6 +110,34 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
     setIsOpen(false);
   };
 
+  const pending = !!status?.deletionScheduledFor;
+  const dueDate = status?.deletionScheduledFor
+    ? new Date(status.deletionScheduledFor).toLocaleDateString(undefined, {
+        year: 'numeric', month: 'long', day: 'numeric',
+      })
+    : '';
+  const graceDays = status?.gracePeriodDays ?? 7;
+
+  /** Keeping the account asks nothing and checks nothing. */
+  const keepAccount = async () => {
+    if (isCancelling) return;
+    setIsCancelling(true);
+    setError(null);
+    try {
+      const res = await apiClient.post('/api/users/me/cancel-deletion');
+      if (res.data.status === 'Ok') {
+        setStatus(status ? { ...status, deletionRequestedAt: null, deletionScheduledFor: null } : null);
+        setIsOpen(false);
+      } else {
+        setError('Could not cancel the deletion. Please try again.');
+      }
+    } catch {
+      setError('Could not cancel the deletion. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const matches =
     !!status &&
     confirmEmail.trim().toLowerCase() === status.confirmationEmail.trim().toLowerCase();
@@ -119,8 +151,14 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
         data: { confirmEmail: confirmEmail.trim() },
       });
       if (res.data.status === 'Ok') {
-        setIsOpen(false);
-        onDeleted();
+        // Nothing is erased yet, so the member stays signed in and can still
+        // take it back. Reflect the pending state instead of signing them out.
+        setStatus(status ? {
+          ...status,
+          deletionRequestedAt: new Date().toISOString(),
+          deletionScheduledFor: res.data.scheduledFor ?? null,
+        } : null);
+        setConfirmEmail('');
       } else {
         setError(res.data.message || 'Could not delete the account.');
       }
@@ -143,13 +181,42 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
     <>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Danger zone</Text>
-        <TouchableOpacity style={styles.dangerButton} onPress={open} activeOpacity={0.7}>
-          <Ionicons name="trash-outline" size={18} color={DANGER} style={{ marginRight: 10 }} />
-          <Text style={styles.dangerButtonText}>Delete my account</Text>
-        </TouchableOpacity>
-        <Text style={styles.sectionHint}>
-          Permanently removes your account and personal data. This cannot be undone.
-        </Text>
+
+        {pending ? (
+          <>
+            <View style={styles.pendingBox}>
+              <Ionicons name="time-outline" size={18} color={DANGER} />
+              <Text style={styles.pendingText}>
+                Your account is scheduled for deletion on {dueDate}.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.keepButton}
+              onPress={keepAccount}
+              disabled={isCancelling}
+              activeOpacity={0.85}
+            >
+              {isCancelling
+                ? <ActivityIndicator size="small" color={colors.textLight} />
+                : <Text style={styles.keepText}>Keep my account</Text>}
+            </TouchableOpacity>
+            <Text style={styles.sectionHint}>
+              Nothing has been removed yet. Keep your account any time before that date
+              and the request is forgotten.
+            </Text>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity style={styles.dangerButton} onPress={open} activeOpacity={0.7}>
+              <Ionicons name="trash-outline" size={18} color={DANGER} style={{ marginRight: 10 }} />
+              <Text style={styles.dangerButtonText}>Delete my account</Text>
+            </TouchableOpacity>
+            <Text style={styles.sectionHint}>
+              Your account is kept for {graceDays} days first, so you can change your mind.
+              After that it is removed permanently.
+            </Text>
+          </>
+        )}
       </View>
 
       <Modal
@@ -185,9 +252,31 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
                   <Text style={styles.cancelText}>Close</Text>
                 </TouchableOpacity>
               </View>
+            ) : pending ? (
+              <View>
+                <Text style={styles.body}>Deletion scheduled</Text>
+                <Text style={styles.bullet}>
+                  Your account and personal data will be removed on {dueDate}. Until
+                  then nothing has changed and you can keep your account.
+                </Text>
+                <TouchableOpacity
+                  style={styles.keepButton}
+                  onPress={keepAccount}
+                  disabled={isCancelling}
+                >
+                  {isCancelling
+                    ? <ActivityIndicator size="small" color={colors.textLight} />
+                    : <Text style={styles.keepText}>Keep my account</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButton} onPress={close}>
+                  <Text style={styles.cancelText}>Close</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <ScrollView keyboardShouldPersistTaps="handled">
-                <Text style={styles.body}>This permanently deletes:</Text>
+                <Text style={styles.body}>
+                  Your account is kept for {graceDays} days, then deleted. This removes:
+                </Text>
                 <Text style={styles.bullet}>• Your name, email and profile photo</Text>
                 <Text style={styles.bullet}>• Your notes, reading progress and reminders</Text>
                 <Text style={styles.bullet}>• Your saved verses and songs</Text>
@@ -227,7 +316,7 @@ export default function DeleteAccountSection({ onDeleted }: Props) {
                   {isDeleting ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={styles.confirmButtonText}>Delete permanently</Text>
+                    <Text style={styles.confirmButtonText}>Schedule deletion</Text>
                   )}
                 </TouchableOpacity>
 
@@ -330,6 +419,28 @@ const getStyles = (colors: any) =>
       backgroundColor: colors.inputBg || colors.background,
     },
     errorText: { marginTop: 10, fontSize: 13, color: DANGER },
+    pendingBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: 12,
+      backgroundColor: 'rgba(229, 57, 53, 0.10)',
+    },
+    pendingText: {
+      flex: 1,
+      marginLeft: 9,
+      fontSize: 13,
+      lineHeight: 18,
+      color: colors.text,
+    },
+    keepButton: {
+      marginTop: 12,
+      paddingVertical: 13,
+      borderRadius: 12,
+      alignItems: 'center',
+      backgroundColor: colors.primary,
+    },
+    keepText: { color: colors.textLight, fontSize: 15, fontWeight: '700' },
     confirmButton: {
       marginTop: 16,
       paddingVertical: 13,
